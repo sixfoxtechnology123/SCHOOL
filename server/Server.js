@@ -16,10 +16,15 @@ app.use(cors());
 // Routes
 const classRoutes = require("./routes/classRoutes");
 const feeHeadRoutes = require("./routes/feeHeadRoutes");
+const academicSessionRoutes = require("./routes/academicSessionRoutes");
+
+
 
 
 app.use("/api/classes", classRoutes);
 app.use("/api/feeheads", feeHeadRoutes);
+app.use("/api/sessions", academicSessionRoutes);
+
 
 // Start server
 const PORT = process.env.PORT || 5001;

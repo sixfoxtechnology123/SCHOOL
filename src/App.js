@@ -5,6 +5,8 @@ import ClassesList from "./component/ClassesList";
 import HomePage from "./component/HomePage";
 import FeeHeadsMaster from "./component/FeeHeadsMaster";
 import FeeHeadsList from "./component/FeeHeadsList";
+import AcademicSessionMaster from "./component/AcademicSessionMaster";
+import AcademicSessionList from "./component/AcademicSessionList";
 
 function App() {
   return (
@@ -14,6 +16,8 @@ function App() {
       <Route path="/ClassesList" element={<ClassesList />} />
       <Route path="/FeeHeadsMaster" element={<FeeHeadsMaster/>} />
       <Route path="/FeeHeadsList" element={<FeeHeadsList/>} />
+      <Route path="/AcademicSessionMaster" element={<AcademicSessionMaster/>} />
+      <Route path="/AcademicSessionList" element={<AcademicSessionList/>} />
      
     </Routes>
   );

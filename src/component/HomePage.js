@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaBook, FaMoneyBill } from 'react-icons/fa';  // Added Fee Heads icon
+import { FaBook, FaMoneyBill, FaCalendarAlt } from 'react-icons/fa';  // Added Academic Session icon
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -26,6 +26,15 @@ const HomePage = () => {
         >
           <FaMoneyBill className="text-5xl text-green-600 mb-4" />
           <h2 className="text-xl font-semibold text-black">Fee Heads</h2>
+        </div>
+
+        {/* Academic Session Button */}
+        <div
+          onClick={() => navigate("/AcademicSessionList")}
+          className="cursor-pointer bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center hover:bg-teal-100 transition"
+        >
+          <FaCalendarAlt className="text-5xl text-blue-600 mb-4" />
+          <h2 className="text-xl font-semibold text-black">Academic Session</h2>
         </div>
       </div>
     </div>
