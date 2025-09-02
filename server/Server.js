@@ -20,7 +20,8 @@ const academicSessionRoutes = require("./routes/academicSessionRoutes");
 const feeStructureRoutes = require("./routes/feeStructureRoutes");
 const transportRoutes = require("./routes/transportRoute");
 const userRoutes = require("./routes/userRoutes");
-
+const studentRoutes = require("./routes/studentRoutes");
+const receiptRoutes = require("./routes/receiptRoutes");
 
 
 
@@ -30,7 +31,8 @@ app.use("/api/sessions", academicSessionRoutes);
 app.use("/api/fees", feeStructureRoutes);
 app.use("/api/transportroutes", transportRoutes);
 app.use("/api/users", userRoutes);
-
+app.use("/api/students", studentRoutes);
+app.use("/api/receipts", receiptRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5001;

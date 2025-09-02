@@ -6,7 +6,8 @@ import {
   FaCalendarAlt, 
   FaFileInvoiceDollar,
   FaBus,
-   FaUser ,
+  FaUser ,
+  FaUserGraduate,
 } from 'react-icons/fa';
 
 const HomePage = () => {
@@ -17,6 +18,15 @@ const HomePage = () => {
       <h1 className="text-4xl font-bold text-gray-800 mb-10">Welcome to SCHOOL</h1>
 
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-8 flex-wrap justify-center">
+        {/* Student Master Button */}
+        <div
+          onClick={() => navigate("/StudentList")}
+          className="cursor-pointer bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center hover:bg-teal-100 transition"
+        >
+          <FaUserGraduate className="text-5xl text-pink-600 mb-4" />
+          <h2 className="text-xl font-semibold text-black">Students</h2>
+        </div>
+
         {/* Class Master Button */}
         <div
           onClick={() => navigate("/classesList")}
@@ -69,6 +79,15 @@ const HomePage = () => {
         >
           <FaUser className="text-5xl text-pink-600 mb-4" />
           <h2 className="text-xl font-semibold text-black">User Master</h2>
+        </div>
+
+          {/* Receipts Button */}
+        <div
+          onClick={() => navigate("/ReceiptsList")}
+          className="cursor-pointer bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center hover:bg-teal-100 transition"
+        >
+          <FaFileInvoiceDollar className="text-5xl text-red-600 mb-4" />
+          <h2 className="text-xl font-semibold text-black">Receipts</h2>
         </div>
       </div>
     </div>
