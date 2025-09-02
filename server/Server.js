@@ -22,6 +22,7 @@ const transportRoutes = require("./routes/transportRoute");
 const userRoutes = require("./routes/userRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const receiptRoutes = require("./routes/receiptRoutes");
+const paymentRoutes = require("./routes/paymentRoutes"); 
 
 
 
@@ -33,6 +34,7 @@ app.use("/api/transportroutes", transportRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/receipts", receiptRoutes);
+app.use("/api/payments", paymentRoutes);    
 
 // Start server
 const PORT = process.env.PORT || 5001;

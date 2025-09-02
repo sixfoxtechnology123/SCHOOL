@@ -17,6 +17,8 @@ import StudentList from "./component/StudentList";
 import StudentMaster from "./component/StudentMaster";
 import ReceiptMaster from "./component/ReceiptMaster";
 import ReceiptsList from "./component/ReceiptsList";
+import PaymentsMaster from "./component/PaymentsMaster";
+import PaymentsList from "./component/PaymentsList";
 
 function App() {
   return (
@@ -38,6 +40,8 @@ function App() {
       <Route path="/StudentMaster" element={<StudentMaster/>} />
       <Route path="/ReceiptMaster" element={<ReceiptMaster/>} />
       <Route path="/ReceiptsList" element={<ReceiptsList/>} />
+      <Route path="/PaymentsMaster" element={<PaymentsMaster/>} />
+      <Route path="/PaymentsList" element={<PaymentsList/>} />
      
     </Routes>
   );

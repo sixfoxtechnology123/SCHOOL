@@ -8,6 +8,7 @@ import {
   FaBus,
   FaUser ,
   FaUserGraduate,
+  FaCreditCard
 } from 'react-icons/fa';
 
 const HomePage = () => {
@@ -88,6 +89,15 @@ const HomePage = () => {
         >
           <FaFileInvoiceDollar className="text-5xl text-red-600 mb-4" />
           <h2 className="text-xl font-semibold text-black">Receipts</h2>
+        </div>
+
+        {/* Payments Button */}
+        <div
+          onClick={() => navigate("/PaymentsList")}
+          className="cursor-pointer bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center hover:bg-teal-100 transition"
+        >
+          <FaCreditCard className="text-5xl text-indigo-600 mb-4" />
+          <h2 className="text-xl font-semibold text-black">Payments</h2>
         </div>
       </div>
     </div>
