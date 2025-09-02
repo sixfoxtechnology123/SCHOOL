@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaBook } from 'react-icons/fa';  
+import { FaBook, FaMoneyBill } from 'react-icons/fa';  // Added Fee Heads icon
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -17,6 +17,15 @@ const HomePage = () => {
         >
           <FaBook className="text-5xl text-teal-600 mb-4" />
           <h2 className="text-xl font-semibold text-black">Class Master</h2>
+        </div>
+
+        {/* Fee Heads Button */}
+        <div
+          onClick={() => navigate("/FeeHeadsList")}
+          className="cursor-pointer bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center hover:bg-teal-100 transition"
+        >
+          <FaMoneyBill className="text-5xl text-green-600 mb-4" />
+          <h2 className="text-xl font-semibold text-black">Fee Heads</h2>
         </div>
       </div>
     </div>

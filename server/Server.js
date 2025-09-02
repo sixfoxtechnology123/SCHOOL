@@ -15,7 +15,11 @@ app.use(cors());
 
 // Routes
 const classRoutes = require("./routes/classRoutes");
+const feeHeadRoutes = require("./routes/feeHeadRoutes");
+
+
 app.use("/api/classes", classRoutes);
+app.use("/api/feeheads", feeHeadRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5001;
