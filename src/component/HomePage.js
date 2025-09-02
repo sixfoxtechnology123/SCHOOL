@@ -1,6 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaBook, FaMoneyBill, FaCalendarAlt, FaFileInvoiceDollar } from 'react-icons/fa';  // Added Fee Structure icon
+import { 
+  FaBook, 
+  FaMoneyBill, 
+  FaCalendarAlt, 
+  FaFileInvoiceDollar,
+  FaBus,
+   FaUser ,
+} from 'react-icons/fa';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -16,7 +23,7 @@ const HomePage = () => {
           className="cursor-pointer bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center hover:bg-teal-100 transition"
         >
           <FaBook className="text-5xl text-teal-600 mb-4" />
-          <h2 className="text-xl font-semibold text-black">Class Master</h2>
+          <h2 className="text-xl font-semibold text-black">Class</h2>
         </div>
 
         {/* Fee Heads Button */}
@@ -44,6 +51,24 @@ const HomePage = () => {
         >
           <FaFileInvoiceDollar className="text-5xl text-purple-600 mb-4" />
           <h2 className="text-xl font-semibold text-black">Fee Structure</h2>
+        </div>
+
+        {/* Transport Routes Button */}
+        <div
+          onClick={() => navigate("/TransportRoutesList")}
+          className="cursor-pointer bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center hover:bg-teal-100 transition"
+        >
+          <FaBus className="text-5xl text-orange-600 mb-4" />
+          <h2 className="text-xl font-semibold text-black">Transport</h2>
+        </div>
+
+        {/* User Master Button */}
+        <div
+          onClick={() => navigate("/UserList")}
+          className="cursor-pointer bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center hover:bg-teal-100 transition"
+        >
+          <FaUser className="text-5xl text-pink-600 mb-4" />
+          <h2 className="text-xl font-semibold text-black">User Master</h2>
         </div>
       </div>
     </div>

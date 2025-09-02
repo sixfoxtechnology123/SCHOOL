@@ -76,7 +76,7 @@ const FeeStructureMaster = () => {
     <div className="min-h-screen bg-zinc-300 flex items-center justify-center">
       <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-sm">
         <h2 className="text-2xl font-bold mb-6 text-center text-black">
-          {isEditMode ? "Update Fee Structure" : "Fee Structure Master"}
+          {isEditMode ? "Update Fee Structure" : "Fee Structure"}
         </h2>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-2">

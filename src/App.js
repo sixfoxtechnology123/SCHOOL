@@ -9,6 +9,10 @@ import AcademicSessionMaster from "./component/AcademicSessionMaster";
 import AcademicSessionList from "./component/AcademicSessionList";
 import FeeStructureMaster from "./component/FeeStructureMaster";
 import FeeStructureList from "./component/FeeStructureList";
+import TransportRoutesMaster from "./component/TransportRoutesMaster";
+import TransportRoutesList from "./component/TransportRoutesList";
+import UsersList from "./component/UsersList";
+import UsersMaster from "./component/UsersMaster";
 
 function App() {
   return (
@@ -22,6 +26,10 @@ function App() {
       <Route path="/AcademicSessionList" element={<AcademicSessionList/>} />
       <Route path="/FeeStructureMaster" element={<FeeStructureMaster/>} />
       <Route path="/FeeStructureList" element={<FeeStructureList/>} />
+      <Route path="/TransportRoutesMaster" element={<TransportRoutesMaster/>} />
+      <Route path="/TransportRoutesList" element={<TransportRoutesList/>} />
+      <Route path="/UsersMaster" element={<UsersMaster/>} />
+      <Route path="/UserList" element={<UsersList/>} />
      
     </Routes>
   );
