@@ -7,6 +7,8 @@ import FeeHeadsMaster from "./component/FeeHeadsMaster";
 import FeeHeadsList from "./component/FeeHeadsList";
 import AcademicSessionMaster from "./component/AcademicSessionMaster";
 import AcademicSessionList from "./component/AcademicSessionList";
+import FeeStructureMaster from "./component/FeeStructureMaster";
+import FeeStructureList from "./component/FeeStructureList";
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
       <Route path="/FeeHeadsList" element={<FeeHeadsList/>} />
       <Route path="/AcademicSessionMaster" element={<AcademicSessionMaster/>} />
       <Route path="/AcademicSessionList" element={<AcademicSessionList/>} />
+      <Route path="/FeeStructureMaster" element={<FeeStructureMaster/>} />
+      <Route path="/FeeStructureList" element={<FeeStructureList/>} />
      
     </Routes>
   );

@@ -17,6 +17,8 @@ app.use(cors());
 const classRoutes = require("./routes/classRoutes");
 const feeHeadRoutes = require("./routes/feeHeadRoutes");
 const academicSessionRoutes = require("./routes/academicSessionRoutes");
+const feeStructureRoutes = require("./routes/feeStructureRoutes");
+
 
 
 
@@ -24,6 +26,8 @@ const academicSessionRoutes = require("./routes/academicSessionRoutes");
 app.use("/api/classes", classRoutes);
 app.use("/api/feeheads", feeHeadRoutes);
 app.use("/api/sessions", academicSessionRoutes);
+app.use("/api/fees", feeStructureRoutes);
+
 
 
 // Start server

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaBook, FaMoneyBill, FaCalendarAlt } from 'react-icons/fa';  // Added Academic Session icon
+import { FaBook, FaMoneyBill, FaCalendarAlt, FaFileInvoiceDollar } from 'react-icons/fa';  // Added Fee Structure icon
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -9,7 +9,7 @@ const HomePage = () => {
     <div className="flex flex-col items-center justify-center min-h-screen bg-teal-200">
       <h1 className="text-4xl font-bold text-gray-800 mb-10">Welcome to SCHOOL</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 flex-wrap justify-center">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-8 flex-wrap justify-center">
         {/* Class Master Button */}
         <div
           onClick={() => navigate("/classesList")}
@@ -35,6 +35,15 @@ const HomePage = () => {
         >
           <FaCalendarAlt className="text-5xl text-blue-600 mb-4" />
           <h2 className="text-xl font-semibold text-black">Academic Session</h2>
+        </div>
+
+        {/* Fee Structure Button */}
+        <div
+          onClick={() => navigate("/FeeStructureList")}
+          className="cursor-pointer bg-white shadow-lg rounded-2xl p-6 flex flex-col items-center hover:bg-teal-100 transition"
+        >
+          <FaFileInvoiceDollar className="text-5xl text-purple-600 mb-4" />
+          <h2 className="text-xl font-semibold text-black">Fee Structure</h2>
         </div>
       </div>
     </div>
