@@ -4,6 +4,7 @@ import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaTrash, FaEdit } from "react-icons/fa";
 import BackButton from "../component/BackButton";
+import Sidebar from '../component/Sidebar';
 
 const PaymentsList = () => {
   const [payments, setPayments] = useState([]);
@@ -51,6 +52,9 @@ const PaymentsList = () => {
   };
 
   return (
+  <div className="flex min-h-screen flex-col md:flex-row">
+      <Sidebar/>
+    <div className="flex-1 overflow-y-auto">
     <div className="p-6 bg-white shadow-md rounded-md">
       <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
         <div className="flex justify-between items-center">
@@ -120,6 +124,8 @@ const PaymentsList = () => {
         </tbody>
       </table>
     </div>
+     </div>
+  </div>
   );
 };
 

@@ -19,11 +19,19 @@ import ReceiptMaster from "./component/ReceiptMaster";
 import ReceiptsList from "./component/ReceiptsList";
 import PaymentsMaster from "./component/PaymentsMaster";
 import PaymentsList from "./component/PaymentsList";
+import Layout from "./component/Layout";
+import Sidebar from "./component/Sidebar";
+
+
+
+
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage/>} />
+   
+      <Route path="/HomePage" element={<HomePage/>} />
+      <Route path="/" element={<Layout/>} />
       <Route path="/ClassesMaster" element={<ClassesMaster />} />
       <Route path="/ClassesList" element={<ClassesList />} />
       <Route path="/FeeHeadsMaster" element={<FeeHeadsMaster/>} />
@@ -42,7 +50,9 @@ function App() {
       <Route path="/ReceiptsList" element={<ReceiptsList/>} />
       <Route path="/PaymentsMaster" element={<PaymentsMaster/>} />
       <Route path="/PaymentsList" element={<PaymentsList/>} />
-     
+      <Route path="/Sidebar" element={<Sidebar/>} />
+      <Route path="/Layout" element={<Layout/>} />
+
     </Routes>
   );
 }
