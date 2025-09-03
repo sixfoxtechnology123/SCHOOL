@@ -21,6 +21,7 @@ import PaymentsMaster from "./component/PaymentsMaster";
 import PaymentsList from "./component/PaymentsList";
 import Layout from "./component/Layout";
 import Sidebar from "./component/Sidebar";
+import Header from "./component/Header";
 
 
 
@@ -52,6 +53,7 @@ function App() {
       <Route path="/PaymentsList" element={<PaymentsList/>} />
       <Route path="/Sidebar" element={<Sidebar/>} />
       <Route path="/Layout" element={<Layout/>} />
+      <Route path="/Header" element={<Header/>} />
 
     </Routes>
   );

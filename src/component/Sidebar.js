@@ -96,7 +96,7 @@ const Sidebar = () => {
     <>
       {/* Mobile Topbar */}
       <div className="md:hidden flex items-center justify-between bg-green-700 text-white p-2">
-        <h2 className="text-lg font-bold">SCHOOL Fees</h2>
+        <h2 className="text-lg font-bold">Management</h2>
         <button onClick={() => setMobileOpen(true)}>
           <Menu size={28} />
         </button>
@@ -114,7 +114,7 @@ const Sidebar = () => {
           {/* Header + Toggle */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-green-800">
             {isOpen && (
-              <h3 className="text-2xl font-bold text-white">School Fees</h3>
+              <h3 className="text-2xl font-bold text-white">Management</h3>
             )}
             <button
               className="hidden md:block text-white ml-auto"
