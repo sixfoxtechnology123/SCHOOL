@@ -58,13 +58,13 @@ const Sidebar = () => {
     {
       title: "Reports",
       menus: [
-        { name: "Daily Collection", path: "/reports/daily", icon: FaChartBar },
-        { name: "Daily Collection (User-wise)", path: "/reports/daily-userwise", icon: FaUserCog },
-        { name: "Class-wise Summary", path: "/reports/classwise", icon: FaBook },
-        { name: "Student Payment History", path: "/reports/student-history", icon: FaHistory },
-        { name: "Outstanding Fees", path: "/reports/outstanding", icon: FaExclamationTriangle },
-        { name: "Fee Head Summary", path: "/reports/feehead", icon: FaListAlt },
-        { name: "Transport Fees", path: "/reports/transport", icon: FaBus },
+        { name: "Daily Collection", path: "/DailyCollectionReport", icon: FaChartBar },
+        { name: "Daily Collection (User-wise)", path: "/DailyCollectionUserReport", icon: FaUserCog },
+        { name: "Class-wise Summary", path: "/ClassSummaryReport", icon: FaBook },
+        { name: "Student Payment History", path: "/StudentPaymentHistory", icon: FaHistory },
+        { name: "Outstanding Fees", path: "/OutstandingReport", icon: FaExclamationTriangle },
+        { name: "Fee Head Summary", path: "/FeeHeadSummary", icon: FaListAlt },
+        { name: "Transport Fees", path: "/TransportReport", icon: FaBus },
       ],
     },
   ];

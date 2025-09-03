@@ -1,6 +1,7 @@
 // pages/Layout.js
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import Sidebar from "../component/Sidebar";
 import Header from "../component/Header";
 import {
@@ -13,10 +14,27 @@ import {
 const Layout = () => {
   const navigate = useNavigate();
 
+  // State for dashboard
+  const [totalStudents, setTotalStudents] = useState(0);
+
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
   };
+
+  // Fetch total students from backend
+  const fetchTotalStudents = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/students"); // Replace with your backend endpoint
+      setTotalStudents(res.data.length || 0);
+    } catch (err) {
+      console.error("Error fetching total students:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTotalStudents();
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -30,7 +48,6 @@ const Layout = () => {
 
         {/* Dashboard Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          {/* Summary Cards */}
           <div className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
             <FaMoneyBill size={30} className="text-green-700 mb-2" />
             <h2 className="text-lg font-semibold">Today's Collection</h2>
@@ -46,7 +63,7 @@ const Layout = () => {
           <div className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
             <FaUserGraduate size={30} className="text-green-700 mb-2" />
             <h2 className="text-lg font-semibold">Total Students</h2>
-            <p className="text-2xl font-bold">0</p>
+            <p className="text-2xl font-bold">{totalStudents}</p>
           </div>
 
           <div className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
