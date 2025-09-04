@@ -44,76 +44,127 @@ const PaymentsList = () => {
     }
   };
 
-  const handlePrint = (id) => {
-    const payment = payments.find((p) => p._id === id);
-    if (!payment) return;
+const handlePrint = (id) => {
+  const payment = payments.find((p) => p._id === id);
+  if (!payment) return;
 
-    const feeLines =
-      payment.feeDetails && payment.feeDetails.length > 0
-        ? payment.feeDetails
-            .map(
-              (f) =>
-                `<tr>
-                  <td style="border:1px solid #333;padding:6px;">${f.feeHead}</td>
-                  <td style="border:1px solid #333;padding:6px;text-align:right;">₹${Number(f.amount).toFixed(2)}</td>
-                </tr>`
-            )
-            .join("")
-        : `<tr><td colspan="2" style="border:1px solid #333;padding:6px;text-align:center;">No Fee Details</td></tr>`;
+  const feeLines =
+    payment.feeDetails && payment.feeDetails.length > 0
+      ? payment.feeDetails
+          .map(
+            (f) =>
+              `<tr>
+                <td style="border:1px solid #333;padding:6px;">${f.feeHead}</td>
+                <td style="border:1px solid #333;padding:6px;text-align:right;">₹${Number(f.amount).toFixed(2)}</td>
+              </tr>`
+          )
+          .join("")
+      : `<tr><td colspan="2" style="border:1px solid #333;padding:6px;text-align:center;">No Fee Details</td></tr>`;
 
-    const printContent = `
-      <div style="font-family: Arial; padding:20px; max-width:700px; margin:auto;">
-        <h1 style="text-align:center; margin:0; font-size:22px;">Central Public School</h1>
-        <p style="text-align:center; margin:0; font-size:14px;">Vill + PO - Tamluk, Dist - Purba Medinipur</p>
-        <p style="text-align:center; margin:0; font-size:14px;">West Bengal - 721636</p>
-        <hr style="margin:10px 0;" />
-        <h2 style="text-align:center; margin:5px 0;">Payment Receipt</h2>
-        
-        <table style="width:100%; margin-top:10px; margin-bottom:10px;">
-          <tr>
-            <td><b>Receipt No:</b> ${payment.paymentId}</td>
-            <td><b>Date:</b> ${formatDDMMYYYY(payment.date)}</td>
+  const printContent = `
+    <div style="font-family: Arial; padding:20px; max-width:750px; margin:auto; border:1px solid #333;">
+      
+      <!-- ===== School Header Section ===== -->
+      <div style="text-align:center; margin-bottom:10px;">
+        <h1 style="margin:0; font-size:26px; font-weight:bold;">Central Public School</h1>
+        <h3 style="margin:2px 0; font-size:16px; font-weight:normal;">(English Medium Co-education School)</h3>
+        <p style="margin:2px 0; font-size:13px;">
+          Affiliated to Council for the Indian School Certificate Examination (CISCE), New Delhi, Code-WB 412
+        </p>
+        <p style="margin:2px 0; font-size:13px;">
+          Nilgange, Matarangi, Barrackpore-Barasat Road, Kol-121
+        </p>
+        <hr style="margin:10px 0; border-top:2px solid #333;" />
+      </div>
+
+      <!-- ===== Receipt Title ===== -->
+      <div style="background:#f0f0f0; padding:8px; margin-bottom:10px; text-align:center; border:1px solid #333;">
+        <h2 style="margin:0; font-size:18px;">Payment Receipt</h2>
+      </div>
+
+  <!-- ===== Payment Info ===== -->
+      <table style="width:100%; margin-bottom:10px;">
+        <tr>
+          <td style="vertical-align: top; padding-right: 20px;">
+            <b>Receipt No:</b> ${payment.paymentId} <br>
+            <b>Student:</b> ${payment.student || "-"} <br>
+            <b>Date:</b> ${formatDDMMYYYY(payment.date)}
+          </td>
+          <td style="vertical-align: top;">
+            <b>Class:</b> ${payment.className || "-"} <br>
+            <b>Section:</b> ${payment.section || "-"} <br>
+            <b>Roll No:</b> ${payment.rollNo || "-"}
+          </td>
+        </tr>
+      </table>
+
+
+
+      <!-- ===== Fee Table ===== -->
+      <table style="width:100%; border-collapse:collapse; margin:10px 0;">
+        <thead>
+          <tr style="background:#f0f0f0;">
+            <th style="border:1px solid #333;padding:6px;text-align:left;">Fee Head</th>
+            <th style="border:1px solid #333;padding:6px;text-align:right;">Amount</th>
           </tr>
-          <tr>
-            <td><b>Student:</b> ${payment.student || "-"}</td>
-            <td><b>Class & Section:</b> ${payment.className || "-"} - ${payment.section || "-"}</td>
+        </thead>
+        <tbody>
+          ${feeLines}
+          <tr style="background:#f0f0f0;">
+            <td style="border:1px solid #333;padding:6px;font-weight:bold;">Total</td>
+            <td style="border:1px solid #333;padding:6px;text-align:right;font-weight:bold;">₹${Number(payment.totalAmount).toFixed(2)}</td>
           </tr>
-        </table>
+        </tbody>
+      </table>
 
-        <table style="width:100%; border-collapse:collapse; margin:10px 0;">
-          <thead>
-            <tr>
-              <th style="border:1px solid #333;padding:6px;text-align:left;">Fee Head</th>
-              <th style="border:1px solid #333;padding:6px;text-align:right;">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${feeLines}
-            <tr>
-              <td style="border:1px solid #333;padding:6px;font-weight:bold;">Total</td>
-              <td style="border:1px solid #333;padding:6px;text-align:right;font-weight:bold;">₹${Number(payment.totalAmount).toFixed(2)}</td>
-            </tr>
-          </tbody>
-        </table>
-
+      <!-- ===== Additional Info ===== -->
+      <div style="margin:10px 0; font-size:14px;">
         <p><b>Payment Mode:</b> ${payment.paymentMode}</p>
         <p><b>Transaction ID:</b> ${payment.transactionId || "-"}</p>
         <p><b>Remarks:</b> ${payment.remarks || "-"}</p>
         <p><b>Collected By:</b> ${payment.user || "-"}</p>
+      </div>
 
-        <br /><br />
-        <div style="display:flex; justify-content:space-between; font-size:13px;">
-          <span><b>Parent/Guardian Signature</b></span>
-          <span><b>Authorized Signatory</b></span>
+      <!-- ===== Signature Section ===== -->
+      <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:40px;">
+        <div style="display:flex; flex-direction: column; align-items:center; line-height:1;">
+          <span style="border-top:1px solid black; width:150px; margin:0 0 5px 0;"></span>
+          <b style="margin:0; padding:0;">Parent/Guardian Signature</b>
+        </div>
+        <div style="display:flex; flex-direction: column; align-items:center; line-height:1;">
+          <span style="border-top:1px solid black; width:150px; margin:0 0 5px 0;"></span>
+          <b style="margin:0; padding:0;">Authorized Signatory</b>
         </div>
       </div>
-    `;
 
-    const printWindow = window.open("", "_blank");
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    printWindow.print();
-  };
+    </div>
+  `;
+
+  const printWindow = window.open("", "_blank");
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>Payment Receipt</title>
+        <style>
+          @media print {
+            @page { margin: 0; }  /* Remove default page margins */
+            body { margin: 0; padding: 0; }
+          }
+          body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+          table { border-collapse: collapse; }
+        </style>
+      </head>
+      <body>
+        ${printContent}
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+};
+
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -142,7 +193,9 @@ const PaymentsList = () => {
               <tr>
                 <th className="border border-green-600 px-2 py-1">Payment ID</th>
                 <th className="border border-green-600 px-2 py-1">Student</th>
-                <th className="border border-green-600 px-2 py-1">Class & Section</th>
+                <th className="border border-green-600 px-2 py-1">Class</th>
+                <th className="border border-green-600 px-2 py-1">Sec</th>
+                <th className="border border-green-600 px-2 py-1">Roll</th>
                 <th className="border border-green-600 px-2 py-1">Fee Details</th>
                 <th className="border border-green-600 px-2 py-1">Total Amount</th>
                 <th className="border border-green-600 px-2 py-1">Date</th>
@@ -156,12 +209,12 @@ const PaymentsList = () => {
             <tbody className="text-sm text-center">
               {payments.length > 0 ? (
                 payments.map((p) => (
-                  <tr key={p._id} className="hover:bg-green-50 transition">
+                  <tr key={p._id} className="hover:bg-gray-100 transition">
                     <td className="border border-green-600 px-2 py-1">{p.paymentId}</td>
                     <td className="border border-green-600 px-2 py-1">{p.student || "-"}</td>
-                    <td className="border border-green-600 px-2 py-1">
-                      {p.className} - {p.section}
-                    </td>
+                    <td className="border border-green-600 px-2 py-1">{p.className}</td>
+                    <td className="border border-green-600 px-2 py-1">{p.section}</td>
+                    <td className="border border-green-600 px-2 py-1">{p.rollNo}</td>
                     <td className="border border-green-600 px-2 py-1">
                       {p.feeDetails && p.feeDetails.length > 0
                         ? p.feeDetails

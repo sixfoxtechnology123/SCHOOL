@@ -12,6 +12,7 @@ const paymentSchema = new mongoose.Schema(
     student: { type: String, required: true },
     className: String,
     section: String,
+    rollNo: String,
     feeDetails: [feeDetailSchema],   //  array of objects
     totalAmount: { type: Number, required: true },
     date: { type:String, default: Date.now },

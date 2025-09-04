@@ -109,18 +109,18 @@ const ClassesMaster = () => {
             >
               <option value="">--Select--</option>
               {[
-                "Class I",
-                "Class II",
-                "Class III",
-                "Class IV",
-                "Class V",
-                "Class VI",
-                "Class VII",
-                "Class VIII",
-                "Class IX",
-                "Class X",
-                "Class XI",
-                "Class XII",
+                "Class - I",
+                "Class - II",
+                "Class - III",
+                "Class - IV",
+                "Class - V",
+                "Class - VI",
+                "Class - VII",
+                "Class - VIII",
+                "Class - IX",
+                "Class - X",
+                "Class - XI",
+                "Class - XII",
               ].map((cls) => (
                 <option key={cls} value={cls}>
                   {cls}

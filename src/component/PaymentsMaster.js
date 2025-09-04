@@ -8,16 +8,17 @@ import Select from "react-select";
 const PaymentsMaster = () => {
   const [paymentData, setPaymentData] = useState({
     paymentId: "",
-    date: new Date().toISOString().split("T")[0], // default today
+    date: new Date().toISOString().split("T")[0], 
     student: "",
     className: "",
     section: "",
-    feeDetails: [], // ✅ backend expects array
+    rollNo: "", // ✅ added roll number
+    feeDetails: [], 
     totalAmount: 0,
     paymentMode: "",
     transactionId: "",
     remarks: "",
-    user: localStorage.getItem("userId") || "admin", // ✅ default value
+    user: localStorage.getItem("userId") || "admin",
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -59,7 +60,7 @@ const PaymentsMaster = () => {
       setPaymentData({
         ...p,
         date: p.date?.slice(0, 10),
-        user: p.user || localStorage.getItem("userId") || "admin", // ✅ fallback
+        user: p.user || localStorage.getItem("userId") || "admin",
       });
     } else {
       fetchNextPaymentId();
@@ -67,7 +68,7 @@ const PaymentsMaster = () => {
     }
   }, [location.state]);
 
-  // Handle Student Select → Save as "Name - ID"
+  // Handle Student Select → Save as "Name - ID" + fetch class, section, roll
   const handleStudentChange = (selected) => {
     if (!selected) {
       setPaymentData((prev) => ({
@@ -75,18 +76,18 @@ const PaymentsMaster = () => {
         student: "",
         className: "",
         section: "",
+        rollNo: "",
       }));
       return;
     }
     const stu = students.find((s) => s._id === selected.value);
-    const studentDisplay = `${stu?.studentName || stu?.name || ""} - ${
-      stu?.studentId || ""
-    }`;
+    const studentDisplay = `${stu?.studentName || stu?.name || ""} - ${stu?.studentId || ""}`;
     setPaymentData((prev) => ({
       ...prev,
-      student: studentDisplay, // ✅ Save as string in DB
+      student: studentDisplay,
       className: stu?.className || "",
       section: stu?.section || "",
+      rollNo: stu?.rollNo || "", // ✅ auto fetch roll number
     }));
   };
 
@@ -94,19 +95,14 @@ const PaymentsMaster = () => {
   const handleFeeHeadChange = (selected) => {
     const newHeads = selected || [];
     const newFeeDetails = newHeads.map((fh) => {
-      const existing = paymentData.feeDetails.find(
-        (f) => f.feeHead === fh.value
-      );
+      const existing = paymentData.feeDetails.find((f) => f.feeHead === fh.value);
       return {
         feeHead: fh.value,
-        amount: existing ? existing.amount : fh.defaultAmount || 0,
+        amount: existing ? existing.amount : fh.defaultAmount || " ",
       };
     });
 
-    const total = newFeeDetails.reduce(
-      (sum, f) => sum + Number(f.amount || 0),
-      0
-    );
+    const total = newFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
 
     setPaymentData((prev) => ({
       ...prev,
@@ -120,10 +116,7 @@ const PaymentsMaster = () => {
     const updatedFeeDetails = paymentData.feeDetails.map((f) =>
       f.feeHead === feeHead ? { ...f, amount: Number(value) } : f
     );
-    const total = updatedFeeDetails.reduce(
-      (sum, f) => sum + Number(f.amount || 0),
-      0
-    );
+    const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
     setPaymentData((prev) => ({
       ...prev,
       feeDetails: updatedFeeDetails,
@@ -150,10 +143,7 @@ const PaymentsMaster = () => {
 
     try {
       if (isEditMode) {
-        await axios.put(
-          `http://localhost:5000/api/payments/${paymentData._id}`,
-          paymentData
-        );
+        await axios.put(`http://localhost:5000/api/payments/${paymentData._id}`, paymentData);
         alert("Receipt updated successfully!");
         navigate("/PaymentsList", { replace: true });
       } else {
@@ -166,12 +156,13 @@ const PaymentsMaster = () => {
           student: "",
           className: "",
           section: "",
+          rollNo: "",
           feeDetails: [],
           totalAmount: 0,
           paymentMode: "",
           transactionId: "",
           remarks: "",
-          user: localStorage.getItem("userId") || "admin", // ✅ always set
+          user: localStorage.getItem("userId") || "admin",
         });
         navigate("/PaymentsList", { replace: true });
       }
@@ -188,10 +179,7 @@ const PaymentsMaster = () => {
           {isEditMode ? "Update Receipt" : "New Receipt"}
         </h2>
 
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {/* Payment Id */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Payment Id
@@ -261,6 +249,18 @@ const PaymentsMaster = () => {
             />
           </label>
 
+          {/* Roll Number */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Roll No
+            <input
+              type="text"
+              name="rollNo"
+              value={paymentData.rollNo}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
+            />
+          </label>
+
           {/* Fee Heads Multi-select */}
           <label className="flex flex-col text-sm font-semibold text-black col-span-2">
             Fee Heads
@@ -283,10 +283,7 @@ const PaymentsMaster = () => {
 
           {/* Amount per head */}
           {paymentData.feeDetails.map((f) => (
-            <label
-              key={f.feeHead}
-              className="flex flex-col text-sm font-semibold text-black"
-            >
+            <label key={f.feeHead} className="flex flex-col text-sm font-semibold text-black">
               {f.feeHead} Amount
               <input
                 type="number"
@@ -371,9 +368,7 @@ const PaymentsMaster = () => {
             <button
               type="submit"
               className={`px-6 py-1 rounded text-white ${
-                isEditMode
-                  ? "bg-yellow-500 hover:bg-yellow-600"
-                  : "bg-green-600 hover:bg-green-700"
+                isEditMode ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"
               }`}
             >
               {isEditMode ? "Update" : "Save"}
