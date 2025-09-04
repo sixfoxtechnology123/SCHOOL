@@ -18,6 +18,7 @@ const formatDDMMYYYY = (iso) => {
 
 const PaymentsList = () => {
   const [payments, setPayments] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -44,146 +45,147 @@ const PaymentsList = () => {
     }
   };
 
-const handlePrint = (id) => {
-  const payment = payments.find((p) => p._id === id);
-  if (!payment) return;
+  const handlePrint = (id) => {
+    const payment = payments.find((p) => p._id === id);
+    if (!payment) return;
 
-  const feeLines =
-    payment.feeDetails && payment.feeDetails.length > 0
-      ? payment.feeDetails
-          .map(
-            (f) =>
-              `<tr>
-                <td style="border:1px solid #333;padding:6px;">${f.feeHead}</td>
-                <td style="border:1px solid #333;padding:6px;text-align:right;">₹${Number(f.amount).toFixed(2)}</td>
-              </tr>`
-          )
-          .join("")
-      : `<tr><td colspan="2" style="border:1px solid #333;padding:6px;text-align:center;">No Fee Details</td></tr>`;
+    const feeLines =
+      payment.feeDetails && payment.feeDetails.length > 0
+        ? payment.feeDetails
+            .map(
+              (f) =>
+                `<tr>
+                  <td style="border:1px solid #333;padding:6px;">${f.feeHead}</td>
+                  <td style="border:1px solid #333;padding:6px;text-align:right;">₹${Number(f.amount).toFixed(2)}</td>
+                </tr>`
+            )
+            .join("")
+        : `<tr><td colspan="2" style="border:1px solid #333;padding:6px;text-align:center;">No Fee Details</td></tr>`;
 
-  const printContent = `
-    <div style="font-family: Arial; padding:20px; max-width:750px; margin:auto; border:1px solid #333;">
-      
-    <!-- ===== School Header Section ===== -->
-        <div style="display:flex; align-items:center; margin-bottom:10px; border:none; padding:0;">
-          <!-- Logo -->
-         <div style="flex-shrink:0; margin-right:15px; border:none; padding:0;">
-        <img src="logo.jpg" alt="School Logo" 
-            style="height:80px; width:80px; display:block; border-radius:50%; border:none;" />
+    const printContent = `
+      <div style="font-family: Arial; padding:20px; max-width:750px; margin:auto; border:1px solid #333;">
+        
+      <!-- ===== School Header Section ===== -->
+          <div style="display:flex; align-items:center; margin-bottom:10px; border:none; padding:0;">
+            <!-- Logo -->
+           <div style="flex-shrink:0; margin-right:15px; border:none; padding:0;">
+          <img src="logo.jpg" alt="School Logo" 
+              style="height:80px; width:80px; display:block; border-radius:50%; border:none;" />
+        </div>
+
+            <!-- School Info -->
+            <div style="text-align:center; flex-grow:1; border:none; padding:0;">
+              <h1 style="margin:0; font-size:26px; font-weight:bold;">Central Public School</h1>
+              <h3 style="margin:2px 0; font-size:16px; font-weight:normal;">(English Medium Co-education School)</h3>
+              <p style="margin:2px 0; font-size:13px;">
+                Affiliated to Council for the Indian School Certificate Examination (CISCE), New Delhi, Code-WB 412
+              </p>
+              <p style="margin:2px 0; font-size:13px;">
+                Nilgange, Matarangi, Barrackpore-Barasat Road, Kol-121
+              </p>
+              <hr style="margin:10px 0; border-top:2px solid #333;" />
+            </div>
+          </div>
+
+        <div style="background:#C4C4C4; 
+              -webkit-print-color-adjust: exact; 
+              print-color-adjust: exact;
+              padding:8px; 
+              margin-bottom:10px; 
+              text-align:center; 
+              border:1px solid #333;">
+        <h2 style="margin:0; font-size:18px;">Payment Receipt</h2>
       </div>
 
-          <!-- School Info -->
-          <div style="text-align:center; flex-grow:1; border:none; padding:0;">
-            <h1 style="margin:0; font-size:26px; font-weight:bold;">Central Public School</h1>
-            <h3 style="margin:2px 0; font-size:16px; font-weight:normal;">(English Medium Co-education School)</h3>
-            <p style="margin:2px 0; font-size:13px;">
-              Affiliated to Council for the Indian School Certificate Examination (CISCE), New Delhi, Code-WB 412
-            </p>
-            <p style="margin:2px 0; font-size:13px;">
-              Nilgange, Matarangi, Barrackpore-Barasat Road, Kol-121
-            </p>
-            <hr style="margin:10px 0; border-top:2px solid #333;" />
+    <!-- ===== Payment Info ===== -->
+        <table style="width:100%; margin-bottom:10px;">
+          <tr>
+            <td style="vertical-align: top; padding-right: 20px;">
+              <b>Receipt No:</b> ${payment.paymentId} <br>
+              <b>Student:</b> ${payment.student || "-"} <br>
+              <b>Date:</b> ${formatDDMMYYYY(payment.date)}
+            </td>
+            <td style="vertical-align: top;">
+              <b>Class:</b> ${payment.className || "-"} <br>
+              <b>Section:</b> ${payment.section || "-"} <br>
+              <b>Roll No:</b> ${payment.rollNo || "-"}
+            </td>
+          </tr>
+        </table>
+
+       <!-- ===== Fee Table ===== -->
+    <table style="width:100%; border-collapse:collapse; margin:10px 0; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+      <thead>
+        <tr style="background:#C4C4C4;">
+          <th style="border:1px solid #333; padding:6px; text-align:center;">Fee Heads</th>
+          <th style="border:1px solid #333; padding:6px; text-align:right;">Amount</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${feeLines.replace(/<td style="border:1px solid #333;padding:6px;">/g, '<td style="border:1px solid #333;padding:6px;text-align:center;">')}
+        <tr style="background:#C4C4C4;">
+          <td style="border:1px solid #333; padding:6px; text-align:center; font-weight:bold;">Total</td>
+          <td style="border:1px solid #333; padding:6px; text-align:right; font-weight:bold;">₹${Number(payment.totalAmount).toFixed(2)}</td>
+        </tr>
+      </tbody>
+    </table>
+
+        <!-- ===== Additional Info ===== -->
+        <div style="margin:10px 0; font-size:14px;">
+          <p><b>Payment Mode:</b> ${payment.paymentMode}</p>
+          <p><b>Transaction ID:</b> ${payment.transactionId || "-"}</p>
+          <p><b>Remarks:</b> ${payment.remarks || "-"}</p>
+          <p><b>Collected By:</b> ${payment.user || "-"}</p>
+        </div>
+
+        <!-- ===== Signature Section ===== -->
+        <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:40px;">
+          <div style="display:flex; flex-direction: column; align-items:center; line-height:1;">
+            <span style="border-top:1px solid black; width:150px; margin:0 0 5px 0;"></span>
+            <b style="margin:0; padding:0;">Parent/Guardian Signature</b>
+          </div>
+          <div style="display:flex; flex-direction: column; align-items:center; line-height:1;">
+            <span style="border-top:1px solid black; width:150px; margin:0 0 5px 0;"></span>
+            <b style="margin:0; padding:0;">Authorized Signatory</b>
           </div>
         </div>
 
-
-
-      <div style="background:#C4C4C4; 
-            -webkit-print-color-adjust: exact; 
-            print-color-adjust: exact;
-            padding:8px; 
-            margin-bottom:10px; 
-            text-align:center; 
-            border:1px solid #333;">
-      <h2 style="margin:0; font-size:18px;">Payment Receipt</h2>
-    </div>
-
-
-  <!-- ===== Payment Info ===== -->
-      <table style="width:100%; margin-bottom:10px;">
-        <tr>
-          <td style="vertical-align: top; padding-right: 20px;">
-            <b>Receipt No:</b> ${payment.paymentId} <br>
-            <b>Student:</b> ${payment.student || "-"} <br>
-            <b>Date:</b> ${formatDDMMYYYY(payment.date)}
-          </td>
-          <td style="vertical-align: top;">
-            <b>Class:</b> ${payment.className || "-"} <br>
-            <b>Section:</b> ${payment.section || "-"} <br>
-            <b>Roll No:</b> ${payment.rollNo || "-"}
-          </td>
-        </tr>
-      </table>
-
-
-
-     <!-- ===== Fee Table ===== -->
-  <table style="width:100%; border-collapse:collapse; margin:10px 0; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-    <thead>
-      <tr style="background:#C4C4C4;">
-        <th style="border:1px solid #333; padding:6px; text-align:center;">Fee Heads</th>
-        <th style="border:1px solid #333; padding:6px; text-align:right;">Amount</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${feeLines.replace(/<td style="border:1px solid #333;padding:6px;">/g, '<td style="border:1px solid #333;padding:6px;text-align:center;">')}
-      <tr style="background:#C4C4C4;">
-        <td style="border:1px solid #333; padding:6px; text-align:center; font-weight:bold;">Total</td>
-        <td style="border:1px solid #333; padding:6px; text-align:right; font-weight:bold;">₹${Number(payment.totalAmount).toFixed(2)}</td>
-      </tr>
-    </tbody>
-  </table>
-
-
-
-      <!-- ===== Additional Info ===== -->
-      <div style="margin:10px 0; font-size:14px;">
-        <p><b>Payment Mode:</b> ${payment.paymentMode}</p>
-        <p><b>Transaction ID:</b> ${payment.transactionId || "-"}</p>
-        <p><b>Remarks:</b> ${payment.remarks || "-"}</p>
-        <p><b>Collected By:</b> ${payment.user || "-"}</p>
       </div>
+    `;
 
-      <!-- ===== Signature Section ===== -->
-      <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:40px;">
-        <div style="display:flex; flex-direction: column; align-items:center; line-height:1;">
-          <span style="border-top:1px solid black; width:150px; margin:0 0 5px 0;"></span>
-          <b style="margin:0; padding:0;">Parent/Guardian Signature</b>
-        </div>
-        <div style="display:flex; flex-direction: column; align-items:center; line-height:1;">
-          <span style="border-top:1px solid black; width:150px; margin:0 0 5px 0;"></span>
-          <b style="margin:0; padding:0;">Authorized Signatory</b>
-        </div>
-      </div>
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Payment Receipt</title>
+          <style>
+            @media print {
+              @page { margin: 0; }
+              body { margin: 0; padding: 0; }
+            }
+            body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+            table { border-collapse: collapse; }
+          </style>
+        </head>
+        <body>
+          ${printContent}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
 
-    </div>
-  `;
-
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <title>Payment Receipt</title>
-        <style>
-          @media print {
-            @page { margin: 0; }  /* Remove default page margins */
-            body { margin: 0; padding: 0; }
-          }
-          body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-          table { border-collapse: collapse; }
-        </style>
-      </head>
-      <body>
-        ${printContent}
-      </body>
-    </html>
-  `);
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
-};
-
+  // Filter payments based on search term
+  const filteredPayments = payments.filter((p) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      (p.student && p.student.toLowerCase().includes(term)) ||
+      (p.paymentId && p.paymentId.toLowerCase().includes(term))
+    );
+  });
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -192,21 +194,34 @@ const handlePrint = (id) => {
         <Header />
         <div className="p-2 bg-white shadow-md rounded-md">
           <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-green-800">Payments</h2>
-              <div className="flex gap-4">
-                <BackButton />
-                <button
-                  onClick={() => navigate("/PaymentsMaster")}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
-                >
-                  Add Payment
-                </button>
-              </div>
-            </div>
-          </div>
+  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+    {/* Left: Payments Title */}
+    <h2 className="text-xl font-bold text-green-800">Payments</h2>
 
-          {/*  Table with green borders */}
+    {/* Right: Back, Search, Add Payment */}
+    <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
+      <BackButton />
+
+      <input
+        type="text"
+        placeholder="Search by Student Name or Receipt ID"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
+      />
+
+      <button
+        onClick={() => navigate("/PaymentsMaster")}
+        className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
+      >
+        Add Payment
+      </button>
+    </div>
+  </div>
+</div>
+
+
+          {/* Table with green borders */}
           <table className="w-full table-auto border border-green-600">
             <thead className="bg-green-100 text-sm">
               <tr>
@@ -226,8 +241,8 @@ const handlePrint = (id) => {
               </tr>
             </thead>
             <tbody className="text-sm text-center">
-              {payments.length > 0 ? (
-                payments.map((p) => (
+              {filteredPayments.length > 0 ? (
+                filteredPayments.map((p) => (
                   <tr key={p._id} className="hover:bg-gray-100 transition">
                     <td className="border border-green-600 px-2 py-1">{p.paymentId}</td>
                     <td className="border border-green-600 px-2 py-1">{p.student || "-"}</td>
@@ -282,7 +297,7 @@ const handlePrint = (id) => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="11" className="text-center py-4 text-gray-500">
+                  <td colSpan="13" className="text-center py-4 text-gray-500">
                     No payments found.
                   </td>
                 </tr>
