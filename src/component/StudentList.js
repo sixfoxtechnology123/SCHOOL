@@ -64,7 +64,7 @@ const StudentsList = () => {
           </div>
 
           <table className="w-full table-auto border border-green-500 text-sm">
-            <thead className="bg-gray-200">
+            <thead className="bg-green-100">
               <tr>
                 <th className="border border-green-500 px-2 py-1">Student ID</th>
                 <th className="border border-green-500 px-2 py-1">Name</th>

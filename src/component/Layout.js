@@ -76,26 +76,21 @@ const Layout = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <button
-            onClick={() => navigate("/collectfees")}
-            className="bg-green-700 text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
+            onClick={() => navigate("/PaymentsList")}
+            className="bg-green-700 font-semibold text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
           >
-            ➕ Collect Fee
+            ➕ Collect Fees & 🧾 View Receipts
           </button>
-          <button
-            onClick={() => navigate("/receipts")}
-            className="bg-green-700 text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
-          >
-            🧾 View Receipts
-          </button>
+          
           <button
             onClick={() => navigate("/reports/outstanding")}
-            className="bg-green-700 text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
+            className="bg-green-700 font-semibold text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
           >
             ⚠️ Outstanding Dues
           </button>
           <button
             onClick={() => navigate("/reports")}
-            className="bg-green-700 text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
+            className="bg-green-700 font-semibold text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
           >
             📊 Reports
           </button>

@@ -1,3 +1,4 @@
+// pages/PaymentsList.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -50,22 +51,62 @@ const PaymentsList = () => {
     const feeLines =
       payment.feeDetails && payment.feeDetails.length > 0
         ? payment.feeDetails
-            .map((f) => `${f.feeHead}: ₹${Number(f.amount).toFixed(2)}`)
-            .join("<br/>")
-        : "-";
+            .map(
+              (f) =>
+                `<tr>
+                  <td style="border:1px solid #333;padding:6px;">${f.feeHead}</td>
+                  <td style="border:1px solid #333;padding:6px;text-align:right;">₹${Number(f.amount).toFixed(2)}</td>
+                </tr>`
+            )
+            .join("")
+        : `<tr><td colspan="2" style="border:1px solid #333;padding:6px;text-align:center;">No Fee Details</td></tr>`;
 
     const printContent = `
-      <h2>Payment Receipt</h2>
-      <p><b>Payment ID:</b> ${payment.paymentId}</p>
-      <p><b>Date:</b> ${formatDDMMYYYY(payment.date)}</p>
-      <p><b>Student:</b> ${payment.student || "-"}</p>
-      <p><b>Class:</b> ${payment.className} - ${payment.section}</p>
-      <p><b>Fee Details:</b><br/>${feeLines}</p>
-      <p><b>Total Amount:</b> ₹${Number(payment.totalAmount).toFixed(2)}</p>
-      <p><b>Payment Mode:</b> ${payment.paymentMode}</p>
-      <p><b>Transaction ID:</b> ${payment.transactionId || "-"}</p>
-      <p><b>Remarks:</b> ${payment.remarks || "-"}</p>
-      <p><b>Collected By:</b> ${payment.user || "-"}</p>
+      <div style="font-family: Arial; padding:20px; max-width:700px; margin:auto;">
+        <h1 style="text-align:center; margin:0; font-size:22px;">Central Public School</h1>
+        <p style="text-align:center; margin:0; font-size:14px;">Vill + PO - Tamluk, Dist - Purba Medinipur</p>
+        <p style="text-align:center; margin:0; font-size:14px;">West Bengal - 721636</p>
+        <hr style="margin:10px 0;" />
+        <h2 style="text-align:center; margin:5px 0;">Payment Receipt</h2>
+        
+        <table style="width:100%; margin-top:10px; margin-bottom:10px;">
+          <tr>
+            <td><b>Receipt No:</b> ${payment.paymentId}</td>
+            <td><b>Date:</b> ${formatDDMMYYYY(payment.date)}</td>
+          </tr>
+          <tr>
+            <td><b>Student:</b> ${payment.student || "-"}</td>
+            <td><b>Class & Section:</b> ${payment.className || "-"} - ${payment.section || "-"}</td>
+          </tr>
+        </table>
+
+        <table style="width:100%; border-collapse:collapse; margin:10px 0;">
+          <thead>
+            <tr>
+              <th style="border:1px solid #333;padding:6px;text-align:left;">Fee Head</th>
+              <th style="border:1px solid #333;padding:6px;text-align:right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${feeLines}
+            <tr>
+              <td style="border:1px solid #333;padding:6px;font-weight:bold;">Total</td>
+              <td style="border:1px solid #333;padding:6px;text-align:right;font-weight:bold;">₹${Number(payment.totalAmount).toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p><b>Payment Mode:</b> ${payment.paymentMode}</p>
+        <p><b>Transaction ID:</b> ${payment.transactionId || "-"}</p>
+        <p><b>Remarks:</b> ${payment.remarks || "-"}</p>
+        <p><b>Collected By:</b> ${payment.user || "-"}</p>
+
+        <br /><br />
+        <div style="display:flex; justify-content:space-between; font-size:13px;">
+          <span><b>Parent/Guardian Signature</b></span>
+          <span><b>Authorized Signatory</b></span>
+        </div>
+      </div>
     `;
 
     const printWindow = window.open("", "_blank");
@@ -95,32 +136,33 @@ const PaymentsList = () => {
             </div>
           </div>
 
-          <table className="w-full table-auto border border-green-500">
-            <thead className="bg-gray-200 text-sm">
+          {/*  Table with green borders */}
+          <table className="w-full table-auto border border-green-600">
+            <thead className="bg-green-100 text-sm">
               <tr>
-                <th className="border px-2 py-1">Payment ID</th>
-                <th className="border px-2 py-1">Student</th>
-                <th className="border px-2 py-1">Class & section </th>
-                <th className="border px-2 py-1">Fee Details</th>
-                <th className="border px-2 py-1">Total Amount</th>
-                <th className="border px-2 py-1">Date</th>
-                <th className="border px-2 py-1">Payment Mode</th>
-                <th className="border px-2 py-1">Txn ID</th>
-                <th className="border px-2 py-1">Remarks</th>
-                <th className="border px-2 py-1">Collected By</th>
-                <th className="border px-2 py-1">Action</th>
+                <th className="border border-green-600 px-2 py-1">Payment ID</th>
+                <th className="border border-green-600 px-2 py-1">Student</th>
+                <th className="border border-green-600 px-2 py-1">Class & Section</th>
+                <th className="border border-green-600 px-2 py-1">Fee Details</th>
+                <th className="border border-green-600 px-2 py-1">Total Amount</th>
+                <th className="border border-green-600 px-2 py-1">Date</th>
+                <th className="border border-green-600 px-2 py-1">Payment Mode</th>
+                <th className="border border-green-600 px-2 py-1">Txn ID</th>
+                <th className="border border-green-600 px-2 py-1">Remarks</th>
+                <th className="border border-green-600 px-2 py-1">Collected By</th>
+                <th className="border border-green-600 px-2 py-1">Action</th>
               </tr>
             </thead>
             <tbody className="text-sm text-center">
               {payments.length > 0 ? (
                 payments.map((p) => (
-                  <tr key={p._id} className="hover:bg-gray-100 transition">
-                    <td className="border px-2 py-1">{p.paymentId}</td>
-                    <td className="border px-2 py-1">{p.student || "-"}</td>
-                    <td className="border px-2 py-1">
+                  <tr key={p._id} className="hover:bg-green-50 transition">
+                    <td className="border border-green-600 px-2 py-1">{p.paymentId}</td>
+                    <td className="border border-green-600 px-2 py-1">{p.student || "-"}</td>
+                    <td className="border border-green-600 px-2 py-1">
                       {p.className} - {p.section}
                     </td>
-                    <td className="border px-2 py-1">
+                    <td className="border border-green-600 px-2 py-1">
                       {p.feeDetails && p.feeDetails.length > 0
                         ? p.feeDetails
                             .map(
@@ -130,17 +172,17 @@ const PaymentsList = () => {
                             .join(", ")
                         : "-"}
                     </td>
-                    <td className="border px-2 py-1">
+                    <td className="border border-green-600 px-2 py-1">
                       ₹{Number(p.totalAmount).toFixed(2)}
                     </td>
-                    <td className="border px-2 py-1">{formatDDMMYYYY(p.date)}</td>
-                    <td className="border px-2 py-1">{p.paymentMode}</td>
-                    <td className="border px-2 py-1">
+                    <td className="border border-green-600 px-2 py-1">{formatDDMMYYYY(p.date)}</td>
+                    <td className="border border-green-600 px-2 py-1">{p.paymentMode}</td>
+                    <td className="border border-green-600 px-2 py-1">
                       {p.transactionId || "-"}
                     </td>
-                    <td className="border px-2 py-1">{p.remarks || "-"}</td>
-                    <td className="border px-2 py-1">{p.user || "-"}</td>
-                    <td className="border px-2 py-1">
+                    <td className="border border-green-600 px-2 py-1">{p.remarks || "-"}</td>
+                    <td className="border border-green-600 px-2 py-1">{p.user || "-"}</td>
+                    <td className="border border-green-600 px-2 py-1">
                       <div className="flex justify-center gap-4">
                         <button
                           onClick={() => handlePrint(p._id)}

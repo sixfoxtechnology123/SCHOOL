@@ -86,7 +86,7 @@ const FeeStructureList = () => {
       </div>
 
       <table className="w-full table-auto border border-green-500">
-        <thead className="bg-gray-200 text-sm">
+        <thead className="bg-green-100 text-sm">
           <tr>
             <th className="border border-green-500 px-2 py-1">FeeStruct ID</th>
             <th className="border border-green-500 px-2 py-1">Class</th>
