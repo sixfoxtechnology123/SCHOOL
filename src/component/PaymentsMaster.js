@@ -12,7 +12,7 @@ const PaymentsMaster = () => {
     student: "",
     className: "",
     section: "",
-    rollNo: "", // ✅ added roll number
+    rollNo: "", //  added roll number
     feeDetails: [], 
     totalAmount: 0,
     paymentMode: "",
@@ -87,7 +87,7 @@ const PaymentsMaster = () => {
       student: studentDisplay,
       className: stu?.className || "",
       section: stu?.section || "",
-      rollNo: stu?.rollNo || "", // ✅ auto fetch roll number
+      rollNo: stu?.rollNo || "", //  auto fetch roll number
     }));
   };
 

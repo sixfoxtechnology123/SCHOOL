@@ -64,23 +64,40 @@ const handlePrint = (id) => {
   const printContent = `
     <div style="font-family: Arial; padding:20px; max-width:750px; margin:auto; border:1px solid #333;">
       
-      <!-- ===== School Header Section ===== -->
-      <div style="text-align:center; margin-bottom:10px;">
-        <h1 style="margin:0; font-size:26px; font-weight:bold;">Central Public School</h1>
-        <h3 style="margin:2px 0; font-size:16px; font-weight:normal;">(English Medium Co-education School)</h3>
-        <p style="margin:2px 0; font-size:13px;">
-          Affiliated to Council for the Indian School Certificate Examination (CISCE), New Delhi, Code-WB 412
-        </p>
-        <p style="margin:2px 0; font-size:13px;">
-          Nilgange, Matarangi, Barrackpore-Barasat Road, Kol-121
-        </p>
-        <hr style="margin:10px 0; border-top:2px solid #333;" />
+    <!-- ===== School Header Section ===== -->
+        <div style="display:flex; align-items:center; margin-bottom:10px; border:none; padding:0;">
+          <!-- Logo -->
+         <div style="flex-shrink:0; margin-right:15px; border:none; padding:0;">
+        <img src="logo.jpg" alt="School Logo" 
+            style="height:80px; width:80px; display:block; border-radius:50%; border:none;" />
       </div>
 
-      <!-- ===== Receipt Title ===== -->
-      <div style="background:#f0f0f0; padding:8px; margin-bottom:10px; text-align:center; border:1px solid #333;">
-        <h2 style="margin:0; font-size:18px;">Payment Receipt</h2>
-      </div>
+          <!-- School Info -->
+          <div style="text-align:center; flex-grow:1; border:none; padding:0;">
+            <h1 style="margin:0; font-size:26px; font-weight:bold;">Central Public School</h1>
+            <h3 style="margin:2px 0; font-size:16px; font-weight:normal;">(English Medium Co-education School)</h3>
+            <p style="margin:2px 0; font-size:13px;">
+              Affiliated to Council for the Indian School Certificate Examination (CISCE), New Delhi, Code-WB 412
+            </p>
+            <p style="margin:2px 0; font-size:13px;">
+              Nilgange, Matarangi, Barrackpore-Barasat Road, Kol-121
+            </p>
+            <hr style="margin:10px 0; border-top:2px solid #333;" />
+          </div>
+        </div>
+
+
+
+      <div style="background:#C4C4C4; 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact;
+            padding:8px; 
+            margin-bottom:10px; 
+            text-align:center; 
+            border:1px solid #333;">
+      <h2 style="margin:0; font-size:18px;">Payment Receipt</h2>
+    </div>
+
 
   <!-- ===== Payment Info ===== -->
       <table style="width:100%; margin-bottom:10px;">
@@ -100,22 +117,24 @@ const handlePrint = (id) => {
 
 
 
-      <!-- ===== Fee Table ===== -->
-      <table style="width:100%; border-collapse:collapse; margin:10px 0;">
-        <thead>
-          <tr style="background:#f0f0f0;">
-            <th style="border:1px solid #333;padding:6px;text-align:left;">Fee Head</th>
-            <th style="border:1px solid #333;padding:6px;text-align:right;">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${feeLines}
-          <tr style="background:#f0f0f0;">
-            <td style="border:1px solid #333;padding:6px;font-weight:bold;">Total</td>
-            <td style="border:1px solid #333;padding:6px;text-align:right;font-weight:bold;">₹${Number(payment.totalAmount).toFixed(2)}</td>
-          </tr>
-        </tbody>
-      </table>
+     <!-- ===== Fee Table ===== -->
+  <table style="width:100%; border-collapse:collapse; margin:10px 0; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+    <thead>
+      <tr style="background:#C4C4C4;">
+        <th style="border:1px solid #333; padding:6px; text-align:center;">Fee Heads</th>
+        <th style="border:1px solid #333; padding:6px; text-align:right;">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${feeLines.replace(/<td style="border:1px solid #333;padding:6px;">/g, '<td style="border:1px solid #333;padding:6px;text-align:center;">')}
+      <tr style="background:#C4C4C4;">
+        <td style="border:1px solid #333; padding:6px; text-align:center; font-weight:bold;">Total</td>
+        <td style="border:1px solid #333; padding:6px; text-align:right; font-weight:bold;">₹${Number(payment.totalAmount).toFixed(2)}</td>
+      </tr>
+    </tbody>
+  </table>
+
+
 
       <!-- ===== Additional Info ===== -->
       <div style="margin:10px 0; font-size:14px;">

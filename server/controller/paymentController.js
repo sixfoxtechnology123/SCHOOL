@@ -1,12 +1,12 @@
 const Payment = require("../models/Payment");
 const Student = require("../models/Student");
 
-const PREFIX = "PAY";
+const PREFIX = "RECEIPT";
 const PAD = 3; // PAY001, PAY002...
 
 // Generate next PaymentId based on last payment
 async function generateNextPaymentId() {
-  const last = await Payment.findOne().sort({ paymentId: -1 }).lean(); // ✅ sort by paymentId
+  const last = await Payment.findOne().sort({ paymentId: -1 }).lean(); //  sort by paymentId
   const lastNum = last ? parseInt(last.paymentId.replace(PREFIX, ""), 10) : 0;
   const nextNum = lastNum + 1;
   return `${PREFIX}${String(nextNum).padStart(PAD, "0")}`;
