@@ -1,17 +1,30 @@
 // models/Payment.js
 const mongoose = require("mongoose");
 
+const feeDetailSchema = new mongoose.Schema({
+  feeHead: { type: String, required: true },
+  amount: { type: Number, required: true },
+});
+
 const paymentSchema = new mongoose.Schema(
   {
-    paymentId: { type: String, required: true, unique: true }, // Payment001
-    receiptNo: { type: String, required: true }, // from Receipts table
-    feeHeadId: { type: String, required: true }, // from FeeHeads table
-    amount: { type: Number, required: true },
+    paymentId: { type: String, required: true, unique: true },
+    student: { type: String, required: true },
+    className: String,
+    section: String,
+    feeDetails: [feeDetailSchema],   //  array of objects
+    totalAmount: { type: Number, required: true },
+    date: { type:String, default: Date.now },
+    paymentMode: {
+      type: String,
+      enum: ["Cash", "Card", "UPI", "NetBanking"],
+      required: true,
+    },
+    transactionId: String,
+    remarks: String,
+    user: { type: String, required: true }, // logged-in user
   },
-  {
-    timestamps: false,
-    collection: "payments",
-  }
+  { timestamps: false }
 );
 
 module.exports = mongoose.model("Payment", paymentSchema);

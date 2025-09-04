@@ -2,142 +2,378 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import Select from "react-select";
 
 const PaymentsMaster = () => {
   const [paymentData, setPaymentData] = useState({
     paymentId: "",
-    receiptNo: "",
-    feeHeadId: "",
-    amount: "",
+    date: new Date().toISOString().split("T")[0], // default today
+    student: "",
+    className: "",
+    section: "",
+    feeDetails: [], // ✅ backend expects array
+    totalAmount: 0,
+    paymentMode: "",
+    transactionId: "",
+    remarks: "",
+    user: localStorage.getItem("userId") || "admin", // ✅ default value
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
-  const [receipts, setReceipts] = useState([]);
+  const [students, setStudents] = useState([]);
   const [feeHeads, setFeeHeads] = useState([]);
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  const fetchNextPaymentId = async () => {
-    const res = await axios.get("http://localhost:5000/api/payments/latest");
-    setPaymentData((prev) => ({ ...prev, paymentId: res.data?.paymentId || "Payment001" }));
+  // Fetch Students & FeeHeads
+  const fetchDropdownData = async () => {
+    try {
+      const stuRes = await axios.get("http://localhost:5000/api/students");
+      setStudents(stuRes.data || []);
+
+      const fhRes = await axios.get("http://localhost:5000/api/feeheads");
+      setFeeHeads(fhRes.data || []);
+    } catch (err) {
+      console.error("Error fetching dropdown data:", err);
+    }
   };
 
-  const fetchDropdowns = async () => {
-    // TODO: Replace with real APIs
-    const receiptRes = await axios.get("http://localhost:5000/api/receipts");
-    const feeHeadRes = await axios.get("http://localhost:5000/api/feeheads");
-    setReceipts(receiptRes.data || []);
-    setFeeHeads(feeHeadRes.data || []);
+  // Fetch Next PaymentId
+  const fetchNextPaymentId = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/payments/latest");
+      const nextId = res.data?.paymentId || "PAY001";
+      setPaymentData((prev) => ({ ...prev, paymentId: nextId }));
+    } catch (err) {
+      console.error("Error getting paymentId:", err);
+    }
   };
 
   useEffect(() => {
+    fetchDropdownData();
     if (location.state?.paymentItem) {
       const p = location.state.paymentItem;
-      setPaymentData(p);
       setIsEditMode(true);
+      setPaymentData({
+        ...p,
+        date: p.date?.slice(0, 10),
+        user: p.user || localStorage.getItem("userId") || "admin", // ✅ fallback
+      });
     } else {
       fetchNextPaymentId();
       setIsEditMode(false);
     }
-    fetchDropdowns();
   }, [location.state]);
 
+  // Handle Student Select → Save as "Name - ID"
+  const handleStudentChange = (selected) => {
+    if (!selected) {
+      setPaymentData((prev) => ({
+        ...prev,
+        student: "",
+        className: "",
+        section: "",
+      }));
+      return;
+    }
+    const stu = students.find((s) => s._id === selected.value);
+    const studentDisplay = `${stu?.studentName || stu?.name || ""} - ${
+      stu?.studentId || ""
+    }`;
+    setPaymentData((prev) => ({
+      ...prev,
+      student: studentDisplay, // ✅ Save as string in DB
+      className: stu?.className || "",
+      section: stu?.section || "",
+    }));
+  };
+
+  // Handle FeeHead Multi-Select
+  const handleFeeHeadChange = (selected) => {
+    const newHeads = selected || [];
+    const newFeeDetails = newHeads.map((fh) => {
+      const existing = paymentData.feeDetails.find(
+        (f) => f.feeHead === fh.value
+      );
+      return {
+        feeHead: fh.value,
+        amount: existing ? existing.amount : fh.defaultAmount || 0,
+      };
+    });
+
+    const total = newFeeDetails.reduce(
+      (sum, f) => sum + Number(f.amount || 0),
+      0
+    );
+
+    setPaymentData((prev) => ({
+      ...prev,
+      feeDetails: newFeeDetails,
+      totalAmount: total,
+    }));
+  };
+
+  // Handle Amount Change (per head)
+  const handleAmountChange = (feeHead, value) => {
+    const updatedFeeDetails = paymentData.feeDetails.map((f) =>
+      f.feeHead === feeHead ? { ...f, amount: Number(value) } : f
+    );
+    const total = updatedFeeDetails.reduce(
+      (sum, f) => sum + Number(f.amount || 0),
+      0
+    );
+    setPaymentData((prev) => ({
+      ...prev,
+      feeDetails: updatedFeeDetails,
+      totalAmount: total,
+    }));
+  };
+
+  // General Form Change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setPaymentData({ ...paymentData, [name]: value });
   };
 
+  // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isEditMode) {
-      await axios.put(`http://localhost:5000/api/payments/${paymentData._id}`, paymentData);
-      alert("Payment updated successfully!");
-    } else {
-      await axios.post("http://localhost:5000/api/payments", paymentData);
-      alert("Payment saved successfully!");
+    if (
+      ["UPI", "Card", "NetBanking"].includes(paymentData.paymentMode) &&
+      !paymentData.transactionId
+    ) {
+      alert("Transaction ID required for this payment mode!");
+      return;
     }
-    navigate("/PaymentsList", { replace: true });
+
+    try {
+      if (isEditMode) {
+        await axios.put(
+          `http://localhost:5000/api/payments/${paymentData._id}`,
+          paymentData
+        );
+        alert("Receipt updated successfully!");
+        navigate("/PaymentsList", { replace: true });
+      } else {
+        await axios.post("http://localhost:5000/api/payments", paymentData);
+        alert("Receipt saved successfully!");
+        fetchNextPaymentId();
+        setPaymentData({
+          paymentId: "",
+          date: new Date().toISOString().split("T")[0],
+          student: "",
+          className: "",
+          section: "",
+          feeDetails: [],
+          totalAmount: 0,
+          paymentMode: "",
+          transactionId: "",
+          remarks: "",
+          user: localStorage.getItem("userId") || "admin", // ✅ always set
+        });
+        navigate("/PaymentsList", { replace: true });
+      }
+    } catch (err) {
+      console.error("Save failed:", err.response?.data || err.message);
+      alert("Error saving receipt");
+    }
   };
 
   return (
     <div className="min-h-screen bg-zinc-300 flex items-center justify-center">
-      <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-sm">
+      <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-6xl">
         <h2 className="text-2xl font-bold mb-6 text-center text-black">
-          {isEditMode ? "Update Payment" : "Payments Master"}
+          {isEditMode ? "Update Receipt" : "New Receipt"}
         </h2>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-2">
-          {/* Payment ID */}
-          <div>
-            <label className="block font-medium">Payment ID</label>
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
+          {/* Payment Id */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Payment Id
             <input
               type="text"
               name="paymentId"
               value={paymentData.paymentId}
               readOnly
-              className="w-full border border-gray-300 p-1 rounded bg-gray-100"
+              className="border border-gray-400 p-1 rounded bg-gray-100"
             />
-          </div>
+          </label>
 
-          {/* ReceiptNo */}
-          <div>
-            <label className="block font-medium">Receipt No</label>
-            <select
-              name="receiptNo"
-              value={paymentData.receiptNo}
+          {/* Date */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Date
+            <input
+              type="date"
+              name="date"
+              value={paymentData.date}
               onChange={handleChange}
-              className="w-full border border-gray-300 p-1 rounded"
+              className="border border-gray-400 p-1 rounded"
+              required
+            />
+          </label>
+
+          {/* Student Dropdown */}
+          <label className="flex flex-col text-sm font-semibold text-black col-span-2">
+            Student
+            <Select
+              options={students.map((s) => ({
+                value: s._id,
+                label: `${s.studentName || s.name || ""} - ${s.studentId || ""}`,
+              }))}
+              onChange={handleStudentChange}
+              value={
+                paymentData.student
+                  ? { value: paymentData.student, label: paymentData.student }
+                  : null
+              }
+              placeholder="Search Student..."
+              isSearchable
+              isClearable
+            />
+          </label>
+
+          {/* Class */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Class
+            <input
+              type="text"
+              name="className"
+              value={paymentData.className}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
+            />
+          </label>
+
+          {/* Section */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Section
+            <input
+              type="text"
+              name="section"
+              value={paymentData.section}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
+            />
+          </label>
+
+          {/* Fee Heads Multi-select */}
+          <label className="flex flex-col text-sm font-semibold text-black col-span-2">
+            Fee Heads
+            <Select
+              isMulti
+              options={feeHeads.map((fh) => ({
+                value: fh.feeHeadName,
+                label: fh.feeHeadName,
+                defaultAmount: fh.defaultAmount || 0,
+              }))}
+              onChange={handleFeeHeadChange}
+              value={paymentData.feeDetails.map((f) => ({
+                value: f.feeHead,
+                label: f.feeHead,
+              }))}
+              placeholder="Select Fee Heads..."
+              isSearchable
+            />
+          </label>
+
+          {/* Amount per head */}
+          {paymentData.feeDetails.map((f) => (
+            <label
+              key={f.feeHead}
+              className="flex flex-col text-sm font-semibold text-black"
+            >
+              {f.feeHead} Amount
+              <input
+                type="number"
+                value={f.amount}
+                onChange={(e) => handleAmountChange(f.feeHead, e.target.value)}
+                className="border border-gray-400 p-1 rounded"
+              />
+            </label>
+          ))}
+
+          {/* Payment Mode */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Payment Mode
+            <select
+              name="paymentMode"
+              value={paymentData.paymentMode}
+              onChange={handleChange}
+              className="border border-gray-400 p-1 rounded"
               required
             >
-              <option value="">--Select--</option>
-              {receipts.map((r) => (
-                <option key={r._id} value={r.receiptNo}>
-                  {r.receiptNo}
-                </option>
-              ))}
+              <option value="">-- Select Mode --</option>
+              <option value="Cash">Cash</option>
+              <option value="UPI">UPI</option>
+              <option value="Card">Card</option>
+              <option value="NetBanking">Net Banking</option>
             </select>
-          </div>
+          </label>
 
-          {/* FeeHead */}
-          <div>
-            <label className="block font-medium">Fee Head</label>
-            <select
-              name="feeHeadId"
-              value={paymentData.feeHeadId}
+          {/* Transaction ID */}
+          <label className="flex flex-col text-sm col-span-2 font-semibold text-black">
+            Transaction ID
+            <input
+              type="text"
+              name="transactionId"
+              value={paymentData.transactionId}
               onChange={handleChange}
-              className="w-full border border-gray-300 p-1 rounded"
-              required
-            >
-              <option value="">--Select--</option>
-              {feeHeads.map((f) => (
-                <option key={f._id} value={f.feeHeadId}>
-                  {f.feeHeadName}
-                </option>
-              ))}
-            </select>
-          </div>
+              placeholder="Txn ID / Ref No"
+              className="border border-gray-400 p-1 rounded"
+            />
+          </label>
 
-          {/* Amount */}
-          <div>
-            <label className="block font-medium">Amount</label>
+          {/* Total Amount */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Total Amount
             <input
               type="number"
-              name="amount"
-              value={paymentData.amount}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-1 rounded"
-              required
+              name="totalAmount"
+              value={paymentData.totalAmount}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
             />
-          </div>
+          </label>
 
-          <div className="flex justify-between">
+          {/* Remarks */}
+          <label className="flex flex-col text-sm font-semibold text-black col-span-2 lg:col-span-2">
+            Remarks
+            <input
+              type="text"
+              name="remarks"
+              value={paymentData.remarks}
+              onChange={handleChange}
+              placeholder="Remarks"
+              className="border border-gray-400 p-1 rounded"
+            />
+          </label>
+
+          {/* Collected By */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Collected By
+            <input
+              type="text"
+              name="user"
+              value={paymentData.user}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
+            />
+          </label>
+
+          {/* Buttons */}
+          <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex justify-between mt-4">
             <BackButton />
             <button
               type="submit"
-              className={`px-4 py-1 rounded text-white ${
-                isEditMode ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"
+              className={`px-6 py-1 rounded text-white ${
+                isEditMode
+                  ? "bg-yellow-500 hover:bg-yellow-600"
+                  : "bg-green-600 hover:bg-green-700"
               }`}
             >
               {isEditMode ? "Update" : "Save"}

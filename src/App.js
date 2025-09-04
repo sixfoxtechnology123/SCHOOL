@@ -15,8 +15,6 @@ import UsersList from "./component/UsersList";
 import UsersMaster from "./component/UsersMaster";
 import StudentList from "./component/StudentList";
 import StudentMaster from "./component/StudentMaster";
-import ReceiptMaster from "./component/ReceiptMaster";
-import ReceiptsList from "./component/ReceiptsList";
 import PaymentsMaster from "./component/PaymentsMaster";
 import PaymentsList from "./component/PaymentsList";
 import Layout from "./component/Layout";
@@ -54,8 +52,6 @@ function App() {
       <Route path="/UserList" element={<UsersList/>} />
       <Route path="/StudentList" element={<StudentList/>} />
       <Route path="/StudentMaster" element={<StudentMaster/>} />
-      <Route path="/ReceiptMaster" element={<ReceiptMaster/>} />
-      <Route path="/ReceiptsList" element={<ReceiptsList/>} />
       <Route path="/PaymentsMaster" element={<PaymentsMaster/>} />
       <Route path="/PaymentsList" element={<PaymentsList/>} />
       <Route path="/Sidebar" element={<Sidebar/>} />

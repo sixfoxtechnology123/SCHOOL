@@ -52,7 +52,6 @@ const Sidebar = () => {
       title: "Transactions",
       menus: [
         { name: "Collect Fees", path: "/PaymentsList", icon: FaMoneyBill },
-        { name: "Receipts", path: "/ReceiptsList", icon: FaFileInvoice },
       ],
     },
     {

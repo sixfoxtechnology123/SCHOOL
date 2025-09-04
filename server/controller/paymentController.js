@@ -1,96 +1,79 @@
-// controllers/paymentController.js
 const Payment = require("../models/Payment");
-const FeeHead = require("../models/FeeHead");
+const Student = require("../models/Student");
 
-const PREFIX = "Payment";
-const PAD = 3; // Payment001, Payment002
+const PREFIX = "PAY";
+const PAD = 3; // PAY001, PAY002...
 
-// Generate next Payment ID
+// Generate next PaymentId based on last payment
 async function generateNextPaymentId() {
-  const last = await Payment.findOne().sort({ paymentId: -1 }).lean();
-  if (!last || !last.paymentId) return `${PREFIX}${String(1).padStart(PAD, "0")}`;
-
-  const lastNum = parseInt(last.paymentId.replace(PREFIX, ""), 10) || 0;
-  return `${PREFIX}${String(lastNum + 1).padStart(PAD, "0")}`;
+  const last = await Payment.findOne().sort({ paymentId: -1 }).lean(); // ✅ sort by paymentId
+  const lastNum = last ? parseInt(last.paymentId.replace(PREFIX, ""), 10) : 0;
+  const nextNum = lastNum + 1;
+  return `${PREFIX}${String(nextNum).padStart(PAD, "0")}`;
 }
 
-//  GET all payments (with feeHeadName instead of only feeHeadId)
-exports.getAllPayments = async (_req, res) => {
+exports.getAllStudents = async (req, res) => {
   try {
-    const payments = await Payment.find().lean();
-
-    // Get all fee heads
-    const feeHeads = await FeeHead.find().lean();
-    const feeHeadMap = feeHeads.reduce((acc, fh) => {
-      acc[fh.feeHeadId] = fh.feeHeadName;
-      return acc;
-    }, {});
-
-    // Attach feeHeadName
-    const result = payments.map(p => ({
-      ...p,
-      feeHeadName: feeHeadMap[p.feeHeadId] || p.feeHeadId,
-    }));
-
-    res.json(result);
+    const students = await Student.find().lean();
+    res.json(students);
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch payments", error: err.message });
+    res.status(500).json({ error: err.message || "Failed to fetch students" });
   }
 };
 
-// GET latest PaymentID
 exports.getLatestPaymentId = async (_req, res) => {
   try {
     const nextId = await generateNextPaymentId();
     res.json({ paymentId: nextId });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error generating paymentId:", err);
+    res.status(500).json({ error: "Failed to get paymentId" });
   }
 };
 
-// POST create payment
+exports.getAllPayments = async (_req, res) => {
+  try {
+    const payments = await Payment.find().lean();
+    res.json(payments);
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Failed to fetch payments" });
+  }
+};
+
 exports.createPayment = async (req, res) => {
   try {
-    const { receiptNo, feeHeadId, amount } = req.body;
-    if (!receiptNo || !feeHeadId || !amount) {
-      return res.status(400).json({ error: "All fields are required" });
+    if (!req.body.paymentId) {
+      req.body.paymentId = await generateNextPaymentId();
     }
 
-    const paymentId = await generateNextPaymentId();
-    const doc = new Payment({ paymentId, receiptNo, feeHeadId, amount });
+    const payment = new Payment(req.body);
+    await payment.save();
 
-    await doc.save();
-    res.status(201).json(doc);
+    res.status(201).json(payment);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Save error:", err.message);
+    res.status(500).json({ error: err.message || "Failed to create payment" });
   }
 };
 
-//  PUT update payment
 exports.updatePayment = async (req, res) => {
   try {
-    const { id } = req.params;
-    const payload = { ...req.body };
-    if (payload.paymentId) delete payload.paymentId;
-
-    const updated = await Payment.findByIdAndUpdate(id, payload, { new: true });
+    const updated = await Payment.findByIdAndUpdate(req.params.id, req.body, {
+      new: true,
+    });
     if (!updated) return res.status(404).json({ error: "Payment not found" });
-
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message || "Failed to update payment" });
   }
 };
 
-// DELETE payment
 exports.deletePayment = async (req, res) => {
   try {
-    const { id } = req.params;
-    const deleted = await Payment.findByIdAndDelete(id);
+    const deleted = await Payment.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ error: "Payment not found" });
-
-    res.json({ message: "Payment deleted successfully" });
+    res.json({ message: "Payment deleted" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: err.message || "Failed to delete payment" });
   }
 };
