@@ -9,6 +9,7 @@ import Header from "./Header";
 
 const FeeStructureList = () => {
   const [fees, setFees] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [classes, setClasses] = useState([]);
   const [feeHeads, setFeeHeads] = useState([]);
   const navigate = useNavigate();
@@ -56,13 +57,22 @@ const FeeStructureList = () => {
   const getClassName = (classId) => {
     const cls = classes.find((c) => c.classId === classId);
     return cls ? `${cls.className}` : classId;
-    // return cls ? `${cls.className} - ${cls.section}` : classId;
   };
 
   const getFeeHeadName = (feeHeadId) => {
     const fh = feeHeads.find((f) => f.feeHeadId === feeHeadId);
     return fh ? fh.feeHeadName : feeHeadId;
   };
+
+  // Filtered fees based on search term (class name or fee head)
+  const filteredFees = fees.filter((fee) => {
+    const className = getClassName(fee.classId).toLowerCase();
+    const feeHeadName = getFeeHeadName(fee.feeHeadId).toLowerCase();
+    return (
+      className.includes(searchTerm.toLowerCase()) ||
+      feeHeadName.includes(searchTerm.toLowerCase())
+    );
+  });
 
   return (
    <div className="flex min-h-screen flex-col md:flex-row">
@@ -71,11 +81,23 @@ const FeeStructureList = () => {
         {/*  Added Header */}
       <Header/>
     <div className="p-2 bg-white shadow-md rounded-md">
-      <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
-        <div className="flex justify-between items-center">
+     <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+          {/* Left: Title */}
           <h2 className="text-xl font-bold text-green-800">Fee Structures</h2>
-          <div className="flex gap-4">
+
+          {/* Right: Back, Search, Add */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
             <BackButton />
+
+            <input
+              type="text"
+              placeholder="Search by Class or Fee Head"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
+            />
+
             <button
               onClick={() => navigate("/FeeStructureMaster")}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
@@ -85,6 +107,7 @@ const FeeStructureList = () => {
           </div>
         </div>
       </div>
+
 
       <table className="w-full table-auto border border-green-500">
         <thead className="bg-green-100 text-sm">
@@ -97,8 +120,8 @@ const FeeStructureList = () => {
           </tr>
         </thead>
         <tbody className="text-sm text-center">
-          {fees.length > 0 ? (
-            fees.map((fee) => (
+          {filteredFees.length > 0 ? (
+            filteredFees.map((fee) => (
               <tr key={fee._id} className="hover:bg-gray-100 transition">
                 <td className="border border-green-500 px-2 py-1">{fee.feeStructId}</td>
                 <td className="border border-green-500 px-2 py-1">{getClassName(fee.classId)}</td>

@@ -66,7 +66,7 @@ const FeeStructureMaster = () => {
         await axios.post("http://localhost:5000/api/fees", feeData);
         alert("Fee Structure saved!");
       }
-      navigate("/feestructurelist", { replace: true });
+      navigate("/FeeStructureList", { replace: true });
     } catch (err) {
       alert("Error saving Fee Structure");
     }

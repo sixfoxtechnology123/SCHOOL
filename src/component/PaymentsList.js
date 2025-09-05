@@ -249,31 +249,31 @@ const PaymentsList = () => {
         <Header />
         <div className="p-2 bg-white shadow-md rounded-md">
           <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
-  <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-    {/* Left: Payments Title */}
-    <h2 className="text-xl font-bold text-green-800">Payments</h2>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+          {/* Left: Payments Title */}
+          <h2 className="text-xl font-bold text-green-800">Payments</h2>
 
-    {/* Right: Back, Search, Add Payment */}
-    <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
-      <BackButton />
+          {/* Right: Back, Search, Add Payment */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
+            <BackButton />
 
-      <input
-        type="text"
-        placeholder="Search by Student Name or Receipt ID"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
-      />
+            <input
+              type="text"
+              placeholder="Search by Student Name or Receipt ID"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
+            />
 
-      <button
-        onClick={() => navigate("/PaymentsMaster")}
-        className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
-      >
-        Add Payment
-      </button>
-    </div>
-  </div>
-</div>
+            <button
+              onClick={() => navigate("/PaymentsMaster")}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
+            >
+              Add Payment
+            </button>
+          </div>
+        </div>
+      </div>
 
 
           {/* Table with green borders */}
