@@ -105,7 +105,8 @@ const FeeStructureMaster = () => {
               <option value="">--Select--</option>
               {classes.map((c) => (
                 <option key={c.classId} value={c.classId}>
-                  {c.className} - {c.section}
+                  {c.className} 
+                  {/* - {c.section} */}
                 </option>
               ))}
             </select>

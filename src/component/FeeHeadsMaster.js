@@ -89,7 +89,7 @@ const FeeHeadsMaster = () => {
             />
           </div>
 
-          {/* Fee Head Name */}
+         {/* Fee Head Name */}
           <div>
             <label className="block font-medium">Fee Head Name</label>
             <select
@@ -100,13 +100,27 @@ const FeeHeadsMaster = () => {
               required
             >
               <option value="">--Select--</option>
-              {["Tuition", "Admission", "Exam", "Library", "Transport"].map(
-                (fh) => (
-                  <option key={fh} value={fh}>
-                    {fh}
-                  </option>
-                )
-              )}
+              {[
+                "Tuition Fee",
+                "Admission Fee",
+                "Session Fee",
+                "Laboratory Fee",
+                "Computer Fee",
+                "Computer Induction Fee",
+                "Badge/Tie/Diary/ID Card",
+                "Belt/Books",
+                "Development Fee",
+                "Board Registration Fee",
+                "Exam Fee",
+                "Bus/Jeep/Van Charge",
+                "Sports & Annual Social",
+                "Electricity Charge",
+                "Miscellaneous Fee",
+              ].map((fh) => (
+                <option key={fh} value={fh}>
+                  {fh}
+                </option>
+              ))}
             </select>
           </div>
 

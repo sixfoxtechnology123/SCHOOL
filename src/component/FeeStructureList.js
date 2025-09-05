@@ -55,7 +55,8 @@ const FeeStructureList = () => {
   // Helpers for display
   const getClassName = (classId) => {
     const cls = classes.find((c) => c.classId === classId);
-    return cls ? `${cls.className} - ${cls.section}` : classId;
+    return cls ? `${cls.className}` : classId;
+    // return cls ? `${cls.className} - ${cls.section}` : classId;
   };
 
   const getFeeHeadName = (feeHeadId) => {
