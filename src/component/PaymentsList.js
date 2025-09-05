@@ -97,46 +97,99 @@ const PaymentsList = () => {
         <h2 style="margin:0; font-size:18px;">Payment Receipt</h2>
       </div>
 
-    <!-- ===== Payment Info ===== -->
-        <table style="width:100%; margin-bottom:10px;">
-          <tr>
-            <td style="vertical-align: top; padding-right: 20px;">
-              <b>Receipt No:</b> ${payment.paymentId} <br>
-              <b>Student:</b> ${payment.student || "-"} <br>
-              <b>Date:</b> ${formatDDMMYYYY(payment.date)}
-            </td>
-            <td style="vertical-align: top;">
-              <b>Class:</b> ${payment.className || "-"} <br>
-              <b>Section:</b> ${payment.section || "-"} <br>
-              <b>Roll No:</b> ${payment.rollNo || "-"}
-            </td>
-          </tr>
-        </table>
+   <!-- ===== Payment Info ===== -->
+    <table style="width:100%; margin-bottom:10px; border-collapse:collapse;">
+      <tr>
+        <!-- Left side -->
+        <td style="vertical-align: top; padding-right: 30px;">
+          <table style="border-collapse: collapse;">
+            <tr>
+              <td style="padding-right: 10px;"><b>Receipt No</b></td>
+              <td><b>:</b> ${payment.paymentId}</td>
+            </tr>
+            <tr>
+              <td><b>Student</b></td>
+              <td><b>:</b> ${payment.student || "-"}</td>
+            </tr>
+            <tr>
+              <td><b>Date</b></td>
+              <td><b>:</b> ${formatDDMMYYYY(payment.date)}</td>
+            </tr>
+          </table>
+        </td>
+
+        <!-- Right side -->
+        <td style="vertical-align: top;">
+          <table style="border-collapse: collapse;">
+            <tr>
+              <td style="padding-right: 10px;"><b>Class</b></td>
+              <td><b>:</b> ${payment.className || "-"}</td>
+            </tr>
+            <tr>
+              <td><b>Section</b></td>
+              <td><b>:</b> ${payment.section || "-"}</td>
+            </tr>
+            <tr>
+              <td><b>Roll No</b></td>
+              <td><b>:</b> ${payment.rollNo || "-"}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+
 
        <!-- ===== Fee Table ===== -->
     <table style="width:100%; border-collapse:collapse; margin:10px 0; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
       <thead>
         <tr style="background:#C4C4C4;">
-          <th style="border:1px solid #333; padding:6px; text-align:center;">Fee Heads</th>
+          <th style="border:1px solid #333; padding:6px; text-align:left;">Fee Heads</th>
           <th style="border:1px solid #333; padding:6px; text-align:right;">Amount</th>
         </tr>
       </thead>
       <tbody>
-        ${feeLines.replace(/<td style="border:1px solid #333;padding:6px;">/g, '<td style="border:1px solid #333;padding:6px;text-align:center;">')}
+        ${feeLines.replace(/<td style="border:1px solid #333;padding:6px;">/g, '<td style="border:1px solid #333;padding:6px;text-align:left;">')}
         <tr style="background:#C4C4C4;">
-          <td style="border:1px solid #333; padding:6px; text-align:center; font-weight:bold;">Total</td>
+          <td style="border:1px solid #333; padding:6px; text-align:left; font-weight:bold;">Total</td>
           <td style="border:1px solid #333; padding:6px; text-align:right; font-weight:bold;">₹${Number(payment.totalAmount).toFixed(2)}</td>
         </tr>
       </tbody>
     </table>
 
-        <!-- ===== Additional Info ===== -->
-        <div style="margin:10px 0; font-size:14px;">
-          <p><b>Payment Mode:</b> ${payment.paymentMode}</p>
-          <p><b>Transaction ID:</b> ${payment.transactionId || "-"}</p>
-          <p><b>Remarks:</b> ${payment.remarks || "-"}</p>
-          <p><b>Collected By:</b> ${payment.user || "-"}</p>
-        </div>
+      <!-- ===== Additional Info ===== -->
+    <table style="width:100%; margin:10px 0; font-size:14px; border-collapse:collapse;">
+      <tr>
+        <!-- Left side -->
+        <td style="vertical-align: top; padding-right: 30px;">
+          <table style="border-collapse: collapse;">
+            <tr>
+              <td style="padding-right: 10px;"><b>Payment Mode</b></td>
+              <td><b>:</b> ${payment.paymentMode || "-"}</td>
+            </tr>
+            <tr>
+              <td><b>Remarks</b></td>
+              <td><b>:</b> ${payment.remarks || "-"}</td>
+            </tr>
+          </table>
+        </td>
+
+        <!-- Right side -->
+        <td style="vertical-align: top;">
+          <table style="border-collapse: collapse;">
+            <tr>
+              <td style="padding-right: 10px;"><b>Transaction ID</b></td>
+              <td><b>:</b> ${payment.transactionId || "-"}</td>
+            </tr>
+            <tr>
+              <td><b>Collected By</b></td>
+              <td><b>:</b> ${payment.user || "-"}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
 
         <!-- ===== Signature Section ===== -->
         <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:40px;">
@@ -177,6 +230,8 @@ const PaymentsList = () => {
     printWindow.focus();
     printWindow.print();
   };
+
+  
 
   // Filter payments based on search term
   const filteredPayments = payments.filter((p) => {
