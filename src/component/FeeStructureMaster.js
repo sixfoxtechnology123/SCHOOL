@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 const FeeStructureMaster = () => {
   const [feeData, setFeeData] = useState({
+    _id: "",             // <-- Add _id to state
     feeStructId: "",
     classId: "",
     feeHeadId: "",
@@ -17,9 +18,25 @@ const FeeStructureMaster = () => {
   const [feeHeads, setFeeHeads] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [showRouteDropdown, setShowRouteDropdown] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const location = useLocation();
   const navigate = useNavigate();
+  const feeItem = location.state?.feeItem || null;
+
+  // Fetch classes and fee heads
+  const fetchDropdownData = async () => {
+    try {
+      const [clsRes, fhRes] = await Promise.all([
+        axios.get("http://localhost:5000/api/classes"),
+        axios.get("http://localhost:5000/api/feeheads")
+      ]);
+      setClasses(clsRes.data || []);
+      setFeeHeads(fhRes.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // Fetch next FeeStructID
   const fetchNextId = async () => {
@@ -31,30 +48,8 @@ const FeeStructureMaster = () => {
     }
   };
 
-  // Fetch classes and fee heads
-  const fetchDropdownData = async () => {
-    try {
-      const cls = await axios.get("http://localhost:5000/api/classes");
-      const fh = await axios.get("http://localhost:5000/api/feeheads");
-      setClasses(cls.data || []);
-      setFeeHeads(fh.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Fetch routes dynamically if Transport is selected
-  const fetchRoutes = async (feeHeadId, selectedRouteId = "") => {
-    const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeHeadId);
-    if (!selectedFeeHead || selectedFeeHead.feeHeadName.toLowerCase() !== "transport") {
-      setRoutes([]);
-      setFeeData(prev => ({ ...prev, routeId: "" }));
-      setShowRouteDropdown(false);
-      return;
-    }
-
-    setShowRouteDropdown(true);
-
+  // Fetch transport routes
+  const fetchRoutes = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
       const routeList = res.data.map(r => ({
@@ -63,66 +58,91 @@ const FeeStructureMaster = () => {
         vanCharge: r.vanCharge
       }));
       setRoutes(routeList);
-
-      // If editing, keep the current route selected
-      if (selectedRouteId) {
-        setFeeData(prev => ({ ...prev, routeId: selectedRouteId }));
-      }
+      setShowRouteDropdown(routeList.length > 0);
+      return routeList;
     } catch (err) {
       console.error(err);
       setRoutes([]);
+      setShowRouteDropdown(false);
+      return [];
     }
   };
 
-  // Fetch amount dynamically
+  // Fetch amount dynamically from backend
   const fetchAmount = async (classId, feeHeadId, routeId) => {
     if (!classId || !feeHeadId) return;
-
     try {
-      let amount = 0;
-      const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeHeadId);
-
-      if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport" && routeId) {
-        const route = routes.find(r => r.routeId === routeId);
-        amount = route ? route.vanCharge : 0;
-      } else {
-        const url = `http://localhost:5000/api/fees/get-amount?classId=${classId}&feeHeadId=${feeHeadId}`;
-        const res = await axios.get(url);
-        amount = res.data.amount || 0;
-      }
-
-      setFeeData(prev => ({ ...prev, amount }));
+      const res = await axios.get("http://localhost:5000/api/fees/get-amount", {
+        params: { classId, feeHeadId, routeId: routeId || undefined }
+      });
+      setFeeData(prev => ({ ...prev, amount: res.data.amount || 0 }));
     } catch (err) {
       console.error(err);
-      setFeeData(prev => ({ ...prev, amount: "" }));
+      setFeeData(prev => ({ ...prev, amount: 0 }));
     }
   };
 
-  // Load initial data
+  // Initialize everything
   useEffect(() => {
-    fetchDropdownData().then(() => {
-      if (location.state?.feeItem) {
-        const f = location.state.feeItem;
-        setFeeData(f);
+    const init = async () => {
+      await fetchDropdownData();
+
+      if (feeItem) {
         setIsEditMode(true);
-        fetchRoutes(f.feeHeadId, f.routeId); // Ensure route dropdown shows correct value
+
+        // Check if fee head is transport
+        const selectedFeeHead = feeItem.feeHeadId
+          ? (await axios.get("http://localhost:5000/api/feeheads")).data.find(fh => fh.feeHeadId === feeItem.feeHeadId)
+          : null;
+
+        let routeList = [];
+        if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
+          routeList = await fetchRoutes();
+        }
+
+        setFeeData({
+          _id: feeItem._id, // <-- Important: include _id for update
+          feeStructId: feeItem.feeStructId,
+          classId: feeItem.classId,
+          feeHeadId: feeItem.feeHeadId,
+          routeId: feeItem.routeId || "",
+          amount: feeItem.amount || (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport" ? (routeList.find(r => r.routeId === feeItem.routeId)?.vanCharge || 0) : 0)
+        });
       } else {
         fetchNextId();
-        setIsEditMode(false);
       }
-    });
-  }, [location.state]);
 
-  // Update routes when feeHeadId changes
+      setLoading(false);
+    };
+    init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Show/hide route dropdown when feeHead changes
   useEffect(() => {
-    if (feeData.feeHeadId) {
-      fetchRoutes(feeData.feeHeadId);
+    const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId);
+    if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
+      fetchRoutes();
+    } else {
+      setRoutes([]);
+      setShowRouteDropdown(false);
+      setFeeData(prev => ({ ...prev, routeId: "", amount: prev.amount || 0 }));
     }
-  }, [feeData.feeHeadId, feeHeads]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feeData.feeHeadId]);
 
-  // Update amount when classId, feeHeadId, or routeId changes
+  // Update amount whenever class, feeHead, or route changes
   useEffect(() => {
-    fetchAmount(feeData.classId, feeData.feeHeadId, feeData.routeId);
+    const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId);
+    if (!selectedFeeHead) return;
+
+    if (selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
+      const selectedRoute = routes.find(r => r.routeId === feeData.routeId);
+      setFeeData(prev => ({ ...prev, amount: selectedRoute ? selectedRoute.vanCharge : 0 }));
+    } else {
+      fetchAmount(feeData.classId, feeData.feeHeadId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feeData.classId, feeData.feeHeadId, feeData.routeId, routes]);
 
   const handleChange = (e) => {
@@ -143,8 +163,11 @@ const FeeStructureMaster = () => {
       navigate("/FeeStructureList", { replace: true });
     } catch (err) {
       alert("Error saving Fee Structure");
+      console.error(err);
     }
   };
+
+  if (loading) return <div className="text-center mt-10">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-zinc-300 flex items-center justify-center">
