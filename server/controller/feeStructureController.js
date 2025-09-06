@@ -80,3 +80,22 @@ exports.deleteFeeStructure = async (req, res) => {
     res.status(500).json({ error: "Failed to delete Fee Structure" });
   }
 };
+
+// ✅ Get Fee Amount by Class and FeeHead
+exports.getFeeAmount = async (req, res) => {
+  try {
+    const { classId, feeHeadId } = req.query;
+    if (!classId || !feeHeadId) {
+      return res.status(400).json({ error: "classId and feeHeadId are required" });
+    }
+
+    const fee = await FeeStructure.findOne({ classId, feeHeadId }).lean();
+    if (!fee) {
+      return res.json({ amount: 0 });
+    }
+
+    res.json({ amount: fee.amount });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch fee amount" });
+  }
+};

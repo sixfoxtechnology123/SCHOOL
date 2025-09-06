@@ -91,25 +91,33 @@ const PaymentsMaster = () => {
     }));
   };
 
-  // Handle FeeHead Multi-Select
-  const handleFeeHeadChange = (selected) => {
-    const newHeads = selected || [];
-    const newFeeDetails = newHeads.map((fh) => {
-      const existing = paymentData.feeDetails.find((f) => f.feeHead === fh.value);
-      return {
-        feeHead: fh.value,
-        amount: existing ? existing.amount : fh.defaultAmount || " ",
-      };
-    });
+// Handle FeeHead Multi-Select
+const handleFeeHeadChange = async (selected) => {
+  const newHeads = selected || [];
 
-    const total = newFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  const newFeeDetails = await Promise.all(
+    newHeads.map(async (fh) => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/payments/fee-amount", {
+          params: { className: paymentData.className, feeHeadName: fh.value },
+        });
+        const amount = res.data?.amount || 0;
+        return { feeHead: fh.value, amount };
+      } catch (err) {
+        console.error("Error fetching fee amount:", err);
+        return { feeHead: fh.value, amount: 0 };
+      }
+    })
+  );
 
-    setPaymentData((prev) => ({
-      ...prev,
-      feeDetails: newFeeDetails,
-      totalAmount: total,
-    }));
-  };
+  const total = newFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+
+  setPaymentData((prev) => ({
+    ...prev,
+    feeDetails: newFeeDetails,
+    totalAmount: total,
+  }));
+};
 
   // Handle Amount Change (per head)
   const handleAmountChange = (feeHead, value) => {
