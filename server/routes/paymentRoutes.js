@@ -8,14 +8,14 @@ const {
   updatePayment,
   deletePayment,
   getAllStudents,
-  getFeeAmount, // ✅ added
+  getFeeAmount, //  added
 } = require("../controller/paymentController");
 
 // Routes
 router.get("/", getAllPayments);
 router.get("/latest", getLatestPaymentId);
 router.get("/students", getAllStudents);
-router.get("/fee-amount", getFeeAmount); // ✅ NEW route
+router.get("/fee-amount", getFeeAmount); //  NEW route
 router.post("/", createPayment);
 router.put("/:id", updatePayment);
 router.delete("/:id", deletePayment);

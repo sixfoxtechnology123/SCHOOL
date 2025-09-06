@@ -7,7 +7,7 @@ const {
   createFeeStructure,
   updateFeeStructure,
   deleteFeeStructure,
-  getFeeAmount, // ✅ added
+  getFeeAmount, 
 } = require("../controller/feeStructureController");
 
 router.get("/", getAllFeeStructures);
@@ -16,7 +16,7 @@ router.post("/", createFeeStructure);
 router.put("/:id", updateFeeStructure);
 router.delete("/:id", deleteFeeStructure);
 
-// ✅ New route for fetching fee amount
+//  New route for fetching fee amount
 router.get("/get-amount", getFeeAmount);
 
 module.exports = router;

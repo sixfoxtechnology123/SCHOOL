@@ -81,7 +81,7 @@ exports.deleteFeeStructure = async (req, res) => {
   }
 };
 
-// ✅ Get Fee Amount by Class and FeeHead
+//  Get Fee Amount by Class and FeeHead
 exports.getFeeAmount = async (req, res) => {
   try {
     const { classId, feeHeadId } = req.query;
