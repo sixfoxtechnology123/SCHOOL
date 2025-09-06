@@ -20,11 +20,11 @@ import PaymentsList from "./component/PaymentsList";
 import Layout from "./component/Layout";
 import Sidebar from "./component/Sidebar";
 import Header from "./component/Header";
-import DailyCollectionReport from "./reports/DailyCollectionReport";
-import DailyCollectionUserReport from "./reports/DailyCollectionUserReport";
-import ClassSummaryReport from "./reports/ClassSummaryReport";
-import StudentPaymentHistory from "./reports/StudentPaymentHistory";
-import OutstandingReport from "./reports/OutstandingReport";
+import DailyCollection from "./reports/DailyCollection";
+import DailyCollectionUser from "./reports/DailyCollectionUser";
+import ClassSummary from "./reports/ClassSummary";
+import StudentHistory from "./reports/StudentHistory";
+import OutstandingFees from "./reports/OutstandingFees";
 import FeeHeadSummary from "./reports/FeeHeadSummary";
 import TransportReport from "./reports/TransportReport";
 
@@ -57,11 +57,11 @@ function App() {
       <Route path="/Sidebar" element={<Sidebar/>} />
       <Route path="/Layout" element={<Layout/>} />
       <Route path="/Header" element={<Header/>} />
-      <Route path="/DailyCollectionReport" element={<DailyCollectionReport/>} />
-      <Route path="/DailyCollectionUserReport" element={<DailyCollectionUserReport/>} />
-      <Route path="/ClassSummaryReport" element={<ClassSummaryReport/>} />
-      <Route path="/StudentPaymentHistory" element={<StudentPaymentHistory/>} />
-      <Route path="/OutstandingReport" element={<OutstandingReport/>} />
+      <Route path="/DailyCollection" element={<DailyCollection/>} />
+      <Route path="/DailyCollectionUser" element={<DailyCollectionUser/>} />
+      <Route path="/ClassSummary" element={<ClassSummary/>} />
+      <Route path="/StudentHistory" element={<StudentHistory/>} />
+      <Route path="/OutstandingFees" element={<OutstandingFees/>} />
       <Route path="/FeeHeadSummary" element={<FeeHeadSummary/>} />
       <Route path="/TransportReport" element={<TransportReport/>} />
 

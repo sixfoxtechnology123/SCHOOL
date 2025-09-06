@@ -4,13 +4,13 @@ import BackButton from "../component/BackButton";
 import Sidebar from "../component/Sidebar";
 import Header from "../component/Header";
 
-const TransportReport = () => {
-  const [transportData, setTransportData] = useState([]);
+const OutstandingFees = () => {
+  const [outstandingData, setOutstandingData] = useState([]);
 
   useEffect(() => {
     axios
-      .get("http://localhost:5000/api/reports/transport")
-      .then((res) => setTransportData(res.data || []))
+      .get("http://localhost:5000/api/reports/outstanding-fees")
+      .then((res) => setOutstandingData(res.data || []))
       .catch((err) => console.log(err));
   }, []);
 
@@ -28,7 +28,7 @@ const TransportReport = () => {
           <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-bold text-green-800">
-                Transport Fee Report
+                Outstanding Fees
               </h2>
               <div className="flex gap-4">
                 <BackButton />
@@ -42,23 +42,19 @@ const TransportReport = () => {
               <thead className="bg-green-100 text-sm">
                 <tr>
                   <th className="border border-green-500 px-2 py-1">Student Name</th>
-                  <th className="border border-green-500 px-2 py-1">Route</th>
-                  <th className="border border-green-500 px-2 py-1">Amount Paid</th>
-                  <th className="border border-green-500 px-2 py-1">Pending Amount</th>
+                  <th className="border border-green-500 px-2 py-1">Class</th>
+                  <th className="border border-green-500 px-2 py-1">Pending Fee Amount</th>
                 </tr>
               </thead>
               <tbody className="text-sm text-center">
-                {transportData.length > 0 ? (
-                  transportData.map((item, index) => (
+                {outstandingData.length > 0 ? (
+                  outstandingData.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-100 transition">
                       <td className="border border-green-500 px-2 py-1">
                         {item.studentName || "-"}
                       </td>
                       <td className="border border-green-500 px-2 py-1">
-                        {item.route || "-"}
-                      </td>
-                      <td className="border border-green-500 px-2 py-1">
-                        ₹{item.amountPaid}
+                        {item.class || "-"}
                       </td>
                       <td className="border border-green-500 px-2 py-1">
                         ₹{item.pendingAmount}
@@ -67,7 +63,7 @@ const TransportReport = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="text-center py-4 text-gray-500">
+                    <td colSpan="3" className="text-center py-4 text-gray-500">
                       No records found.
                     </td>
                   </tr>
@@ -81,4 +77,4 @@ const TransportReport = () => {
   );
 };
 
-export default TransportReport;
+export default OutstandingFees;

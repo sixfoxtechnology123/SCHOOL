@@ -57,11 +57,11 @@ const Sidebar = () => {
     {
       title: "Reports",
       menus: [
-        { name: "Daily Collection", path: "/DailyCollectionReport", icon: FaChartBar },
-        { name: "Daily Collection (User-wise)", path: "/DailyCollectionUserReport", icon: FaUserCog },
-        { name: "Class-wise Summary", path: "/ClassSummaryReport", icon: FaBook },
-        { name: "Student Payment History", path: "/StudentPaymentHistory", icon: FaHistory },
-        { name: "Outstanding Fees", path: "/OutstandingReport", icon: FaExclamationTriangle },
+        { name: "Daily Collection", path: "/DailyCollection", icon: FaChartBar },
+        { name: "Daily Collection (User-wise)", path: "/DailyCollectionUser", icon: FaUserCog },
+        { name: "Class-wise Summary", path: "/ClassSummary", icon: FaBook },
+        { name: "Student Payment History", path: "/StudentHistory", icon: FaHistory },
+        { name: "Outstanding Fees", path: "/OutstandingFees", icon: FaExclamationTriangle },
         { name: "Fee Head Summary", path: "/FeeHeadSummary", icon: FaListAlt },
         { name: "Transport Fees", path: "/TransportReport", icon: FaBus },
       ],
