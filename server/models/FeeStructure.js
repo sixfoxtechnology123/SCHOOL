@@ -3,9 +3,10 @@ const mongoose = require("mongoose");
 
 const feeStructureSchema = new mongoose.Schema(
   {
-    feeStructId: { type: String, required: true, unique: true }, // FEES001
+    feeStructId: { type: String, required: true, unique: true }, 
     classId: { type: String, required: true, ref: "ClassMaster" },
     feeHeadId: { type: String, required: true, ref: "FeeHead" },
+    routeId: { type: String, required: false, ref: "TransportRoute" }, // new field
     amount: { type: Number, required: true },
   },
   {

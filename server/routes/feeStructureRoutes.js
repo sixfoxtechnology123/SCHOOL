@@ -1,4 +1,3 @@
-// routes/feeStructureRoutes.js
 const express = require("express");
 const router = express.Router();
 const {
@@ -7,7 +6,8 @@ const {
   createFeeStructure,
   updateFeeStructure,
   deleteFeeStructure,
-  getFeeAmount, 
+  getFeeAmount,
+  getAllTransportRoutes, // <-- added
 } = require("../controller/feeStructureController");
 
 router.get("/", getAllFeeStructures);
@@ -15,8 +15,9 @@ router.get("/latest", getLatestFeeStructId);
 router.post("/", createFeeStructure);
 router.put("/:id", updateFeeStructure);
 router.delete("/:id", deleteFeeStructure);
-
-//  New route for fetching fee amount
 router.get("/get-amount", getFeeAmount);
+
+// NEW endpoint for transport routes
+router.get("/transport/routes", getAllTransportRoutes);
 
 module.exports = router;
