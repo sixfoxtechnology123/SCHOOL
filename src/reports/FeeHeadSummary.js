@@ -3,9 +3,12 @@ import axios from "axios";
 import BackButton from "../component/BackButton";
 import Sidebar from "../component/Sidebar";
 import Header from "../component/Header";
+import { FaThLarge } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 const FeeHeadSummary = () => {
   const [feeData, setFeeData] = useState([]);
+   const navigate = useNavigate();
 
   useEffect(() => {
     axios
@@ -30,8 +33,15 @@ const FeeHeadSummary = () => {
               <h2 className="text-xl font-bold text-green-800">
                 Fee Head Summary
               </h2>
-              <div className="flex gap-4">
+               <div className="flex gap-2">
                 <BackButton />
+                <button
+                  onClick={() => navigate("/ReportsDashboard")}
+                  className="flex items-center px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                  title="Reports Dashboard"
+                >
+                  <FaThLarge />
+                </button>
               </div>
             </div>
           </div>

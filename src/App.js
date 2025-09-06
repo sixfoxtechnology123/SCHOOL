@@ -27,6 +27,7 @@ import StudentHistory from "./reports/StudentHistory";
 import OutstandingFees from "./reports/OutstandingFees";
 import FeeHeadSummary from "./reports/FeeHeadSummary";
 import TransportReport from "./reports/TransportReport";
+import ReportsDashboard from "./reports/ReportsDashboard";
 
 
 
@@ -64,6 +65,7 @@ function App() {
       <Route path="/OutstandingFees" element={<OutstandingFees/>} />
       <Route path="/FeeHeadSummary" element={<FeeHeadSummary/>} />
       <Route path="/TransportReport" element={<TransportReport/>} />
+      <Route path="/ReportsDashboard" element={<ReportsDashboard/>} />
 
     </Routes>
   );

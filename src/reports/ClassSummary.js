@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 import BackButton from "../component/BackButton";
 import Sidebar from "../component/Sidebar";
 import Header from "../component/Header";
+import { FaThLarge } from "react-icons/fa"; // Dashboard/Home icon
 
 const ClassSummary = () => {
   const [data, setData] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     axios
@@ -30,8 +33,17 @@ const ClassSummary = () => {
               <h2 className="text-xl font-bold text-green-800">
                 Class/Section-wise Summary
               </h2>
-              <div className="flex gap-4">
+
+              {/* Buttons: Back + Dashboard */}
+              <div className="flex gap-2">
                 <BackButton />
+                <button
+                  onClick={() => navigate("/ReportsDashboard")}
+                  className="flex items-center px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                  title="Reports Dashboard"
+                >
+                  <FaThLarge />
+                </button>
               </div>
             </div>
           </div>

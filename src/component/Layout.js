@@ -89,7 +89,7 @@ const Layout = () => {
             ⚠️ Outstanding Dues
           </button>
           <button
-            onClick={() => navigate("/reports")}
+            onClick={() => navigate("/ReportsDashboard")}
             className="bg-green-700 font-semibold text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
           >
             📊 Reports
