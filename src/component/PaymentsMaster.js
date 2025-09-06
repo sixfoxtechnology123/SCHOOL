@@ -12,8 +12,8 @@ const PaymentsMaster = () => {
     student: "",
     className: "",
     section: "",
-    rollNo: "", //  added roll number
-    feeDetails: [], 
+    rollNo: "",
+    feeDetails: [],
     totalAmount: 0,
     paymentMode: "",
     transactionId: "",
@@ -24,6 +24,8 @@ const PaymentsMaster = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [students, setStudents] = useState([]);
   const [feeHeads, setFeeHeads] = useState([]);
+  const [routes, setRoutes] = useState([]);
+  const [showRouteDropdown, setShowRouteDropdown] = useState(false);
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -38,6 +40,26 @@ const PaymentsMaster = () => {
       setFeeHeads(fhRes.data || []);
     } catch (err) {
       console.error("Error fetching dropdown data:", err);
+    }
+  };
+
+  // Fetch Routes
+  const fetchRoutes = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
+      const routeList = res.data.map(r => ({
+        routeId: r.routeId,
+        routeName: r.routeName,
+        vanCharge: r.vanCharge
+      }));
+      setRoutes(routeList);
+      setShowRouteDropdown(routeList.length > 0);
+      return routeList;
+    } catch (err) {
+      console.error(err);
+      setRoutes([]);
+      setShowRouteDropdown(false);
+      return [];
     }
   };
 
@@ -87,42 +109,82 @@ const PaymentsMaster = () => {
       student: studentDisplay,
       className: stu?.className || "",
       section: stu?.section || "",
-      rollNo: stu?.rollNo || "", //  auto fetch roll number
+      rollNo: stu?.rollNo || "",
     }));
   };
 
-// Handle FeeHead Multi-Select
-const handleFeeHeadChange = async (selected) => {
-  const newHeads = selected || [];
+  // Fetch amount dynamically
+  const fetchAmount = async (className, feeHeadName, routeId) => {
+    if (!className || !feeHeadName) return 0;
+    try {
+      const res = await axios.get("http://localhost:5000/api/payments/fee-amount", {
+        params: { className, feeHeadName, routeId: routeId || undefined },
+      });
+      return res.data?.amount || 0;
+    } catch (err) {
+      console.error("Error fetching fee amount:", err);
+      return 0;
+    }
+  };
 
-  const newFeeDetails = await Promise.all(
-    newHeads.map(async (fh) => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/payments/fee-amount", {
-          params: { className: paymentData.className, feeHeadName: fh.value },
-        });
-        const amount = res.data?.amount || 0;
-        return { feeHead: fh.value, amount };
-      } catch (err) {
-        console.error("Error fetching fee amount:", err);
-        return { feeHead: fh.value, amount: 0 };
-      }
-    })
-  );
+  // Handle FeeHead Multi-Select
+  const handleFeeHeadChange = async (selected) => {
+    const newHeads = selected || [];
 
-  const total = newFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+    // Check if transport is selected
+    const hasTransport = newHeads.some(fh => fh.value.toLowerCase() === "transport");
+    if (hasTransport) {
+      await fetchRoutes();
+    } else {
+      setShowRouteDropdown(false);
+      setRoutes([]);
+    }
 
-  setPaymentData((prev) => ({
-    ...prev,
-    feeDetails: newFeeDetails,
-    totalAmount: total,
-  }));
-};
+    const newFeeDetails = await Promise.all(
+      newHeads.map(async (fh) => {
+        const routeId = fh.value.toLowerCase() === "transport"
+          ? (paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "transport")?.routeId || "")
+          : undefined;
+        const amount = await fetchAmount(paymentData.className, fh.value, routeId);
+        return {
+          feeHead: fh.value,
+          amount,
+          routeId: routeId || "",
+        };
+      })
+    );
+
+    const total = newFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+    setPaymentData((prev) => ({
+      ...prev,
+      feeDetails: newFeeDetails,
+      totalAmount: total,
+    }));
+  };
 
   // Handle Amount Change (per head)
   const handleAmountChange = (feeHead, value) => {
     const updatedFeeDetails = paymentData.feeDetails.map((f) =>
       f.feeHead === feeHead ? { ...f, amount: Number(value) } : f
+    );
+    const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+    setPaymentData((prev) => ({
+      ...prev,
+      feeDetails: updatedFeeDetails,
+      totalAmount: total,
+    }));
+  };
+
+  // Handle Route Change for Transport Fee
+  const handleRouteChange = async (routeId) => {
+    const updatedFeeDetails = await Promise.all(
+      paymentData.feeDetails.map(async (f) => {
+        if (f.feeHead.toLowerCase() === "transport") {
+          const amount = await fetchAmount(paymentData.className, f.feeHead, routeId);
+          return { ...f, amount, routeId };
+        }
+        return f;
+      })
     );
     const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
     setPaymentData((prev) => ({
@@ -191,42 +253,22 @@ const handleFeeHeadChange = async (selected) => {
           {/* Payment Id */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Payment Id
-            <input
-              type="text"
-              name="paymentId"
-              value={paymentData.paymentId}
-              readOnly
-              className="border border-gray-400 p-1 rounded bg-gray-100"
-            />
+            <input type="text" name="paymentId" value={paymentData.paymentId} readOnly className="border border-gray-400 p-1 rounded bg-gray-100" />
           </label>
 
           {/* Date */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Date
-            <input
-              type="date"
-              name="date"
-              value={paymentData.date}
-              onChange={handleChange}
-              className="border border-gray-400 p-1 rounded"
-              required
-            />
+            <input type="date" name="date" value={paymentData.date} onChange={handleChange} className="border border-gray-400 p-1 rounded" required />
           </label>
 
-          {/* Student Dropdown */}
+          {/* Student */}
           <label className="flex flex-col text-sm font-semibold text-black col-span-2">
             Student
             <Select
-              options={students.map((s) => ({
-                value: s._id,
-                label: `${s.studentName || s.name || ""} - ${s.studentId || ""}`,
-              }))}
+              options={students.map((s) => ({ value: s._id, label: `${s.studentName || s.name} - ${s.studentId || ""}` }))}
               onChange={handleStudentChange}
-              value={
-                paymentData.student
-                  ? { value: paymentData.student, label: paymentData.student }
-                  : null
-              }
+              value={paymentData.student ? { value: paymentData.student, label: paymentData.student } : null}
               placeholder="Search Student..."
               isSearchable
               isClearable
@@ -236,37 +278,19 @@ const handleFeeHeadChange = async (selected) => {
           {/* Class */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Class
-            <input
-              type="text"
-              name="className"
-              value={paymentData.className}
-              readOnly
-              className="border border-gray-400 p-1 rounded bg-gray-100"
-            />
+            <input type="text" name="className" value={paymentData.className} readOnly className="border border-gray-400 p-1 rounded bg-gray-100" />
           </label>
 
           {/* Section */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Section
-            <input
-              type="text"
-              name="section"
-              value={paymentData.section}
-              readOnly
-              className="border border-gray-400 p-1 rounded bg-gray-100"
-            />
+            <input type="text" name="section" value={paymentData.section} readOnly className="border border-gray-400 p-1 rounded bg-gray-100" />
           </label>
 
-          {/* Roll Number */}
+          {/* Roll No */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Roll No
-            <input
-              type="text"
-              name="rollNo"
-              value={paymentData.rollNo}
-              readOnly
-              className="border border-gray-400 p-1 rounded bg-gray-100"
-            />
+            <input type="text" name="rollNo" value={paymentData.rollNo} readOnly className="border border-gray-400 p-1 rounded bg-gray-100" />
           </label>
 
           {/* Fee Heads Multi-select */}
@@ -274,20 +298,31 @@ const handleFeeHeadChange = async (selected) => {
             Fee Heads
             <Select
               isMulti
-              options={feeHeads.map((fh) => ({
-                value: fh.feeHeadName,
-                label: fh.feeHeadName,
-                defaultAmount: fh.defaultAmount || 0,
-              }))}
+              options={feeHeads.map((fh) => ({ value: fh.feeHeadName, label: fh.feeHeadName }))}
               onChange={handleFeeHeadChange}
-              value={paymentData.feeDetails.map((f) => ({
-                value: f.feeHead,
-                label: f.feeHead,
-              }))}
+              value={paymentData.feeDetails.map((f) => ({ value: f.feeHead, label: f.feeHead }))}
               placeholder="Select Fee Heads..."
               isSearchable
             />
           </label>
+
+          {/* Route Dropdown for Transport */}
+          {showRouteDropdown && (
+            <label className="flex flex-col text-sm font-semibold text-black">
+              Route
+              <select
+                name="routeId"
+                value={paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "transport")?.routeId || ""}
+                onChange={(e) => handleRouteChange(e.target.value)}
+                className="border border-gray-400 p-1 rounded"
+              >
+                <option value="">--Select Route--</option>
+                {routes.map((r) => (
+                  <option key={r.routeId} value={r.routeId}>{r.routeName}</option>
+                ))}
+              </select>
+            </label>
+          )}
 
           {/* Amount per head */}
           {paymentData.feeDetails.map((f) => (
@@ -305,13 +340,7 @@ const handleFeeHeadChange = async (selected) => {
           {/* Payment Mode */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Payment Mode
-            <select
-              name="paymentMode"
-              value={paymentData.paymentMode}
-              onChange={handleChange}
-              className="border border-gray-400 p-1 rounded"
-              required
-            >
+            <select name="paymentMode" value={paymentData.paymentMode} onChange={handleChange} className="border border-gray-400 p-1 rounded" required>
               <option value="">-- Select Mode --</option>
               <option value="Cash">Cash</option>
               <option value="UPI">UPI</option>
@@ -323,62 +352,31 @@ const handleFeeHeadChange = async (selected) => {
           {/* Transaction ID */}
           <label className="flex flex-col text-sm col-span-2 font-semibold text-black">
             Transaction ID
-            <input
-              type="text"
-              name="transactionId"
-              value={paymentData.transactionId}
-              onChange={handleChange}
-              placeholder="Txn ID / Ref No"
-              className="border border-gray-400 p-1 rounded"
-            />
+            <input type="text" name="transactionId" value={paymentData.transactionId} onChange={handleChange} placeholder="Txn ID / Ref No" className="border border-gray-400 p-1 rounded" />
           </label>
 
           {/* Total Amount */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Total Amount
-            <input
-              type="number"
-              name="totalAmount"
-              value={paymentData.totalAmount}
-              readOnly
-              className="border border-gray-400 p-1 rounded bg-gray-100"
-            />
+            <input type="number" name="totalAmount" value={paymentData.totalAmount} readOnly className="border border-gray-400 p-1 rounded bg-gray-100" />
           </label>
 
           {/* Remarks */}
           <label className="flex flex-col text-sm font-semibold text-black col-span-2 lg:col-span-2">
             Remarks
-            <input
-              type="text"
-              name="remarks"
-              value={paymentData.remarks}
-              onChange={handleChange}
-              placeholder="Remarks"
-              className="border border-gray-400 p-1 rounded"
-            />
+            <input type="text" name="remarks" value={paymentData.remarks} onChange={handleChange} placeholder="Remarks" className="border border-gray-400 p-1 rounded" />
           </label>
 
           {/* Collected By */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Collected By
-            <input
-              type="text"
-              name="user"
-              value={paymentData.user}
-              readOnly
-              className="border border-gray-400 p-1 rounded bg-gray-100"
-            />
+            <input type="text" name="user" value={paymentData.user} readOnly className="border border-gray-400 p-1 rounded bg-gray-100" />
           </label>
 
           {/* Buttons */}
           <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex justify-between mt-4">
             <BackButton />
-            <button
-              type="submit"
-              className={`px-6 py-1 rounded text-white ${
-                isEditMode ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"
-              }`}
-            >
+            <button type="submit" className={`px-6 py-1 rounded text-white ${isEditMode ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"}`}>
               {isEditMode ? "Update" : "Save"}
             </button>
           </div>
