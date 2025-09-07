@@ -113,7 +113,7 @@ const Sidebar = () => {
           {/* Header + Toggle */}
           <div className="flex items-center justify-between px-3 py-2 border-b border-green-800">
             {isOpen && (
-              <h3 className="text-2xl font-bold text-white">Management</h3>
+              <h3 className="text-2xl font-bold text-white">Man</h3>
             )}
             <button
               className="hidden md:block text-white ml-auto"
