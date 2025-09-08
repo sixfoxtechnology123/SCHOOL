@@ -22,6 +22,7 @@ const paymentSchema = new mongoose.Schema(
       required: true,
     },
     transactionId: String,
+    cardNumber: String,
     remarks: String,
     user: { type: String, required: true },
   },

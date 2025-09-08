@@ -290,6 +290,7 @@ const PaymentsList = () => {
                 <th className="border border-green-600 px-2 py-1">Date</th>
                 <th className="border border-green-600 px-2 py-1">Payment Mode</th>
                 <th className="border border-green-600 px-2 py-1">Txn ID</th>
+                <th className="border border-green-600 px-2 py-1">Card Number</th>
                 <th className="border border-green-600 px-2 py-1">Remarks</th>
                 <th className="border border-green-600 px-2 py-1">Collected By</th>
                 <th className="border border-green-600 px-2 py-1">Action</th>
@@ -321,6 +322,9 @@ const PaymentsList = () => {
                     <td className="border border-green-600 px-2 py-1">{p.paymentMode}</td>
                     <td className="border border-green-600 px-2 py-1">
                       {p.transactionId || "-"}
+                    </td>
+                    <td className="border border-green-600 px-2 py-1">
+                      {p.cardNumber || "-"}
                     </td>
                     <td className="border border-green-600 px-2 py-1">{p.remarks || "-"}</td>
                     <td className="border border-green-600 px-2 py-1">{p.user || "-"}</td>
