@@ -19,6 +19,9 @@ const StudentMaster = () => {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [classes, setClasses] = useState([]);
+  const [uniqueClasses, setUniqueClasses] = useState([]);
+  const [filteredSections, setFilteredSections] = useState([]);
+  const [students, setStudents] = useState([]); // ✅ store all students for validation
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -27,9 +30,24 @@ const StudentMaster = () => {
   const fetchClasses = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/classes");
-      setClasses(res.data || []);
+      const data = res.data || [];
+      setClasses(data);
+
+      // ✅ Extract unique class names
+      const unique = [...new Set(data.map((c) => c.className))];
+      setUniqueClasses(unique);
     } catch (err) {
       console.error("Error fetching classes:", err);
+    }
+  };
+
+  // Fetch All Students (for validation)
+  const fetchStudents = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/students");
+      setStudents(res.data || []);
+    } catch (err) {
+      console.error("Error fetching students:", err);
     }
   };
 
@@ -46,15 +64,34 @@ const StudentMaster = () => {
 
   useEffect(() => {
     fetchClasses();
+    fetchStudents();
+
     if (location.state?.studentItem) {
       const s = location.state.studentItem;
       setIsEditMode(true);
       setStudentData({ ...s, dob: s.dob?.slice(0, 10) });
+
+      // Pre-fill sections if class is already selected
+      const sec = classes
+        .filter((c) => c.className === s.className)
+        .map((c) => c.section);
+      setFilteredSections(sec);
     } else {
       fetchNextStudentId();
       setIsEditMode(false);
     }
   }, [location.state]);
+
+  // When class changes → filter its sections
+  const handleClassChange = (e) => {
+    const selectedClass = e.target.value;
+    setStudentData({ ...studentData, className: selectedClass, section: "" });
+
+    const sec = classes
+      .filter((c) => c.className === selectedClass)
+      .map((c) => c.section);
+    setFilteredSections(sec);
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -63,6 +100,21 @@ const StudentMaster = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // ✅ Validation: prevent duplicate class + section + rollNo
+    const isDuplicate = students.some(
+      (s) =>
+        s.className === studentData.className &&
+        s.section === studentData.section &&
+        s.rollNo.toString() === studentData.rollNo.toString() &&
+        (!isEditMode || s._id !== studentData._id) // allow same student when editing
+    );
+
+    if (isDuplicate) {
+      alert("❌ A student with the same Class, Section, and Roll No already exists!");
+      return;
+    }
+
     try {
       if (isEditMode) {
         await axios.put(
@@ -75,6 +127,7 @@ const StudentMaster = () => {
         await axios.post("http://localhost:5000/api/students", studentData);
         alert("Student saved successfully!");
         fetchNextStudentId();
+        fetchStudents(); // refresh students after save
         setStudentData({
           studentId: "",
           name: "",
@@ -139,14 +192,14 @@ const StudentMaster = () => {
             <select
               name="className"
               value={studentData.className}
-              onChange={handleChange}
+              onChange={handleClassChange}
               className="border border-gray-400 p-1 rounded"
               required
             >
               <option value="">--Select Class--</option>
-              {classes.map((cls) => (
-                <option key={cls._id} value={cls.className}>
-                  {cls.className}
+              {uniqueClasses.map((cls, idx) => (
+                <option key={idx} value={cls}>
+                  {cls}
                 </option>
               ))}
             </select>
@@ -161,11 +214,14 @@ const StudentMaster = () => {
               onChange={handleChange}
               className="border border-gray-400 p-1 rounded"
               required
+              disabled={!studentData.className}
             >
               <option value="">--Select Section--</option>
-              <option value="A">A</option>
-              <option value="B">B</option>
-              <option value="C">C</option>
+              {filteredSections.map((sec, idx) => (
+                <option key={idx} value={sec}>
+                  {sec}
+                </option>
+              ))}
             </select>
           </label>
 
@@ -224,7 +280,7 @@ const StudentMaster = () => {
             />
           </label>
 
-          {/* Address (span 2 cols on tablet/desktop) */}
+          {/* Address */}
           <label className="flex flex-col text-sm font-semibold text-black sm:col-span-2 lg:col-span-2">
             Address
             <input
@@ -238,7 +294,7 @@ const StudentMaster = () => {
             />
           </label>
 
-          {/* Phone No (span 2 cols on tablet/desktop) */}
+          {/* Phone No */}
           <label className="flex flex-col text-sm font-semibold text-black sm:col-span-2 lg:col-span-2">
             Phone No
             <input

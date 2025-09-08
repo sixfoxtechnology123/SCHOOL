@@ -53,13 +53,29 @@ const ClassesMaster = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // 🔍 Validation: prevent same class + same section
+      const res = await axios.get("http://localhost:5000/api/classes");
+      const allClasses = res.data || [];
+
+      const duplicate = allClasses.find(
+        (c) =>
+          c.className === classData.className &&
+          c.section === classData.section &&
+          (!isEditMode || c._id !== classData._id)
+      );
+
+      if (duplicate) {
+        alert("This Class + Section already exists!");
+        return;
+      }
+
       if (isEditMode) {
         await axios.put(
           `http://localhost:5000/api/classes/${classData._id}`,
           classData
         );
         alert("Class updated successfully!");
-        navigate("/classeslist", { replace: true });
+        navigate("/ClassesList", { replace: true });
       } else {
         await axios.post("http://localhost:5000/api/classes", classData);
         alert("Class saved successfully!");
@@ -69,7 +85,7 @@ const ClassesMaster = () => {
           className: "",
           section: "",
         });
-        navigate("/classeslist", { replace: true });
+        navigate("/ClassesList", { replace: true });
       }
     } catch (err) {
       console.error("Save failed:", err);
