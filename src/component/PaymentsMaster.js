@@ -157,7 +157,6 @@ const PaymentsMaster = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
-  // Handle Class change
   const handleClassChange = (selected) => {
     if (!selected) {
       setPaymentData((prev) => ({
@@ -242,18 +241,26 @@ const PaymentsMaster = () => {
     );
   };
 
+  // 🔹 Modified: Auto-fill Class, Section, Roll when Student is selected
   const handleStudentChange = (selected) => {
     if (!selected) {
-      setPaymentData((prev) => ({ ...prev, student: "", rollNo: "" }));
+      setPaymentData((prev) => ({ ...prev, student: "", rollNo: "", className: "", section: "" }));
       return;
     }
+
     const stu = students.find((s) => s._id === selected.value);
-    const studentDisplay = `${stu?.studentName || stu?.name || ""} - ${stu?.studentId || ""}`;
-    setPaymentData((prev) => ({
-      ...prev,
-      student: studentDisplay,
-      rollNo: stu?.rollNo || "",
-    }));
+
+    if (stu) {
+      const studentDisplay = `${stu?.studentName || stu?.name || ""} - ${stu?.studentId || ""}`;
+
+      setPaymentData((prev) => ({
+        ...prev,
+        student: studentDisplay,
+        rollNo: stu?.rollNo || "",
+        className: stu?.className || "",
+        section: stu?.section || "",
+      }));
+    }
   };
 
   const fetchAmount = async (className, feeHeadName, routeId) => {
@@ -269,7 +276,6 @@ const PaymentsMaster = () => {
     }
   };
 
-  // 🔹 Fixed Transport reset issue
   const handleFeeHeadChange = async (selected) => {
     const newHeads = selected || [];
     const hasTransport = newHeads.some((fh) => fh.value.toLowerCase() === "transport");
@@ -288,12 +294,12 @@ const PaymentsMaster = () => {
             (f) => f.feeHead.toLowerCase() === "transport"
           );
           return existingTransport
-            ? existingTransport // ✅ keep old amount & routeId
+            ? existingTransport
             : { feeHead: fh.value, amount: 0, routeId: "" };
         } else {
           const existing = paymentData.feeDetails.find((f) => f.feeHead === fh.value);
           if (existing) {
-            return existing; // ✅ keep old amount
+            return existing;
           }
           const amount = await fetchAmount(paymentData.className, fh.value);
           return { feeHead: fh.value, amount };
@@ -349,7 +355,6 @@ const PaymentsMaster = () => {
     }
 
     try {
-      //  check duplicate payment before save
       const duplicateCheck = await axios.get(
         "http://localhost:5000/api/payments/check-duplicate",
         {
@@ -574,7 +579,7 @@ const PaymentsMaster = () => {
             </select>
           </label>
 
-          {/* Transaction ID (only for UPI & NetBanking) */}
+          {/* Transaction ID */}
           {["UPI", "NetBanking"].includes(paymentData.paymentMode) && (
             <label className="flex flex-col text-sm col-span-2 font-semibold text-black">
               Transaction ID
@@ -589,7 +594,7 @@ const PaymentsMaster = () => {
             </label>
           )}
 
-          {/* Card Number (only for Card) */}
+          {/* Card Number */}
           {paymentData.paymentMode === "Card" && (
             <label className="flex flex-col text-sm col-span-2 font-semibold text-black">
               Card Number
