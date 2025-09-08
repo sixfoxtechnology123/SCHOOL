@@ -1,4 +1,3 @@
-// controllers/transportRouteController.js
 const TransportRoute = require("../models/TransportRoute");
 
 const PREFIX = "TRANSPORT";
@@ -37,16 +36,16 @@ exports.getAllRoutes = async (_req, res) => {
 // POST create route
 exports.createRoute = async (req, res) => {
   try {
-    const { routeName, vanCharge } = req.body;
-    if (!routeName || !vanCharge) {
-      return res.status(400).json({ error: "routeName and vanCharge are required" });
+    const { distance, vanCharge } = req.body;
+    if (!distance || !vanCharge) {
+      return res.status(400).json({ error: "distance and vanCharge are required" });
     }
 
     const routeId = await generateNextRouteId();
 
     const doc = new TransportRoute({
       routeId,
-      routeName,
+      distance,
       vanCharge,
     });
 

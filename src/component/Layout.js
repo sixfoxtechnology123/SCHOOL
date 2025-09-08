@@ -48,28 +48,38 @@ const Layout = () => {
 
         {/* Dashboard Content */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
-            <FaMoneyBill size={30} className="text-green-700 mb-2" />
-            <h2 className="text-lg font-semibold">Today's Collection</h2>
-            <p className="text-2xl font-bold">₹ 0.00</p>
+          <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
+            <FaMoneyBill size={30} className="text-green-800 mb-2" />
+            <h2 className="text-lg font-semibold text-green-800">
+              Today's Collection
+            </h2>
+            <p className="text-2xl font-bold text-green-800">₹ 0.00</p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
-            <FaChartBar size={30} className="text-green-700 mb-2" />
-            <h2 className="text-lg font-semibold">This Month</h2>
-            <p className="text-2xl font-bold">₹ 0.00</p>
+          <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
+            <FaChartBar size={30} className="text-green-800 mb-2" />
+            <h2 className="text-lg font-semibold text-green-800">
+              This Month
+            </h2>
+            <p className="text-2xl font-bold text-green-800">₹ 0.00</p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
-            <FaUserGraduate size={30} className="text-green-700 mb-2" />
-            <h2 className="text-lg font-semibold">Total Students</h2>
-            <p className="text-2xl font-bold">{totalStudents}</p>
+          <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
+            <FaUserGraduate size={30} className="text-green-800 mb-2" />
+            <h2 className="text-lg font-semibold text-green-800">
+              Total Students
+            </h2>
+            <p className="text-2xl font-bold text-green-800">
+              {totalStudents}
+            </p>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl shadow hover:shadow-lg transition">
-            <FaFileInvoice size={30} className="text-green-700 mb-2" />
-            <h2 className="text-lg font-semibold">Outstanding Dues</h2>
-            <p className="text-2xl font-bold">₹ 0.00</p>
+          <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
+            <FaFileInvoice size={30} className="text-green-800 mb-2" />
+            <h2 className="text-lg font-semibold text-green-800">
+              Outstanding Dues
+            </h2>
+            <p className="text-2xl font-bold text-green-800">₹ 0.00</p>
           </div>
         </div>
 
@@ -77,20 +87,21 @@ const Layout = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <button
             onClick={() => navigate("/PaymentsList")}
-            className="bg-green-700 font-semibold text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
+            className="bg-green-50 font-semibold text-green-800 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition"
           >
             ➕ Collect Fees & 🧾 View Receipts
           </button>
-          
+
           <button
             onClick={() => navigate("/reports/outstanding")}
-            className="bg-green-700 font-semibold text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
+            className="bg-green-50 font-semibold text-green-800 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition"
           >
             ⚠️ Outstanding Dues
           </button>
+
           <button
             onClick={() => navigate("/ReportsDashboard")}
-            className="bg-green-700 font-semibold text-white p-6 rounded-2xl shadow hover:bg-green-800 transition"
+            className="bg-green-50 font-semibold text-green-800 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition"
           >
             📊 Reports
           </button>

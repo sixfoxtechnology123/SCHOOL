@@ -7,7 +7,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 const TransportRoutesMaster = () => {
   const [routeData, setRouteData] = useState({
     routeId: "",
-    routeName: "",
+    distance: "",
     vanCharge: "",
   });
 
@@ -33,7 +33,7 @@ const TransportRoutesMaster = () => {
       setRouteData({
         _id: r._id,
         routeId: r.routeId || "",
-        routeName: r.routeName || "",
+        distance: r.distance || "",
         vanCharge: r.vanCharge || "",
       });
     } else {
@@ -63,7 +63,7 @@ const TransportRoutesMaster = () => {
         const res = await axios.get("http://localhost:5000/api/transportroutes/latest");
         setRouteData({
           routeId: res.data?.routeId || "TRANSPORT001",
-          routeName: "",
+          distance: "",
           vanCharge: "",
         });
         navigate("/TransportRoutesList", { replace: true });
@@ -94,17 +94,22 @@ const TransportRoutesMaster = () => {
             />
           </div>
 
-          {/* Route Name */}
+          {/* Distance (Dropdown) */}
           <div>
-            <label className="block font-medium">Route Name</label>
-            <input
-              type="text"
-              name="routeName"
-              value={routeData.routeName}
+            <label className="block font-medium">Distance (KM)</label>
+            <select
+              name="distance"
+              value={routeData.distance}
               onChange={handleChange}
               className="w-full border border-gray-300 p-1 rounded"
               required
-            />
+            >
+              <option value="">-- Select Range --</option>
+              <option value="0-5">0-5 KM</option>
+              <option value="6-10">6-10 KM</option>
+              <option value="11-15">11-15 KM</option>
+              <option value="16-20">16-20 KM</option>
+            </select>
           </div>
 
           {/* Van Charge */}

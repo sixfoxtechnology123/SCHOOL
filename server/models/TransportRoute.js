@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const transportRouteSchema = new mongoose.Schema(
   {
     routeId: { type: String, required: true, unique: true }, // TRANSPORT001
-    routeName: { type: String, required: true }, // free text
+    distance: { type: String, required: true }, // Dropdown values like "0-5", "6-10"
     vanCharge: { type: Number, required: true }, // numeric
   },
   {

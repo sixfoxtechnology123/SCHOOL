@@ -50,9 +50,7 @@ const Sidebar = () => {
     },
     {
       title: "Transactions",
-      menus: [
-        { name: "Collect Fees", path: "/PaymentsList", icon: FaMoneyBill },
-      ],
+      menus: [{ name: "Collect Fees", path: "/PaymentsList", icon: FaMoneyBill }],
     },
     {
       title: "Reports",
@@ -94,8 +92,8 @@ const Sidebar = () => {
   return (
     <>
       {/* Mobile Topbar */}
-      <div className="md:hidden flex items-center justify-between bg-green-700 text-white p-2">
-        <h2 className="text-lg font-bold">Management</h2>
+      <div className="md:hidden flex items-center justify-between bg-gray-800 text-white p-2">
+        <h2 className="text-lg font-bold">School Fees</h2>
         <button onClick={() => setMobileOpen(true)}>
           <Menu size={28} />
         </button>
@@ -103,7 +101,7 @@ const Sidebar = () => {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 bg-green-700 text-white transform transition-transform duration-300 ease-in-out z-50
+        className={`fixed inset-y-0 left-0 bg-gray-800 text-white transform transition-transform duration-300 ease-in-out z-50
         ${mobileOpen ? "translate-x-0" : "-translate-x-full"} 
         md:static md:translate-x-0 md:flex md:flex-col
         ${isOpen ? "md:w-56" : "md:w-16"} 
@@ -111,10 +109,8 @@ const Sidebar = () => {
       >
         <div className="flex flex-col h-full">
           {/* Header + Toggle */}
-          <div className="flex items-center justify-between px-3 py-2 border-b border-green-800">
-            {isOpen && (
-              <h3 className="text-2xl font-bold text-white">Management</h3>
-            )}
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
+            {isOpen && <h3 className="text-2xl font-bold text-white">Management</h3>}
             <button
               className="hidden md:block text-white ml-auto"
               onClick={() => setIsOpen(!isOpen)}
@@ -135,7 +131,7 @@ const Sidebar = () => {
               to={dashboardMenu.path}
               className={({ isActive }) =>
                 `flex items-center gap-3 p-2 rounded transition-colors ${
-                  isActive ? "bg-blue-600 text-white" : "hover:bg-green-800"
+                  isActive ? "bg-blue-600 text-white" : "hover:bg-gray-700"
                 }`
               }
               onClick={() => setMobileOpen(false)}
@@ -153,7 +149,7 @@ const Sidebar = () => {
                 {isOpen && (
                   <button
                     onClick={() => toggleSection(section.title)}
-                    className="flex items-center justify-between w-full px-2 py-2 text-base font-semibold uppercase text-white hover:bg-green-800 rounded"
+                    className="flex items-center justify-between w-full px-2 py-2 text-base font-semibold uppercase text-white hover:bg-gray-700 rounded"
                   >
                     {section.title}
                     {openSections[section.title] ? (
@@ -175,9 +171,7 @@ const Sidebar = () => {
                             to={menu.path}
                             className={({ isActive }) =>
                               `flex items-center gap-3 p-1 rounded transition-colors ${
-                                isActive
-                                  ? "bg-blue-600 text-white"
-                                  : "hover:bg-green-800"
+                                isActive ? "bg-blue-600 text-white" : "hover:bg-gray-700"
                               }`
                             }
                             onClick={() => setMobileOpen(false)}
