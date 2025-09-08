@@ -1,4 +1,3 @@
-// controllers/paymentController.js
 const Payment = require("../models/Payment");
 const Student = require("../models/Student");
 const FeeStructure = require("../models/FeeStructure");
@@ -48,27 +47,26 @@ exports.getAllPayments = async (_req, res) => {
 };
 
 // Get fee amount by className + feeHeadName
+// Add routeId support for transport amount
 exports.getFeeAmount = async (req, res) => {
   try {
-    const { className, feeHeadName } = req.query;
-    if (!className || !feeHeadName) {
-      return res.status(400).json({ message: "className and feeHeadName required" });
-    }
+    const { className, feeHeadName, routeId } = req.query;
+    if (!className || !feeHeadName) return res.status(400).json({ message: "className and feeHeadName required" });
 
-    // Find classId from className
     const classData = await ClassMaster.findOne({ className }).lean();
     if (!classData) return res.json({ amount: 0 });
 
-    // Find feeHeadId from feeHeadName
     const feeHeadData = await FeeHead.findOne({ feeHeadName }).lean();
     if (!feeHeadData) return res.json({ amount: 0 });
 
-    // Find fee amount
-    const fee = await FeeStructure.findOne({
-      classId: classData.classId,
-      feeHeadId: feeHeadData.feeHeadId,
-    }).lean();
+    // Transport fee check
+    if (feeHeadName.toLowerCase() === "transport" && routeId) {
+      const routeData = await FeeStructure.findOne({ classId: classData.classId, feeHeadId: feeHeadData.feeHeadId, routeId }).lean();
+      const amount = routeData ? routeData.amount : 0;
+      return res.json({ amount });
+    }
 
+    const fee = await FeeStructure.findOne({ classId: classData.classId, feeHeadId: feeHeadData.feeHeadId }).lean();
     const amount = fee ? fee.amount : 0;
     res.json({ amount });
   } catch (err) {
@@ -81,14 +79,12 @@ exports.getFeeAmount = async (req, res) => {
 async function populateFeeAmounts(paymentBody) {
   if (!paymentBody.feeDetails || !Array.isArray(paymentBody.feeDetails)) return;
 
-  // Convert className to classId if needed
   let classId = paymentBody.classId;
   if (!classId && paymentBody.className) {
     const classData = await ClassMaster.findOne({ className: paymentBody.className }).lean();
     if (classData) classId = classData.classId;
   }
 
-  // Load all fee structures for this class
   const classStructures = await FeeStructure.find({ classId }).lean();
   const globalHeads = await FeeHead.find().lean();
 
@@ -96,7 +92,6 @@ async function populateFeeAmounts(paymentBody) {
     paymentBody.feeDetails.map(async (f) => {
       let feeHeadId = f.feeHeadId;
 
-      // Convert feeHeadName to feeHeadId if needed
       if (!feeHeadId && f.feeHead) {
         const headData = await FeeHead.findOne({ feeHeadName: f.feeHead }).lean();
         if (headData) feeHeadId = headData.feeHeadId;
@@ -104,11 +99,9 @@ async function populateFeeAmounts(paymentBody) {
 
       let amount = 0;
 
-      // 1. From class fee structure
       const headData = classStructures.find((h) => h.feeHeadId === feeHeadId);
       if (headData) amount = headData.amount;
 
-      // 2. From global fee head (fallback)
       if (!amount) {
         const globalHead = globalHeads.find((h) => h.feeHeadId === feeHeadId);
         if (globalHead) amount = globalHead.amount || 0;
@@ -118,7 +111,6 @@ async function populateFeeAmounts(paymentBody) {
     })
   );
 
-  // Recalculate total
   paymentBody.totalAmount = paymentBody.feeDetails.reduce(
     (sum, f) => sum + Number(f.amount || 0),
     0
@@ -148,12 +140,9 @@ exports.createPayment = async (req, res) => {
 exports.updatePayment = async (req, res) => {
   try {
     const updateBody = { ...req.body };
-
     await populateFeeAmounts(updateBody);
 
-    const updated = await Payment.findByIdAndUpdate(req.params.id, updateBody, {
-      new: true,
-    });
+    const updated = await Payment.findByIdAndUpdate(req.params.id, updateBody, { new: true });
     if (!updated) return res.status(404).json({ error: "Payment not found" });
     res.json(updated);
   } catch (err) {

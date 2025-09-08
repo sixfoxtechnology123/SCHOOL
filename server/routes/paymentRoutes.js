@@ -1,4 +1,3 @@
-// routes/paymentRoutes.js
 const express = require("express");
 const router = express.Router();
 const {
@@ -8,14 +7,14 @@ const {
   updatePayment,
   deletePayment,
   getAllStudents,
-  getFeeAmount, //  added
+  getFeeAmount,
 } = require("../controller/paymentController");
 
-// Routes
+// Payment Routes
 router.get("/", getAllPayments);
 router.get("/latest", getLatestPaymentId);
 router.get("/students", getAllStudents);
-router.get("/fee-amount", getFeeAmount); //  NEW route
+router.get("/fee-amount", getFeeAmount); // routeId optional query param
 router.post("/", createPayment);
 router.put("/:id", updatePayment);
 router.delete("/:id", deletePayment);

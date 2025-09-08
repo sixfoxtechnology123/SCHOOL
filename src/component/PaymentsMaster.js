@@ -1,4 +1,3 @@
-// pages/PaymentsMaster.js
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
@@ -8,7 +7,7 @@ import Select from "react-select";
 const PaymentsMaster = () => {
   const [paymentData, setPaymentData] = useState({
     paymentId: "",
-    date: new Date().toISOString().split("T")[0], 
+    date: new Date().toISOString().split("T")[0],
     student: "",
     className: "",
     section: "",
@@ -43,32 +42,35 @@ const PaymentsMaster = () => {
     }
   };
 
-  // Fetch Routes
-  const fetchRoutes = async () => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
-      const routeList = res.data.map(r => ({
-        routeId: r.routeId,
-        routeName: r.routeName,
-        vanCharge: r.vanCharge
-      }));
-      setRoutes(routeList);
-      setShowRouteDropdown(routeList.length > 0);
-      return routeList;
-    } catch (err) {
-      console.error(err);
-      setRoutes([]);
-      setShowRouteDropdown(false);
-      return [];
-    }
-  };
+  // Fetch Routes for Transport (modified)
+const fetchRoutes = async () => {
+  try {
+    const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
+    // assuming backend returns [{ routeId, distance, vanCharge }]
+    const routeList = res.data.map(r => ({
+      routeId: r.routeId,
+      distance: r.distance || 0,
+      vanCharge: r.vanCharge || 0,
+      label: `${r.distance} KM` // display distance
+    }));
+    setRoutes(routeList);
+    setShowRouteDropdown(routeList.length > 0);
+    return routeList;
+  } catch (err) {
+    console.error(err);
+    setRoutes([]);
+    setShowRouteDropdown(false);
+    return [];
+  }
+};
 
-  // Fetch Next PaymentId
+
+
   const fetchNextPaymentId = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/payments/latest");
       const nextId = res.data?.paymentId || "PAY001";
-      setPaymentData((prev) => ({ ...prev, paymentId: nextId }));
+      setPaymentData(prev => ({ ...prev, paymentId: nextId }));
     } catch (err) {
       console.error("Error getting paymentId:", err);
     }
@@ -90,21 +92,14 @@ const PaymentsMaster = () => {
     }
   }, [location.state]);
 
-  // Handle Student Select → Save as "Name - ID" + fetch class, section, roll
   const handleStudentChange = (selected) => {
     if (!selected) {
-      setPaymentData((prev) => ({
-        ...prev,
-        student: "",
-        className: "",
-        section: "",
-        rollNo: "",
-      }));
+      setPaymentData(prev => ({ ...prev, student: "", className: "", section: "", rollNo: "" }));
       return;
     }
-    const stu = students.find((s) => s._id === selected.value);
+    const stu = students.find(s => s._id === selected.value);
     const studentDisplay = `${stu?.studentName || stu?.name || ""} - ${stu?.studentId || ""}`;
-    setPaymentData((prev) => ({
+    setPaymentData(prev => ({
       ...prev,
       student: studentDisplay,
       className: stu?.className || "",
@@ -113,7 +108,6 @@ const PaymentsMaster = () => {
     }));
   };
 
-  // Fetch amount dynamically
   const fetchAmount = async (className, feeHeadName, routeId) => {
     if (!className || !feeHeadName) return 0;
     try {
@@ -127,12 +121,10 @@ const PaymentsMaster = () => {
     }
   };
 
-  // Handle FeeHead Multi-Select
   const handleFeeHeadChange = async (selected) => {
     const newHeads = selected || [];
-
-    // Check if transport is selected
     const hasTransport = newHeads.some(fh => fh.value.toLowerCase() === "transport");
+
     if (hasTransport) {
       await fetchRoutes();
     } else {
@@ -143,42 +135,20 @@ const PaymentsMaster = () => {
     const newFeeDetails = await Promise.all(
       newHeads.map(async (fh) => {
         const routeId = fh.value.toLowerCase() === "transport"
-          ? (paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "transport")?.routeId || "")
+          ? paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "transport")?.routeId || ""
           : undefined;
         const amount = await fetchAmount(paymentData.className, fh.value, routeId);
-        return {
-          feeHead: fh.value,
-          amount,
-          routeId: routeId || "",
-        };
+        return { feeHead: fh.value, amount, routeId: routeId || "" };
       })
     );
 
     const total = newFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-    setPaymentData((prev) => ({
-      ...prev,
-      feeDetails: newFeeDetails,
-      totalAmount: total,
-    }));
+    setPaymentData(prev => ({ ...prev, feeDetails: newFeeDetails, totalAmount: total }));
   };
 
-  // Handle Amount Change (per head)
-  const handleAmountChange = (feeHead, value) => {
-    const updatedFeeDetails = paymentData.feeDetails.map((f) =>
-      f.feeHead === feeHead ? { ...f, amount: Number(value) } : f
-    );
-    const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-    setPaymentData((prev) => ({
-      ...prev,
-      feeDetails: updatedFeeDetails,
-      totalAmount: total,
-    }));
-  };
-
-  // Handle Route Change for Transport Fee
   const handleRouteChange = async (routeId) => {
     const updatedFeeDetails = await Promise.all(
-      paymentData.feeDetails.map(async (f) => {
+      paymentData.feeDetails.map(async f => {
         if (f.feeHead.toLowerCase() === "transport") {
           const amount = await fetchAmount(paymentData.className, f.feeHead, routeId);
           return { ...f, amount, routeId };
@@ -187,26 +157,25 @@ const PaymentsMaster = () => {
       })
     );
     const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-    setPaymentData((prev) => ({
-      ...prev,
-      feeDetails: updatedFeeDetails,
-      totalAmount: total,
-    }));
+    setPaymentData(prev => ({ ...prev, feeDetails: updatedFeeDetails, totalAmount: total }));
   };
 
-  // General Form Change
-  const handleChange = (e) => {
+  const handleAmountChange = (feeHead, value) => {
+    const updatedFeeDetails = paymentData.feeDetails.map(f =>
+      f.feeHead === feeHead ? { ...f, amount: Number(value) } : f
+    );
+    const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+    setPaymentData(prev => ({ ...prev, feeDetails: updatedFeeDetails, totalAmount: total }));
+  };
+
+  const handleChange = e => {
     const { name, value } = e.target;
-    setPaymentData({ ...paymentData, [name]: value });
+    setPaymentData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (
-      ["UPI", "Card", "NetBanking"].includes(paymentData.paymentMode) &&
-      !paymentData.transactionId
-    ) {
+    if (["UPI", "Card", "NetBanking"].includes(paymentData.paymentMode) && !paymentData.transactionId) {
       alert("Transaction ID required for this payment mode!");
       return;
     }
@@ -242,7 +211,7 @@ const PaymentsMaster = () => {
     }
   };
 
-  return (
+    return (
     <div className="min-h-screen bg-zinc-300 flex items-center justify-center">
       <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-6xl">
         <h2 className="text-2xl font-bold mb-6 text-center text-black">
@@ -306,23 +275,25 @@ const PaymentsMaster = () => {
             />
           </label>
 
-          {/* Route Dropdown for Transport */}
-          {showRouteDropdown && (
-            <label className="flex flex-col text-sm font-semibold text-black">
-              Route
-              <select
-                name="routeId"
-                value={paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "transport")?.routeId || ""}
-                onChange={(e) => handleRouteChange(e.target.value)}
-                className="border border-gray-400 p-1 rounded"
-              >
-                <option value="">--Select Route--</option>
-                {routes.map((r) => (
-                  <option key={r.routeId} value={r.routeId}>{r.routeName}</option>
-                ))}
-              </select>
-            </label>
-          )}
+
+        {showRouteDropdown && (
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Distance (KM)
+            <select
+              name="routeId"
+              value={paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "transport")?.routeId || ""}
+              onChange={async (e) => await handleRouteChange(e.target.value)}
+              className="border border-gray-400 p-1 rounded"
+            >
+              <option value="">--Select Distance--</option>
+              {routes.map(r => (
+                <option key={r.routeId} value={r.routeId}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
 
           {/* Amount per head */}
           {paymentData.feeDetails.map((f) => (
