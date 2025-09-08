@@ -132,15 +132,18 @@ const fetchRoutes = async () => {
       setRoutes([]);
     }
 
-    const newFeeDetails = await Promise.all(
-      newHeads.map(async (fh) => {
-        const routeId = fh.value.toLowerCase() === "transport"
-          ? paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "transport")?.routeId || ""
-          : undefined;
-        const amount = await fetchAmount(paymentData.className, fh.value, routeId);
-        return { feeHead: fh.value, amount, routeId: routeId || "" };
-      })
-    );
+   const newFeeDetails = await Promise.all(
+  newHeads.map(async (fh) => {
+    if (fh.value.toLowerCase() === "transport") {
+      // Transport starts with 0 until distance is chosen
+      return { feeHead: fh.value, amount: 0, routeId: "" };
+    } else {
+      const amount = await fetchAmount(paymentData.className, fh.value);
+      return { feeHead: fh.value, amount };
+    }
+  })
+);
+
 
     const total = newFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
     setPaymentData(prev => ({ ...prev, feeDetails: newFeeDetails, totalAmount: total }));
@@ -301,9 +304,10 @@ const fetchRoutes = async () => {
               {f.feeHead} Amount
               <input
                 type="number"
+                readOnly
                 value={f.amount}
                 onChange={(e) => handleAmountChange(f.feeHead, e.target.value)}
-                className="border border-gray-400 p-1 rounded"
+                className="border border-gray-400 p-1 rounded cursor-not-allowed"
               />
             </label>
           ))}
@@ -317,6 +321,7 @@ const fetchRoutes = async () => {
               <option value="UPI">UPI</option>
               <option value="Card">Card</option>
               <option value="NetBanking">Net Banking</option>
+              <option value="No Payment">No Payment</option>
             </select>
           </label>
 
