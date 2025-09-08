@@ -16,6 +16,7 @@ const PaymentsMaster = () => {
     totalAmount: 0,
     paymentMode: "",
     transactionId: "",
+    cardNumber: "",
     remarks: "",
     user: localStorage.getItem("userId") || "admin",
   });
@@ -331,71 +332,77 @@ const PaymentsMaster = () => {
     setPaymentData((prev) => ({ ...prev, [name]: value }));
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  if (
-    ["UPI", "Card", "NetBanking"].includes(paymentData.paymentMode) &&
-    !paymentData.transactionId
-  ) {
-    alert("Transaction ID required for this payment mode!");
-    return;
-  }
-
-  try {
-    //  check duplicate payment before save
-    const duplicateCheck = await axios.get(
-      "http://localhost:5000/api/payments/check-duplicate",
-      {
-        params: {
-          className: paymentData.className,
-          section: paymentData.section,
-          rollNo: paymentData.rollNo,
-        },
-      }
-    );
-
-    if (duplicateCheck.data.exists) {
-      alert(
-        `Receipt already exists for Class: ${paymentData.className}, Section: ${paymentData.section}, Roll No: ${paymentData.rollNo}`
-      );
+    if (
+      ["UPI", "NetBanking"].includes(paymentData.paymentMode) &&
+      !paymentData.transactionId
+    ) {
+      alert("Transaction ID required for this payment mode!");
       return;
     }
 
-    if (isEditMode) {
-      await axios.put(
-        `http://localhost:5000/api/payments/${paymentData._id}`,
-        paymentData
-      );
-      alert("Receipt updated successfully!");
-      navigate("/PaymentsList", { replace: true });
-    } else {
-      await axios.post("http://localhost:5000/api/payments", paymentData);
-      alert("Receipt saved successfully!");
-      await fetchNextPaymentId();
-      setPaymentData({
-        paymentId: "",
-        date: new Date().toISOString().split("T")[0],
-        student: "",
-        className: "",
-        section: "",
-        rollNo: "",
-        feeDetails: [],
-        totalAmount: 0,
-        paymentMode: "",
-        transactionId: "",
-        remarks: "",
-        user: localStorage.getItem("userId") || "admin",
-      });
-      setSectionOptions(initialSectionOptions);
-      setStudentOptions(initialStudentOptions);
-      navigate("/PaymentsList", { replace: true });
+    if (paymentData.paymentMode === "Card" && !paymentData.cardNumber) {
+      alert("Card Number required for Card payment!");
+      return;
     }
-  } catch (err) {
-    console.error("Save failed:", err.response?.data || err.message);
-    alert(err.response?.data?.error || "Error saving receipt");
-  }
-};
+
+    try {
+      //  check duplicate payment before save
+      const duplicateCheck = await axios.get(
+        "http://localhost:5000/api/payments/check-duplicate",
+        {
+          params: {
+            className: paymentData.className,
+            section: paymentData.section,
+            rollNo: paymentData.rollNo,
+          },
+        }
+      );
+
+      if (duplicateCheck.data.exists) {
+        alert(
+          `Receipt already exists for Class: ${paymentData.className}, Section: ${paymentData.section}, Roll No: ${paymentData.rollNo}`
+        );
+        return;
+      }
+
+      if (isEditMode) {
+        await axios.put(
+          `http://localhost:5000/api/payments/${paymentData._id}`,
+          paymentData
+        );
+        alert("Receipt updated successfully!");
+        navigate("/PaymentsList", { replace: true });
+      } else {
+        await axios.post("http://localhost:5000/api/payments", paymentData);
+        alert("Receipt saved successfully!");
+        await fetchNextPaymentId();
+        setPaymentData({
+          paymentId: "",
+          date: new Date().toISOString().split("T")[0],
+          student: "",
+          className: "",
+          section: "",
+          rollNo: "",
+          feeDetails: [],
+          totalAmount: 0,
+          paymentMode: "",
+          transactionId: "",
+          cardNumber: "",
+          remarks: "",
+          user: localStorage.getItem("userId") || "admin",
+        });
+        setSectionOptions(initialSectionOptions);
+        setStudentOptions(initialStudentOptions);
+        navigate("/PaymentsList", { replace: true });
+      }
+    } catch (err) {
+      console.error("Save failed:", err.response?.data || err.message);
+      alert(err.response?.data?.error || "Error saving receipt");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-zinc-300 flex items-center justify-center">
@@ -404,17 +411,33 @@ const PaymentsMaster = () => {
           {isEditMode ? "Update Receipt" : "New Receipt"}
         </h2>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <form
+          onSubmit={handleSubmit}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+        >
           {/* Payment Id */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Payment Id
-            <input type="text" name="paymentId" value={paymentData.paymentId} readOnly className="border border-gray-400 p-1 rounded bg-gray-100" />
+            <input
+              type="text"
+              name="paymentId"
+              value={paymentData.paymentId}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
+            />
           </label>
 
           {/* Date */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Date
-            <input type="date" name="date" value={paymentData.date} onChange={handleChange} className="border border-gray-400 p-1 rounded" required />
+            <input
+              type="date"
+              name="date"
+              value={paymentData.date}
+              onChange={handleChange}
+              className="border border-gray-400 p-1 rounded"
+              required
+            />
           </label>
 
           {/* Class */}
@@ -423,7 +446,9 @@ const PaymentsMaster = () => {
             <Select
               options={classOptions}
               onChange={handleClassChange}
-              value={classOptions.find((c) => c.value === paymentData.className) || null}
+              value={
+                classOptions.find((c) => c.value === paymentData.className) || null
+              }
               placeholder="Select Class..."
               isClearable
             />
@@ -435,7 +460,9 @@ const PaymentsMaster = () => {
             <Select
               options={sectionOptions}
               onChange={handleSectionChange}
-              value={sectionOptions.find((s) => s.value === paymentData.section) || null}
+              value={
+                sectionOptions.find((s) => s.value === paymentData.section) || null
+              }
               placeholder="Select Section..."
               isClearable
             />
@@ -447,7 +474,10 @@ const PaymentsMaster = () => {
             <Select
               options={studentOptions}
               onChange={handleStudentChange}
-              value={studentOptions.find((opt) => opt.label === paymentData.student) || null}
+              value={
+                studentOptions.find((opt) => opt.label === paymentData.student) ||
+                null
+              }
               placeholder="Search Student..."
               isSearchable
               isClearable
@@ -457,7 +487,13 @@ const PaymentsMaster = () => {
           {/* Roll No */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Roll No
-            <input type="text" name="rollNo" value={paymentData.rollNo} readOnly className="border border-gray-400 p-1 rounded bg-gray-100" />
+            <input
+              type="text"
+              name="rollNo"
+              value={paymentData.rollNo}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
+            />
           </label>
 
           {/* Fee Heads Multi-select */}
@@ -465,9 +501,15 @@ const PaymentsMaster = () => {
             Fee Heads
             <Select
               isMulti
-              options={feeHeads.map((fh) => ({ value: fh.feeHeadName, label: fh.feeHeadName }))}
+              options={feeHeads.map((fh) => ({
+                value: fh.feeHeadName,
+                label: fh.feeHeadName,
+              }))}
               onChange={handleFeeHeadChange}
-              value={paymentData.feeDetails.map((f) => ({ value: f.feeHead, label: f.feeHead }))}
+              value={paymentData.feeDetails.map((f) => ({
+                value: f.feeHead,
+                label: f.feeHead,
+              }))}
               placeholder="Select Fee Heads..."
               isSearchable
             />
@@ -478,7 +520,11 @@ const PaymentsMaster = () => {
               Distance (KM)
               <select
                 name="routeId"
-                value={paymentData.feeDetails.find((f) => f.feeHead.toLowerCase() === "transport")?.routeId || ""}
+                value={
+                  paymentData.feeDetails.find(
+                    (f) => f.feeHead.toLowerCase() === "transport"
+                  )?.routeId || ""
+                }
                 onChange={async (e) => await handleRouteChange(e.target.value)}
                 className="border border-gray-400 p-1 rounded"
               >
@@ -494,16 +540,31 @@ const PaymentsMaster = () => {
 
           {/* Amount per head */}
           {paymentData.feeDetails.map((f) => (
-            <label key={f.feeHead} className="flex flex-col text-sm font-semibold text-black">
+            <label
+              key={f.feeHead}
+              className="flex flex-col text-sm font-semibold text-black"
+            >
               {f.feeHead} Amount
-              <input type="number" readOnly value={f.amount} onChange={(e) => handleAmountChange(f.feeHead, e.target.value)} className="border border-gray-400 p-1 rounded cursor-not-allowed" />
+              <input
+                type="number"
+                readOnly
+                value={f.amount}
+                onChange={(e) => handleAmountChange(f.feeHead, e.target.value)}
+                className="border border-gray-400 p-1 rounded cursor-not-allowed"
+              />
             </label>
           ))}
 
           {/* Payment Mode */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Payment Mode
-            <select name="paymentMode" value={paymentData.paymentMode} onChange={handleChange} className="border border-gray-400 p-1 rounded" required>
+            <select
+              name="paymentMode"
+              value={paymentData.paymentMode}
+              onChange={handleChange}
+              className="border border-gray-400 p-1 rounded"
+              required
+            >
               <option value="">-- Select Mode --</option>
               <option value="Cash">Cash</option>
               <option value="UPI">UPI</option>
@@ -513,34 +574,84 @@ const PaymentsMaster = () => {
             </select>
           </label>
 
-          {/* Transaction ID */}
-          <label className="flex flex-col text-sm col-span-2 font-semibold text-black">
-            Transaction ID
-            <input type="text" name="transactionId" value={paymentData.transactionId} onChange={handleChange} placeholder="Txn ID / Ref No" className="border border-gray-400 p-1 rounded" />
-          </label>
+          {/* Transaction ID (only for UPI & NetBanking) */}
+          {["UPI", "NetBanking"].includes(paymentData.paymentMode) && (
+            <label className="flex flex-col text-sm col-span-2 font-semibold text-black">
+              Transaction ID
+              <input
+                type="text"
+                name="transactionId"
+                value={paymentData.transactionId}
+                onChange={handleChange}
+                placeholder="Txn ID / Ref No"
+                className="border border-gray-400 p-1 rounded"
+              />
+            </label>
+          )}
+
+          {/* Card Number (only for Card) */}
+          {paymentData.paymentMode === "Card" && (
+            <label className="flex flex-col text-sm col-span-2 font-semibold text-black">
+              Card Number
+              <input
+                type="text"
+                name="cardNumber"
+                value={paymentData.cardNumber}
+                onChange={handleChange}
+                placeholder="Enter Card Number"
+                className="border border-gray-400 p-1 rounded"
+              />
+            </label>
+          )}
 
           {/* Total Amount */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Total Amount
-            <input type="number" name="totalAmount" value={paymentData.totalAmount} readOnly className="border border-gray-400 p-1 rounded bg-gray-100" />
+            <input
+              type="number"
+              name="totalAmount"
+              value={paymentData.totalAmount}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
+            />
           </label>
 
           {/* Remarks */}
           <label className="flex flex-col text-sm font-semibold text-black col-span-2 lg:col-span-2">
             Remarks
-            <input type="text" name="remarks" value={paymentData.remarks} onChange={handleChange} placeholder="Remarks" className="border border-gray-400 p-1 rounded" />
+            <input
+              type="text"
+              name="remarks"
+              value={paymentData.remarks}
+              onChange={handleChange}
+              placeholder="Remarks"
+              className="border border-gray-400 p-1 rounded"
+            />
           </label>
 
           {/* Collected By */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Collected By
-            <input type="text" name="user" value={paymentData.user} readOnly className="border border-gray-400 p-1 rounded bg-gray-100" />
+            <input
+              type="text"
+              name="user"
+              value={paymentData.user}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
+            />
           </label>
 
           {/* Buttons */}
           <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex justify-between mt-4">
             <BackButton />
-            <button type="submit" className={`px-6 py-1 rounded text-white ${isEditMode ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"}`}>
+            <button
+              type="submit"
+              className={`px-6 py-1 rounded text-white ${
+                isEditMode
+                  ? "bg-yellow-500 hover:bg-yellow-600"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
+            >
               {isEditMode ? "Update" : "Save"}
             </button>
           </div>
@@ -551,7 +662,3 @@ const PaymentsMaster = () => {
 };
 
 export default PaymentsMaster;
-
-
-
-
