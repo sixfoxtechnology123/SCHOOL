@@ -5,7 +5,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 
 const FeeStructureMaster = () => {
   const [feeData, setFeeData] = useState({
-    _id: "",             // <-- Add _id to state
+    _id: "",
     feeStructId: "",
     classId: "",
     feeHeadId: "",
@@ -17,7 +17,6 @@ const FeeStructureMaster = () => {
   const [classes, setClasses] = useState([]);
   const [feeHeads, setFeeHeads] = useState([]);
   const [routes, setRoutes] = useState([]);
-  const [showRouteDropdown, setShowRouteDropdown] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const location = useLocation();
@@ -29,7 +28,7 @@ const FeeStructureMaster = () => {
     try {
       const [clsRes, fhRes] = await Promise.all([
         axios.get("http://localhost:5000/api/classes"),
-        axios.get("http://localhost:5000/api/feeheads")
+        axios.get("http://localhost:5000/api/feeheads"),
       ]);
       setClasses(clsRes.data || []);
       setFeeHeads(fhRes.data || []);
@@ -42,7 +41,10 @@ const FeeStructureMaster = () => {
   const fetchNextId = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/fees/latest");
-      setFeeData(prev => ({ ...prev, feeStructId: res.data?.feeStructId || "FEES001" }));
+      setFeeData((prev) => ({
+        ...prev,
+        feeStructId: res.data?.feeStructId || "FEES001",
+      }));
     } catch (err) {
       console.error(err);
     }
@@ -51,34 +53,34 @@ const FeeStructureMaster = () => {
   // Fetch transport routes
   const fetchRoutes = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
-      const routeList = res.data.map(r => ({
+      const res = await axios.get(
+        "http://localhost:5000/api/fees/transport/routes"
+      );
+      const routeList = res.data.map((r) => ({
         routeId: r.routeId,
-        routeName: r.routeName,
-        vanCharge: r.vanCharge
+        distance: r.distance, // <-- FIXED: use distance instead of routeName
+        vanCharge: r.vanCharge,
       }));
       setRoutes(routeList);
-      setShowRouteDropdown(routeList.length > 0);
       return routeList;
     } catch (err) {
       console.error(err);
       setRoutes([]);
-      setShowRouteDropdown(false);
       return [];
     }
   };
 
-  // Fetch amount dynamically from backend
+  // Fetch amount dynamically (non-transport)
   const fetchAmount = async (classId, feeHeadId, routeId) => {
     if (!classId || !feeHeadId) return;
     try {
       const res = await axios.get("http://localhost:5000/api/fees/get-amount", {
-        params: { classId, feeHeadId, routeId: routeId || undefined }
+        params: { classId, feeHeadId, routeId: routeId || undefined },
       });
-      setFeeData(prev => ({ ...prev, amount: res.data.amount || 0 }));
+      setFeeData((prev) => ({ ...prev, amount: res.data.amount || '' }));
     } catch (err) {
       console.error(err);
-      setFeeData(prev => ({ ...prev, amount: 0 }));
+      setFeeData((prev) => ({ ...prev, amount: 0 }));
     }
   };
 
@@ -90,23 +92,32 @@ const FeeStructureMaster = () => {
       if (feeItem) {
         setIsEditMode(true);
 
-        // Check if fee head is transport
         const selectedFeeHead = feeItem.feeHeadId
-          ? (await axios.get("http://localhost:5000/api/feeheads")).data.find(fh => fh.feeHeadId === feeItem.feeHeadId)
+          ? (await axios.get("http://localhost:5000/api/feeheads")).data.find(
+              (fh) => fh.feeHeadId === feeItem.feeHeadId
+            )
           : null;
 
         let routeList = [];
-        if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
+        if (
+          selectedFeeHead &&
+          selectedFeeHead.feeHeadName.toLowerCase() === "transport"
+        ) {
           routeList = await fetchRoutes();
         }
 
         setFeeData({
-          _id: feeItem._id, // <-- Important: include _id for update
+          _id: feeItem._id,
           feeStructId: feeItem.feeStructId,
           classId: feeItem.classId,
           feeHeadId: feeItem.feeHeadId,
           routeId: feeItem.routeId || "",
-          amount: feeItem.amount || (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport" ? (routeList.find(r => r.routeId === feeItem.routeId)?.vanCharge || 0) : 0)
+          amount:
+            feeItem.amount ||
+            (selectedFeeHead &&
+            selectedFeeHead.feeHeadName.toLowerCase() === "transport"
+              ? routeList.find((r) => r.routeId === feeItem.routeId)?.vanCharge || ''
+              : 0),
         });
       } else {
         fetchNextId();
@@ -120,25 +131,31 @@ const FeeStructureMaster = () => {
 
   // Show/hide route dropdown when feeHead changes
   useEffect(() => {
-    const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId);
+    const selectedFeeHead = feeHeads.find(
+      (fh) => fh.feeHeadId === feeData.feeHeadId
+    );
     if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
       fetchRoutes();
     } else {
       setRoutes([]);
-      setShowRouteDropdown(false);
-      setFeeData(prev => ({ ...prev, routeId: "", amount: prev.amount || 0 }));
+      setFeeData((prev) => ({ ...prev, routeId: "", amount: prev.amount || '' }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feeData.feeHeadId]);
 
-  // Update amount whenever class, feeHead, or route changes
+  // Update amount when class, feeHead, or route changes
   useEffect(() => {
-    const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId);
+    const selectedFeeHead = feeHeads.find(
+      (fh) => fh.feeHeadId === feeData.feeHeadId
+    );
     if (!selectedFeeHead) return;
 
     if (selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
-      const selectedRoute = routes.find(r => r.routeId === feeData.routeId);
-      setFeeData(prev => ({ ...prev, amount: selectedRoute ? selectedRoute.vanCharge : 0 }));
+      const selectedRoute = routes.find((r) => r.routeId === feeData.routeId);
+      setFeeData((prev) => ({
+        ...prev,
+        amount: selectedRoute ? selectedRoute.vanCharge : '',
+      }));
     } else {
       fetchAmount(feeData.classId, feeData.feeHeadId);
     }
@@ -147,7 +164,7 @@ const FeeStructureMaster = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFeeData(prev => ({ ...prev, [name]: value }));
+    setFeeData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -179,43 +196,94 @@ const FeeStructureMaster = () => {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-2">
           <div>
             <label className="block font-medium">Fee Struct ID</label>
-            <input type="text" name="feeStructId" value={feeData.feeStructId} readOnly className="w-full border border-gray-300 p-1 rounded bg-gray-100" />
+            <input
+              type="text"
+              name="feeStructId"
+              value={feeData.feeStructId}
+              readOnly
+              className="w-full border border-gray-300 p-1 rounded bg-gray-100"
+            />
           </div>
 
           <div>
             <label className="block font-medium">Class</label>
-            <select name="classId" value={feeData.classId} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded" required>
+            <select
+              name="classId"
+              value={feeData.classId}
+              onChange={handleChange}
+              className="w-full border border-gray-300 p-1 rounded"
+              required
+            >
               <option value="">--Select--</option>
-              {classes.map(c => <option key={c.classId} value={c.classId}>{c.className}</option>)}
+              {classes.map((c) => (
+                <option key={c.classId} value={c.classId}>
+                  {c.className}
+                </option>
+              ))}
             </select>
           </div>
 
           <div>
             <label className="block font-medium">Fee Head</label>
-            <select name="feeHeadId" value={feeData.feeHeadId} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded" required>
+            <select
+              name="feeHeadId"
+              value={feeData.feeHeadId}
+              onChange={handleChange}
+              className="w-full border border-gray-300 p-1 rounded"
+              required
+            >
               <option value="">--Select--</option>
-              {feeHeads.map(fh => <option key={fh.feeHeadId} value={fh.feeHeadId}>{fh.feeHeadName}</option>)}
+              {feeHeads.map((fh) => (
+                <option key={fh.feeHeadId} value={fh.feeHeadId}>
+                  {fh.feeHeadName}
+                </option>
+              ))}
             </select>
           </div>
 
-          {showRouteDropdown && (
+          {/* Transport Distance Dropdown */}
+          {routes.length > 0 && (
             <div>
-              <label className="block font-medium">Route</label>
-              <select name="routeId" value={feeData.routeId} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded">
-                <option value="">--Select Route--</option>
-                {routes.map(r => <option key={r.routeId} value={r.routeId}>{r.routeName}</option>)}
+              <label className="block font-medium">Distance (KM)</label>
+              <select
+                name="routeId"
+                value={feeData.routeId}
+                onChange={handleChange}
+                className="w-full border border-gray-300 p-1 rounded"
+                required
+              >
+                <option value="">--Select Distance--</option>
+                {routes.map((r) => (
+                  <option key={r.routeId} value={r.routeId}>
+                    {r.distance} {/* Will now show "0-5 KM", "6-10 KM", etc. */}
+                  </option>
+                ))}
               </select>
             </div>
           )}
 
           <div>
             <label className="block font-medium">Amount</label>
-            <input type="number" name="amount" value={feeData.amount} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded" required />
+            <input
+              type="number"
+              name="amount"
+              value={feeData.amount}
+              onChange={handleChange}
+              className="w-full border border-gray-300 p-1 rounded"
+              required
+            />
           </div>
 
           <div className="flex justify-between">
             <BackButton />
-            <button type="submit" className={`px-4 py-1 rounded text-white ${isEditMode ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"}`}>
+            <button
+              type="submit"
+              className={`px-4 py-1 rounded text-white ${
+                isEditMode
+                  ? "bg-yellow-500 hover:bg-yellow-600"
+                  : "bg-green-600 hover:bg-green-700"
+              }`}
+            >
               {isEditMode ? "Update" : "Save"}
             </button>
           </div>

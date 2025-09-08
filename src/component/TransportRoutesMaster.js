@@ -109,6 +109,10 @@ const TransportRoutesMaster = () => {
               <option value="6-10">6-10 KM</option>
               <option value="11-15">11-15 KM</option>
               <option value="16-20">16-20 KM</option>
+              <option value="21-25">21-25 KM</option>
+              <option value="26-30">26-30 KM</option>
+              <option value="31-35">31-35 KM</option>
+              <option value="36-40">36-40 KM</option>
             </select>
           </div>
 

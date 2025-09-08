@@ -1,4 +1,3 @@
-// pages/FeeStructureList.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -16,7 +15,7 @@ const FeeStructureList = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Fetch Class, FeeHead, and Transport Routes first
+  // Fetch dropdowns and routes
   const fetchDropdownsAndRoutes = async () => {
     try {
       const [clsRes, fhRes, routeRes] = await Promise.all([
@@ -32,84 +31,69 @@ const FeeStructureList = () => {
     }
   };
 
-  // Fetch Fee Structures and attach amount and routeName
-  const fetchFeeStructures = async () => {
+  // Fetch raw fee structures
+  const fetchRawFees = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/fees");
-      const feesWithAmount = await Promise.all(
-        res.data.map(async (fee) => {
-          try {
-            let amount = 0;
-            let routeName = "-";
-
-            const feeHead = feeHeads.find(fh => fh.feeHeadId === fee.feeHeadId);
-
-            if (feeHead && feeHead.feeHeadName.toLowerCase() === "transport" && fee.routeId) {
-              const route = routes.find(r => r.routeId === fee.routeId);
-              if (route) {
-                amount = route.vanCharge;
-                routeName = route.routeName;
-              }
-            } else {
-              const amtRes = await axios.get(
-                `http://localhost:5000/api/fees/get-amount?classId=${fee.classId}&feeHeadId=${fee.feeHeadId}`
-              );
-              amount = amtRes.data.amount || 0;
-            }
-
-            return { ...fee, amount, routeName };
-          } catch (err) {
-            console.error("Failed to fetch amount/route for fee:", fee, err);
-            return { ...fee, amount: fee.amount || 0, routeName: "-" };
-          }
-        })
-      );
-      setFees(feesWithAmount);
+      setFees(res.data);
     } catch (err) {
       console.error("Failed to fetch fee structures:", err);
     }
   };
 
+  // Load dropdowns first
   useEffect(() => {
-    // First fetch classes, fee heads, and routes, then fetch fees
-    fetchDropdownsAndRoutes().then(() => fetchFeeStructures());
+    fetchDropdownsAndRoutes();
+    fetchRawFees();
   }, [location.key]);
 
-  // Delete Fee Structure
+  // Map amount and distance whenever fees, feeHeads, or routes change
+  const mappedFees = fees.map(fee => {
+    let amount = "";
+    let distance = "-";
+
+    const feeHead = feeHeads.find(fh => fh.feeHeadId === fee.feeHeadId);
+
+    if (feeHead) {
+      if (feeHead.feeHeadName.toLowerCase() === "transport" && fee.routeId) {
+        const route = routes.find(r => r.routeId === fee.routeId);
+        if (route) {
+          amount = route.vanCharge || "";
+          distance = route.distance || "-";
+        }
+      } else {
+        // Non-transport fee
+        amount = fee.amount !== undefined ? fee.amount : "";
+      }
+    }
+
+    return { ...fee, amount, distance };
+  });
+
   const deleteFee = async (id) => {
     if (!window.confirm("Are you sure you want to delete this Fee Structure?")) return;
     try {
       await axios.delete(`http://localhost:5000/api/fees/${id}`);
-      setFees((prev) => prev.filter((f) => f._id !== id));
+      setFees(prev => prev.filter(f => f._id !== id));
     } catch (err) {
       console.error("Failed to delete Fee Structure:", err);
     }
   };
 
-  // Helpers for display
   const getClassName = (classId) => {
-    const cls = classes.find((c) => c.classId === classId);
+    const cls = classes.find(c => c.classId === classId);
     return cls ? cls.className : classId;
   };
 
   const getFeeHeadName = (feeHeadId) => {
-    const fh = feeHeads.find((f) => f.feeHeadId === feeHeadId);
+    const fh = feeHeads.find(f => f.feeHeadId === feeHeadId);
     return fh ? fh.feeHeadName : feeHeadId;
   };
 
-  const getRouteName = (routeId) => {
-    const route = routes.find(r => r.routeId === routeId);
-    return route ? route.routeName : "-";
-  };
-
-  // Filtered fees based on search term
-  const filteredFees = fees.filter((fee) => {
+  const filteredFees = mappedFees.filter(fee => {
     const className = getClassName(fee.classId).toLowerCase();
     const feeHeadName = getFeeHeadName(fee.feeHeadId).toLowerCase();
-    return (
-      className.includes(searchTerm.toLowerCase()) ||
-      feeHeadName.includes(searchTerm.toLowerCase())
-    );
+    return className.includes(searchTerm.toLowerCase()) || feeHeadName.includes(searchTerm.toLowerCase());
   });
 
   return (
@@ -147,29 +131,23 @@ const FeeStructureList = () => {
                 <th className="border border-green-500 px-2 py-1">Class</th>
                 <th className="border border-green-500 px-2 py-1">Fee Head</th>
                 <th className="border border-green-500 px-2 py-1">Amount</th>
-                <th className="border border-green-500 px-2 py-1">Transport Route</th>
+                <th className="border border-green-500 px-2 py-1">Distance (KM)</th>
                 <th className="border border-green-500 px-2 py-1">Action</th>
               </tr>
             </thead>
             <tbody className="text-sm text-center">
               {filteredFees.length > 0 ? (
-                filteredFees.map((fee) => (
+                filteredFees.map(fee => (
                   <tr key={fee._id} className="hover:bg-gray-100 transition">
                     <td className="border border-green-500 px-2 py-1">{fee.feeStructId}</td>
                     <td className="border border-green-500 px-2 py-1">{getClassName(fee.classId)}</td>
                     <td className="border border-green-500 px-2 py-1">{getFeeHeadName(fee.feeHeadId)}</td>
                     <td className="border border-green-500 px-2 py-1">{fee.amount}</td>
-                    <td className="border border-green-500 px-2 py-1">
-                      {getFeeHeadName(fee.feeHeadId).toLowerCase() === "transport"
-                        ? getRouteName(fee.routeId)
-                        : "-"}
-                    </td>
+                    <td className="border border-green-500 px-2 py-1">{fee.distance}</td>
                     <td className="border border-green-500 px-2 py-1 text-center">
                       <div className="flex justify-center items-center gap-4">
                         <button
-                          onClick={() =>
-                            navigate("/FeeStructureMaster", { state: { feeItem: fee } })
-                          }
+                          onClick={() => navigate("/FeeStructureMaster", { state: { feeItem: fee } })}
                           className="text-blue-600 hover:text-blue-800"
                         >
                           <FaEdit />

@@ -7,9 +7,10 @@ const {
   updateFeeStructure,
   deleteFeeStructure,
   getFeeAmount,
-  getAllTransportRoutes, // <-- added
+  getAllTransportRoutes,
 } = require("../controller/feeStructureController");
 
+// Fee Structure endpoints
 router.get("/", getAllFeeStructures);
 router.get("/latest", getLatestFeeStructId);
 router.post("/", createFeeStructure);
@@ -17,7 +18,7 @@ router.put("/:id", updateFeeStructure);
 router.delete("/:id", deleteFeeStructure);
 router.get("/get-amount", getFeeAmount);
 
-// NEW endpoint for transport routes
+// Transport Routes endpoint
 router.get("/transport/routes", getAllTransportRoutes);
 
 module.exports = router;

@@ -1,8 +1,8 @@
 const FeeStructure = require("../models/FeeStructure");
-const TransportRoute = require("../models/TransportRoute"); // <-- import transport model
+const TransportRoute = require("../models/TransportRoute");
 
 const PREFIX = "FEES";
-const PAD = 3; // FEES001, FEES002
+const PAD = 3;
 
 // Generate next FeeStructID
 async function generateNextFeeStructId() {
@@ -33,11 +33,12 @@ exports.getAllFeeStructures = async (_req, res) => {
   }
 };
 
-// Get Fee Amount by Class, FeeHead, and optional Route
+// Get Fee Amount
 exports.getFeeAmount = async (req, res) => {
   try {
     const { classId, feeHeadId, routeId } = req.query;
-    if (!classId || !feeHeadId) return res.status(400).json({ error: "classId and feeHeadId are required" });
+    if (!classId || !feeHeadId)
+      return res.status(400).json({ error: "classId and feeHeadId are required" });
 
     const isTransport = feeHeadId.toLowerCase().includes("transport");
     if (isTransport && routeId) {
@@ -57,7 +58,8 @@ exports.getFeeAmount = async (req, res) => {
 exports.createFeeStructure = async (req, res) => {
   try {
     const { classId, feeHeadId, routeId, amount } = req.body;
-    if (!classId || !feeHeadId || !amount) return res.status(400).json({ error: "All fields are required" });
+    if (!classId || !feeHeadId || !amount)
+      return res.status(400).json({ error: "All fields are required" });
 
     const feeStructId = await generateNextFeeStructId();
     const doc = new FeeStructure({ feeStructId, classId, feeHeadId, routeId, amount });
@@ -78,6 +80,7 @@ exports.updateFeeStructure = async (req, res) => {
 
     const updated = await FeeStructure.findByIdAndUpdate(id, payload, { new: true });
     if (!updated) return res.status(404).json({ error: "Fee Structure not found" });
+
     res.json(updated);
   } catch (err) {
     console.error(err);
@@ -91,6 +94,7 @@ exports.deleteFeeStructure = async (req, res) => {
     const { id } = req.params;
     const deleted = await FeeStructure.findByIdAndDelete(id);
     if (!deleted) return res.status(404).json({ error: "Fee Structure not found" });
+
     res.json({ message: "Fee Structure deleted successfully" });
   } catch (err) {
     console.error(err);
@@ -98,18 +102,21 @@ exports.deleteFeeStructure = async (req, res) => {
   }
 };
 
-// NEW: Get all transport routes
+// Get all Transport Routes (with distance)
 exports.getAllTransportRoutes = async (_req, res) => {
   try {
     const routes = await TransportRoute.find().lean();
+    // Map to include KM in distance
     const formattedRoutes = routes.map(r => ({
       routeId: r.routeId,
-      routeName: r.routeName,
+      distance: r.distance + " KM", // append KM
       vanCharge: r.vanCharge,
     }));
+    // console.log("Transport Routes:", formattedRoutes); // debug
     res.json(formattedRoutes);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch transport routes" });
   }
 };
+
