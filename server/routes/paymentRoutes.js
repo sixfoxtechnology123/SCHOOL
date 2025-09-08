@@ -1,22 +1,40 @@
+// ======= server/routes/payments.js =======
 const express = require("express");
 const router = express.Router();
-const {
-  getAllPayments,
-  getLatestPaymentId,
-  createPayment,
-  updatePayment,
-  deletePayment,
-  getAllStudents,
-  getFeeAmount,
-} = require("../controller/paymentController");
+
+const controller = require("../controller/paymentController");
+const Payment = require("../models/Payment"); //  need this for duplicate check
 
 // Payment Routes
-router.get("/", getAllPayments);
-router.get("/latest", getLatestPaymentId);
-router.get("/students", getAllStudents);
-router.get("/fee-amount", getFeeAmount); // routeId optional query param
-router.post("/", createPayment);
-router.put("/:id", updatePayment);
-router.delete("/:id", deletePayment);
+router.get("/", controller.getAllPayments);
+router.get("/latest", controller.getLatestPaymentId);
+router.get("/students", controller.getAllStudents);
+router.get("/fee-amount", controller.getFeeAmount);
+
+// New routes
+router.get("/sections", controller.getSectionsByClass);
+router.get("/students-by-class-section", controller.getStudentsByClassAndSection);
+router.get("/classes", controller.getAllClasses);
+
+// Duplicate check route
+router.get("/check-duplicate", async (req, res) => {
+  try {
+    const { className, section, rollNo } = req.query;
+    if (!className || !section || !rollNo) {
+      return res.status(400).json({ error: "className, section, and rollNo required" });
+    }
+
+    const existing = await Payment.findOne({ className, section, rollNo });
+    res.json({ exists: !!existing });
+  } catch (err) {
+    console.error("Error checking duplicate:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+// CRUD routes
+router.post("/", controller.createPayment);
+router.put("/:id", controller.updatePayment);
+router.delete("/:id", controller.deletePayment);
 
 module.exports = router;
