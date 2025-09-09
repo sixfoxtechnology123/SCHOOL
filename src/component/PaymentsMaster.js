@@ -23,7 +23,6 @@ const PaymentsMaster = () => {
 
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // raw data
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
@@ -31,7 +30,6 @@ const PaymentsMaster = () => {
   const [routes, setRoutes] = useState([]);
   const [showRouteDropdown, setShowRouteDropdown] = useState(false);
 
-  // select options
   const [classOptions, setClassOptions] = useState([]);
   const [sectionOptions, setSectionOptions] = useState([]);
   const [studentOptions, setStudentOptions] = useState([]);
@@ -62,7 +60,8 @@ const PaymentsMaster = () => {
       setStudentOptions(stuOpts);
       setInitialStudentOptions(stuOpts);
 
-      const classData = classRes.data || [];
+      // Sort classes alphabetically and remove duplicates
+      const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
       setClasses(classData);
       setClassOptions(classData.map((c) => ({ value: c, label: c })));
 
@@ -89,12 +88,12 @@ const PaymentsMaster = () => {
   const fetchRoutes = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
-    const routeList = res.data.map((r) => ({
-      routeId: r.routeId,
-      distance: r.distance || 0,
-      vanCharge: r.vanCharge || 0,
-      label: r.distance.toString().includes("KM") ? r.distance : `${r.distance} KM`,
-    }));
+      const routeList = res.data.map((r) => ({
+        routeId: r.routeId,
+        distance: r.distance || 0,
+        vanCharge: r.vanCharge || 0,
+        label: r.distance.toString().includes("KM") ? r.distance : `${r.distance} KM`,
+      }));
 
       setRoutes(routeList);
       setShowRouteDropdown(routeList.length > 0);
@@ -158,6 +157,7 @@ const PaymentsMaster = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
+  // Rest of the code remains unchanged...
   const handleClassChange = (selected) => {
     if (!selected) {
       setPaymentData((prev) => ({
@@ -242,7 +242,6 @@ const PaymentsMaster = () => {
     );
   };
 
-  // 🔹 Modified: Auto-fill Class, Section, Roll when Student is selected
   const handleStudentChange = (selected) => {
     if (!selected) {
       setPaymentData((prev) => ({ ...prev, student: "", rollNo: "", className: "", section: "" }));
@@ -263,6 +262,7 @@ const PaymentsMaster = () => {
       }));
     }
   };
+
 
   const fetchAmount = async (className, feeHeadName, routeId) => {
     if (!className || !feeHeadName) return 0;

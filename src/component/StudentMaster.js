@@ -21,10 +21,38 @@ const StudentMaster = () => {
   const [classes, setClasses] = useState([]);
   const [uniqueClasses, setUniqueClasses] = useState([]);
   const [filteredSections, setFilteredSections] = useState([]);
-  const [students, setStudents] = useState([]); // ✅ store all students for validation
+  const [students, setStudents] = useState([]);
 
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Convert Roman numeral to number
+  const romanToNumber = (roman) => {
+    const map = {
+      I: 1,
+      II: 2,
+      III: 3,
+      IV: 4,
+      V: 5,
+      VI: 6,
+      VII: 7,
+      VIII: 8,
+      IX: 9,
+      X: 10,
+      XI: 11,
+      XII: 12,
+    };
+    return map[roman] || 0;
+  };
+
+  // Sort classes like Class-I, Class-II, Class-III
+  const sortClasses = (classArray) => {
+    return classArray.sort((a, b) => {
+      const romanA = a.split("-")[1]?.trim();
+      const romanB = b.split("-")[1]?.trim();
+      return romanToNumber(romanA) - romanToNumber(romanB);
+    });
+  };
 
   // Fetch Classes
   const fetchClasses = async () => {
@@ -33,15 +61,15 @@ const StudentMaster = () => {
       const data = res.data || [];
       setClasses(data);
 
-      // ✅ Extract unique class names
+      // Extract unique class names and sort
       const unique = [...new Set(data.map((c) => c.className))];
-      setUniqueClasses(unique);
+      setUniqueClasses(sortClasses(unique));
     } catch (err) {
       console.error("Error fetching classes:", err);
     }
   };
 
-  // Fetch All Students (for validation)
+  // Fetch All Students
   const fetchStudents = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/students");
@@ -101,13 +129,12 @@ const StudentMaster = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ Validation: prevent duplicate class + section + rollNo
     const isDuplicate = students.some(
       (s) =>
         s.className === studentData.className &&
         s.section === studentData.section &&
         s.rollNo.toString() === studentData.rollNo.toString() &&
-        (!isEditMode || s._id !== studentData._id) // allow same student when editing
+        (!isEditMode || s._id !== studentData._id)
     );
 
     if (isDuplicate) {
@@ -127,7 +154,7 @@ const StudentMaster = () => {
         await axios.post("http://localhost:5000/api/students", studentData);
         alert("Student saved successfully!");
         fetchNextStudentId();
-        fetchStudents(); // refresh students after save
+        fetchStudents();
         setStudentData({
           studentId: "",
           name: "",
@@ -155,12 +182,10 @@ const StudentMaster = () => {
           {isEditMode ? "Update Student" : "Student"}
         </h2>
 
-        {/* Responsive Grid: 1 col (mobile), 2 cols (tablet), 4 cols (desktop) */}
         <form
           onSubmit={handleSubmit}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          {/* Student ID */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Student ID
             <input
@@ -172,7 +197,6 @@ const StudentMaster = () => {
             />
           </label>
 
-          {/* Name */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Name
             <input
@@ -186,7 +210,6 @@ const StudentMaster = () => {
             />
           </label>
 
-          {/* Class Name */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Class
             <select
@@ -205,7 +228,6 @@ const StudentMaster = () => {
             </select>
           </label>
 
-          {/* Section */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Section
             <select
@@ -225,7 +247,6 @@ const StudentMaster = () => {
             </select>
           </label>
 
-          {/* Roll Number */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Roll No
             <input
@@ -239,7 +260,6 @@ const StudentMaster = () => {
             />
           </label>
 
-          {/* DOB */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Date of Birth
             <input
@@ -252,7 +272,6 @@ const StudentMaster = () => {
             />
           </label>
 
-          {/* Father Name */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Father&apos;s Name
             <input
@@ -266,7 +285,6 @@ const StudentMaster = () => {
             />
           </label>
 
-          {/* Mother Name */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Mother&apos;s Name
             <input
@@ -280,7 +298,6 @@ const StudentMaster = () => {
             />
           </label>
 
-          {/* Address */}
           <label className="flex flex-col text-sm font-semibold text-black sm:col-span-2 lg:col-span-2">
             Address
             <input
@@ -294,7 +311,6 @@ const StudentMaster = () => {
             />
           </label>
 
-          {/* Phone No */}
           <label className="flex flex-col text-sm font-semibold text-black sm:col-span-2 lg:col-span-2">
             Phone No
             <input
@@ -309,7 +325,6 @@ const StudentMaster = () => {
             />
           </label>
 
-          {/* Buttons */}
           <div className="col-span-1 sm:col-span-2 lg:col-span-4 flex justify-between mt-4 ">
             <BackButton />
             <button

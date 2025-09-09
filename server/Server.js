@@ -25,6 +25,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 
 
 const dailyCollectionRoutes = require("./routes/dailycollectionRoutes");
+const classSummaryRoutes = require("./routes/classSummaryRoutes");
 
 
 app.use("/api/classes", classRoutes);
@@ -38,6 +39,7 @@ app.use("/api/payments", paymentRoutes);
 
 
 app.use("/api/reports", dailyCollectionRoutes);
+app.use("/api/reports", classSummaryRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5001;

@@ -23,6 +23,22 @@ const FeeStructureMaster = () => {
   const navigate = useNavigate();
   const feeItem = location.state?.feeItem || null;
 
+  // Convert Roman numerals to number for sorting
+  const romanToNumber = (roman) => {
+    const map = {
+      I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8, IX: 9, X: 10, XI: 11, XII: 12
+    };
+    return map[roman] || 0;
+  };
+
+  const sortClasses = (clsArray) => {
+    return clsArray.sort((a, b) => {
+      const romanA = a.className.split("-")[1]?.trim();
+      const romanB = b.className.split("-")[1]?.trim();
+      return romanToNumber(romanA) - romanToNumber(romanB);
+    });
+  };
+
   // Fetch classes and fee heads
   const fetchDropdownData = async () => {
     try {
@@ -30,35 +46,36 @@ const FeeStructureMaster = () => {
         axios.get("http://localhost:5000/api/classes"),
         axios.get("http://localhost:5000/api/feeheads"),
       ]);
-      setClasses(clsRes.data || []);
+      // Remove duplicate class names (keep only first occurrence)
+      const uniqueClassesMap = new Map();
+      clsRes.data.forEach(c => {
+        if (!uniqueClassesMap.has(c.className)) {
+          uniqueClassesMap.set(c.className, c);
+        }
+      });
+      const uniqueClasses = Array.from(uniqueClassesMap.values());
+      setClasses(sortClasses(uniqueClasses));
       setFeeHeads(fhRes.data || []);
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Fetch next FeeStructID
   const fetchNextId = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/fees/latest");
-      setFeeData((prev) => ({
-        ...prev,
-        feeStructId: res.data?.feeStructId || "FEES001",
-      }));
+      setFeeData(prev => ({ ...prev, feeStructId: res.data?.feeStructId || "FEES001" }));
     } catch (err) {
       console.error(err);
     }
   };
 
-  // Fetch transport routes
   const fetchRoutes = async () => {
     try {
-      const res = await axios.get(
-        "http://localhost:5000/api/fees/transport/routes"
-      );
-      const routeList = res.data.map((r) => ({
+      const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
+      const routeList = res.data.map(r => ({
         routeId: r.routeId,
-        distance: r.distance, // <-- FIXED: use distance instead of routeName
+        distance: r.distance,
         vanCharge: r.vanCharge,
       }));
       setRoutes(routeList);
@@ -70,39 +87,34 @@ const FeeStructureMaster = () => {
     }
   };
 
-  // Fetch amount dynamically (non-transport)
   const fetchAmount = async (classId, feeHeadId, routeId) => {
     if (!classId || !feeHeadId) return;
     try {
       const res = await axios.get("http://localhost:5000/api/fees/get-amount", {
         params: { classId, feeHeadId, routeId: routeId || undefined },
       });
-      setFeeData((prev) => ({ ...prev, amount: res.data.amount || '' }));
+      setFeeData(prev => ({ ...prev, amount: res.data.amount || '' }));
     } catch (err) {
       console.error(err);
-      setFeeData((prev) => ({ ...prev, amount: 0 }));
+      setFeeData(prev => ({ ...prev, amount: 0 }));
     }
   };
 
-  // Initialize everything
+  // Initialize
   useEffect(() => {
     const init = async () => {
       await fetchDropdownData();
 
       if (feeItem) {
         setIsEditMode(true);
-
         const selectedFeeHead = feeItem.feeHeadId
           ? (await axios.get("http://localhost:5000/api/feeheads")).data.find(
-              (fh) => fh.feeHeadId === feeItem.feeHeadId
+              fh => fh.feeHeadId === feeItem.feeHeadId
             )
           : null;
 
         let routeList = [];
-        if (
-          selectedFeeHead &&
-          selectedFeeHead.feeHeadName.toLowerCase() === "transport"
-        ) {
+        if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
           routeList = await fetchRoutes();
         }
 
@@ -114,9 +126,8 @@ const FeeStructureMaster = () => {
           routeId: feeItem.routeId || "",
           amount:
             feeItem.amount ||
-            (selectedFeeHead &&
-            selectedFeeHead.feeHeadName.toLowerCase() === "transport"
-              ? routeList.find((r) => r.routeId === feeItem.routeId)?.vanCharge || ''
+            (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport"
+              ? routeList.find(r => r.routeId === feeItem.routeId)?.vanCharge || ''
               : 0),
         });
       } else {
@@ -129,33 +140,26 @@ const FeeStructureMaster = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Show/hide route dropdown when feeHead changes
+  // Show/hide transport dropdown
   useEffect(() => {
-    const selectedFeeHead = feeHeads.find(
-      (fh) => fh.feeHeadId === feeData.feeHeadId
-    );
+    const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId);
     if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
       fetchRoutes();
     } else {
       setRoutes([]);
-      setFeeData((prev) => ({ ...prev, routeId: "", amount: prev.amount || '' }));
+      setFeeData(prev => ({ ...prev, routeId: "", amount: prev.amount || '' }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feeData.feeHeadId]);
 
-  // Update amount when class, feeHead, or route changes
+  // Update amount dynamically
   useEffect(() => {
-    const selectedFeeHead = feeHeads.find(
-      (fh) => fh.feeHeadId === feeData.feeHeadId
-    );
+    const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId);
     if (!selectedFeeHead) return;
 
     if (selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
-      const selectedRoute = routes.find((r) => r.routeId === feeData.routeId);
-      setFeeData((prev) => ({
-        ...prev,
-        amount: selectedRoute ? selectedRoute.vanCharge : '',
-      }));
+      const selectedRoute = routes.find(r => r.routeId === feeData.routeId);
+      setFeeData(prev => ({ ...prev, amount: selectedRoute ? selectedRoute.vanCharge : '' }));
     } else {
       fetchAmount(feeData.classId, feeData.feeHeadId);
     }
@@ -164,12 +168,25 @@ const FeeStructureMaster = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFeeData((prev) => ({ ...prev, [name]: value }));
+    setFeeData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Validation for duplicate class + feeHead + route (range)
+      const allFees = (await axios.get("http://localhost:5000/api/fees")).data || [];
+      const duplicate = allFees.find(f =>
+        f.classId === feeData.classId &&
+        f.feeHeadId === feeData.feeHeadId &&
+        (f.routeId || '') === (feeData.routeId || '') &&
+        (!isEditMode || f._id !== feeData._id)
+      );
+      if (duplicate) {
+        alert("This Class + Fee Head + Distance combination already exists!");
+        return;
+      }
+
       if (isEditMode) {
         await axios.put(`http://localhost:5000/api/fees/${feeData._id}`, feeData);
         alert("Fee Structure updated!");
@@ -215,10 +232,8 @@ const FeeStructureMaster = () => {
               required
             >
               <option value="">--Select--</option>
-              {classes.map((c) => (
-                <option key={c.classId} value={c.classId}>
-                  {c.className}
-                </option>
+              {classes.map(c => (
+                <option key={c.classId} value={c.classId}>{c.className}</option>
               ))}
             </select>
           </div>
@@ -233,15 +248,12 @@ const FeeStructureMaster = () => {
               required
             >
               <option value="">--Select--</option>
-              {feeHeads.map((fh) => (
-                <option key={fh.feeHeadId} value={fh.feeHeadId}>
-                  {fh.feeHeadName}
-                </option>
+              {feeHeads.map(fh => (
+                <option key={fh.feeHeadId} value={fh.feeHeadId}>{fh.feeHeadName}</option>
               ))}
             </select>
           </div>
 
-          {/* Transport Distance Dropdown */}
           {routes.length > 0 && (
             <div>
               <label className="block font-medium">Distance (KM)</label>
@@ -253,10 +265,8 @@ const FeeStructureMaster = () => {
                 required
               >
                 <option value="">--Select Distance--</option>
-                {routes.map((r) => (
-                  <option key={r.routeId} value={r.routeId}>
-                    {r.distance} {/* Will now show "0-5 KM", "6-10 KM", etc. */}
-                  </option>
+                {routes.map(r => (
+                  <option key={r.routeId} value={r.routeId}>{r.distance}</option>
                 ))}
               </select>
             </div>
