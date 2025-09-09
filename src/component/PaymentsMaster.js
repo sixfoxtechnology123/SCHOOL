@@ -89,12 +89,13 @@ const PaymentsMaster = () => {
   const fetchRoutes = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
-      const routeList = res.data.map((r) => ({
-        routeId: r.routeId,
-        distance: r.distance || 0,
-        vanCharge: r.vanCharge || 0,
-        label: `${r.distance} KM`,
-      }));
+    const routeList = res.data.map((r) => ({
+      routeId: r.routeId,
+      distance: r.distance || 0,
+      vanCharge: r.vanCharge || 0,
+      label: r.distance.toString().includes("KM") ? r.distance : `${r.distance} KM`,
+    }));
+
       setRoutes(routeList);
       setShowRouteDropdown(routeList.length > 0);
       return routeList;
