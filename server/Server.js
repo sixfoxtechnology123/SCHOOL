@@ -26,6 +26,7 @@ const paymentRoutes = require("./routes/paymentRoutes");
 
 const dailyCollectionRoutes = require("./routes/dailycollectionRoutes");
 const classSummaryRoutes = require("./routes/classSummaryRoutes");
+const transportReportRoutes = require("./routes/transportReportRoutes");
 
 
 app.use("/api/classes", classRoutes);
@@ -36,7 +37,7 @@ app.use("/api/transportroutes", transportRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/payments", paymentRoutes);   
-
+app.use("/api/transport-report", transportReportRoutes);
 
 app.use("/api/reports", dailyCollectionRoutes);
 app.use("/api/reports", classSummaryRoutes);

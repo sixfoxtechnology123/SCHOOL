@@ -17,8 +17,6 @@ async function generateNextPaymentId() {
 }
 
 // ================== Student Routes ==================
-
-// Get all students
 const getAllStudents = async (req, res) => {
   try {
     const students = await Student.find()
@@ -30,20 +28,13 @@ const getAllStudents = async (req, res) => {
   }
 };
 
-// Get all classes (unique)
 const getAllClasses = async (_req, res) => {
   try {
-    // Prefer ClassMaster if available
-    try {
-      const classDocs = await ClassMaster.find().select("className").lean();
-      if (classDocs && classDocs.length) {
-        const classes = Array.from(new Set(classDocs.map((c) => c.className)));
-        return res.json(classes);
-      }
-    } catch (e) {
-      // ignore and fallback to students
+    const classDocs = await ClassMaster.find().select("className").lean();
+    if (classDocs && classDocs.length) {
+      const classes = Array.from(new Set(classDocs.map((c) => c.className)));
+      return res.json(classes);
     }
-
     const classes = await Student.distinct("className");
     res.json(classes);
   } catch (err) {
@@ -51,7 +42,6 @@ const getAllClasses = async (_req, res) => {
   }
 };
 
-// Get sections for a given class (if className provided) OR all unique class-section pairs when none provided
 const getSectionsByClass = async (req, res) => {
   try {
     const { className } = req.query;
@@ -59,36 +49,21 @@ const getSectionsByClass = async (req, res) => {
       const sections = await Student.distinct("section", { className });
       return res.json(sections);
     }
-
-    // return unique pairs of { className, sectionName }
     const pairs = await Student.aggregate([
-      {
-        $group: {
-          _id: { className: "$className", section: "$section" },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          className: "$_id.className",
-          sectionName: "$_id.section",
-        },
-      },
+      { $group: { _id: { className: "$className", section: "$section" } } },
+      { $project: { _id: 0, className: "$_id.className", sectionName: "$_id.section" } },
     ]);
-
     res.json(pairs);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch sections" });
   }
 };
 
-// Get students by class + section
 const getStudentsByClassAndSection = async (req, res) => {
   try {
     const { className, section } = req.query;
     if (!className || !section)
       return res.status(400).json({ error: "className and section required" });
-
     const students = await Student.find({ className, section })
       .select("_id studentName name rollNo studentId className section")
       .lean();
@@ -99,8 +74,6 @@ const getStudentsByClassAndSection = async (req, res) => {
 };
 
 // ================== Payment Routes ==================
-
-// Get all payments
 const getAllPayments = async (_req, res) => {
   try {
     const payments = await Payment.find().lean();
@@ -110,7 +83,6 @@ const getAllPayments = async (_req, res) => {
   }
 };
 
-// Get latest PaymentId
 const getLatestPaymentId = async (_req, res) => {
   try {
     const nextId = await generateNextPaymentId();
@@ -120,7 +92,6 @@ const getLatestPaymentId = async (_req, res) => {
   }
 };
 
-// Get fee amount by className + feeHeadName (+ routeId for transport)
 const getFeeAmount = async (req, res) => {
   try {
     const { className, feeHeadName, routeId } = req.query;
@@ -153,8 +124,7 @@ const getFeeAmount = async (req, res) => {
   }
 };
 
-// ================== Create / Update / Delete Payment ==================
-
+// ================== Helper: populate fee amounts ==================
 async function populateFeeAmounts(paymentBody) {
   if (!paymentBody.feeDetails || !Array.isArray(paymentBody.feeDetails)) return;
 
@@ -176,60 +146,45 @@ async function populateFeeAmounts(paymentBody) {
       }
 
       let amount = 0;
-      const headData = classStructures.find((h) => h.feeHeadId === feeHeadId);
-      if (headData) amount = headData.amount;
-
-      if (!amount) {
-        const globalHead = globalHeads.find((h) => h.feeHeadId === feeHeadId);
-        if (globalHead) amount = globalHead.amount || 0;
-      }
-
-      //  Fix: ensure transport has "0-5 KM" if not provided
-      let distance = f.distance;
-      if (f.feeHead && f.feeHead.toLowerCase() === "transport") {
-        distance = f.distance && f.distance.trim() !== "" ? f.distance : "0-5 KM";
+      if (f.feeHead && f.feeHead.toLowerCase() === "transport" && f.routeId) {
+        const routeData = await FeeStructure.findOne({ classId, feeHeadId, routeId: f.routeId }).lean();
+        amount = routeData ? routeData.amount : 0;
+      } else {
+        const headData = classStructures.find((h) => h.feeHeadId === feeHeadId);
+        amount = headData ? headData.amount : (globalHeads.find((h) => h.feeHeadId === feeHeadId)?.amount || 0);
       }
 
       return {
         ...f,
         feeHeadId,
         amount,
-        distance, // will always be "0-5 KM" if transport and not set
+        distance: typeof f.distance !== "undefined" ? f.distance : "", // <-- stores exact frontend value
       };
     })
   );
 
-  paymentBody.totalAmount = paymentBody.feeDetails.reduce(
-    (sum, f) => sum + Number(f.amount || 0),
-    0
-  );
+  paymentBody.totalAmount = paymentBody.feeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
 }
 
-
-// Create payment
+// ================== Create Payment ==================
 const createPayment = async (req, res) => {
   try {
-    if (!req.body.paymentId) {
-      req.body.paymentId = await generateNextPaymentId();
-    }
+    if (!req.body.paymentId) req.body.paymentId = await generateNextPaymentId();
 
-    //  Duplicate check: same className + section + rollNo
     const existing = await Payment.findOne({
       className: req.body.className,
       section: req.body.section,
       rollNo: req.body.rollNo,
     });
-
     if (existing) {
-      return res
-        .status(400)
-        .json({ error: "Receipt already exists for this student" });
+      return res.status(400).json({
+        error: `Receipt already exists for Class: ${req.body.className}, Section: ${req.body.section}, Roll No: ${req.body.rollNo}`,
+      });
     }
 
     await populateFeeAmounts(req.body);
     const payment = new Payment(req.body);
     await payment.save();
-
     res.status(201).json(payment);
   } catch (err) {
     console.error("Error creating payment:", err);
@@ -237,20 +192,41 @@ const createPayment = async (req, res) => {
   }
 };
 
-// Update payment
+// ================== Update Payment ==================
 const updatePayment = async (req, res) => {
   try {
     const updateBody = { ...req.body };
+
+    const existing = await Payment.findOne({
+      className: updateBody.className,
+      section: updateBody.section,
+      rollNo: updateBody.rollNo,
+      _id: { $ne: req.params.id },
+    });
+    if (existing) {
+      return res.status(400).json({
+        error: `Receipt already exists for Class: ${updateBody.className}, Section: ${updateBody.section}, Roll No: ${updateBody.rollNo}`,
+      });
+    }
+
     await populateFeeAmounts(updateBody);
-    const updated = await Payment.findByIdAndUpdate(req.params.id, updateBody, { new: true });
-    if (!updated) return res.status(404).json({ error: "Payment not found" });
-    res.json(updated);
+
+    const paymentDoc = await Payment.findById(req.params.id);
+    if (!paymentDoc) return res.status(404).json({ error: "Payment not found" });
+
+    Object.keys(updateBody).forEach((key) => {
+      paymentDoc[key] = updateBody[key];
+    });
+
+    await paymentDoc.save();
+    res.json(paymentDoc);
   } catch (err) {
+    console.error("Update payment error:", err);
     res.status(500).json({ error: err.message || "Failed to update payment" });
   }
 };
 
-// Delete payment
+// ================== Delete Payment ==================
 const deletePayment = async (req, res) => {
   try {
     const deleted = await Payment.findByIdAndDelete(req.params.id);

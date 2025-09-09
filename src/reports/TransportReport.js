@@ -9,32 +9,32 @@ import { useNavigate } from "react-router-dom";
 const TransportReport = () => {
   const [transportData, setTransportData] = useState([]);
   const [searchName, setSearchName] = useState(""); // filter by student name
-  const [filterRoute, setFilterRoute] = useState(""); // filter by route
-  const [routes, setRoutes] = useState([]); // dynamic routes from backend
+  const [filterDistance, setFilterDistance] = useState(""); // filter by distance
+  const [distances, setDistances] = useState([]); // dynamic distances from backend
   const navigate = useNavigate();
 
   useEffect(() => {
     // Fetch transport data
     axios
-      .get("http://localhost:5000/api/reports/transport")
+      .get("http://localhost:5000/api/transport-report")
       .then((res) => {
         const data = res.data || [];
         setTransportData(data);
 
-        // Extract unique routes dynamically
-        const uniqueRoutes = Array.from(new Set(data.map(item => item.route))).sort();
-        setRoutes(uniqueRoutes);
+        // Extract unique distances dynamically
+        const uniqueDistances = Array.from(new Set(data.map(item => item.distance))).sort();
+        setDistances(uniqueDistances);
       })
       .catch((err) => console.log(err));
   }, []);
 
-  // Filter by student name and route
+  // Filter by student name and distance
   const filteredData = transportData.filter((item) => {
     const nameMatch = searchName
       ? item.studentName?.toLowerCase().includes(searchName.toLowerCase())
       : true;
-    const routeMatch = filterRoute ? item.route === filterRoute : true;
-    return nameMatch && routeMatch;
+    const distanceMatch = filterDistance ? item.distance === filterDistance : true;
+    return nameMatch && distanceMatch;
   });
 
   return (
@@ -80,27 +80,27 @@ const TransportReport = () => {
               />
             </div>
 
-            {/* Filter by Route */}
+            {/* Filter by Distance */}
             <div>
-              <label className="text-sm font-medium text-gray-700">Route:</label>
+              <label className="text-sm font-medium text-gray-700">Distance:</label>
               <select
-                value={filterRoute}
-                onChange={(e) => setFilterRoute(e.target.value)}
+                value={filterDistance}
+                onChange={(e) => setFilterDistance(e.target.value)}
                 className="border border-gray-300 rounded px-2 py-1 text-sm"
               >
                 <option value="">All</option>
-                {routes.map((r) => (
-                  <option key={r} value={r}>{r}</option>
+                {distances.map((d) => (
+                  <option key={d} value={d}>{d}</option>
                 ))}
               </select>
             </div>
 
             {/* Clear Filters Button */}
-            {(searchName || filterRoute) && (
+            {(searchName || filterDistance) && (
               <button
                 onClick={() => {
                   setSearchName("");
-                  setFilterRoute("");
+                  setFilterDistance("");
                 }}
                 className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
               >
@@ -115,7 +115,7 @@ const TransportReport = () => {
               <thead className="bg-green-100 text-sm">
                 <tr>
                   <th className="border border-green-500 px-2 py-1">Student Name</th>
-                  <th className="border border-green-500 px-2 py-1">Distance(KM)</th>
+                  <th className="border border-green-500 px-2 py-1">Distance (KM)</th>
                   <th className="border border-green-500 px-2 py-1">Amount Paid</th>
                   <th className="border border-green-500 px-2 py-1">Pending Amount</th>
                 </tr>
@@ -128,7 +128,7 @@ const TransportReport = () => {
                         {item.studentName || "-"}
                       </td>
                       <td className="border border-green-500 px-2 py-1">
-                        {item.route || "-"}
+                        {item.distance || "-"}
                       </td>
                       <td className="border border-green-500 px-2 py-1">
                         ₹{item.amountPaid || 0}

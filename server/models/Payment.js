@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const feeDetailSchema = new mongoose.Schema({
   feeHead: { type: String, required: true },
   amount: { type: Number, required: true },
-  distance: { type: String, default: "" }, // Added field for distance (e.g., for transport)
+  distance: { type: String, default: "" }, // Store frontend distance
 });
 
 const paymentSchema = new mongoose.Schema(
@@ -13,7 +13,7 @@ const paymentSchema = new mongoose.Schema(
     className: String,
     section: String,
     rollNo: String,
-    feeDetails: [feeDetailSchema], // array of objects with feeHead, amount, distance
+    feeDetails: [feeDetailSchema],
     totalAmount: { type: Number, required: true },
     date: { type: String, default: Date.now },
     paymentMode: {

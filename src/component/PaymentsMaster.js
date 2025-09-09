@@ -312,19 +312,26 @@ const PaymentsMaster = () => {
     setPaymentData((prev) => ({ ...prev, feeDetails: newFeeDetails, totalAmount: total }));
   };
 
-  const handleRouteChange = async (routeId) => {
-    const updatedFeeDetails = await Promise.all(
-      paymentData.feeDetails.map(async (f) => {
-        if (f.feeHead.toLowerCase() === "transport") {
-          const amount = await fetchAmount(paymentData.className, f.feeHead, routeId);
-          return { ...f, amount, routeId };
-        }
-        return f;
-      })
-    );
-    const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-    setPaymentData((prev) => ({ ...prev, feeDetails: updatedFeeDetails, totalAmount: total }));
-  };
+ const handleRouteChange = async (routeId) => {
+  const selectedRoute = routes.find((r) => r.routeId === routeId);
+  const updatedFeeDetails = await Promise.all(
+    paymentData.feeDetails.map(async (f) => {
+      if (f.feeHead.toLowerCase() === "transport") {
+        const amount = await fetchAmount(paymentData.className, f.feeHead, routeId);
+        return {
+          ...f,
+          amount,
+          routeId,
+          distance: selectedRoute?.label || "", // <-- ADD THIS
+        };
+      }
+      return f;
+    })
+  );
+  const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  setPaymentData((prev) => ({ ...prev, feeDetails: updatedFeeDetails, totalAmount: total }));
+};
+
 
   const handleAmountChange = (feeHead, value) => {
     const updatedFeeDetails = paymentData.feeDetails.map((f) =>
