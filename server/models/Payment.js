@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const feeDetailSchema = new mongoose.Schema({
   feeHead: { type: String, required: true },
   amount: { type: Number, required: true },
-  distance: { type: Number, default: 0 }, // Added field for distance (e.g., for transport)
+  distance: { type: String, default: "" }, // Added field for distance (e.g., for transport)
 });
 
 const paymentSchema = new mongoose.Schema(

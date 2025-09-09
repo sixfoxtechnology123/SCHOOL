@@ -184,7 +184,18 @@ async function populateFeeAmounts(paymentBody) {
         if (globalHead) amount = globalHead.amount || 0;
       }
 
-      return { ...f, feeHeadId, amount };
+      //  Fix: ensure transport has "0-5 KM" if not provided
+      let distance = f.distance;
+      if (f.feeHead && f.feeHead.toLowerCase() === "transport") {
+        distance = f.distance && f.distance.trim() !== "" ? f.distance : "0-5 KM";
+      }
+
+      return {
+        ...f,
+        feeHeadId,
+        amount,
+        distance, // will always be "0-5 KM" if transport and not set
+      };
     })
   );
 
@@ -193,6 +204,7 @@ async function populateFeeAmounts(paymentBody) {
     0
   );
 }
+
 
 // Create payment
 const createPayment = async (req, res) => {
@@ -224,7 +236,6 @@ const createPayment = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to create payment" });
   }
 };
-
 
 // Update payment
 const updatePayment = async (req, res) => {

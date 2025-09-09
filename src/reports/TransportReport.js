@@ -8,21 +8,39 @@ import { useNavigate } from "react-router-dom";
 
 const TransportReport = () => {
   const [transportData, setTransportData] = useState([]);
-    const navigate = useNavigate();
+  const [searchName, setSearchName] = useState(""); // filter by student name
+  const [filterRoute, setFilterRoute] = useState(""); // filter by route
+  const [routes, setRoutes] = useState([]); // dynamic routes from backend
+  const navigate = useNavigate();
 
   useEffect(() => {
+    // Fetch transport data
     axios
       .get("http://localhost:5000/api/reports/transport")
-      .then((res) => setTransportData(res.data || []))
+      .then((res) => {
+        const data = res.data || [];
+        setTransportData(data);
+
+        // Extract unique routes dynamically
+        const uniqueRoutes = Array.from(new Set(data.map(item => item.route))).sort();
+        setRoutes(uniqueRoutes);
+      })
       .catch((err) => console.log(err));
   }, []);
 
+  // Filter by student name and route
+  const filteredData = transportData.filter((item) => {
+    const nameMatch = searchName
+      ? item.studentName?.toLowerCase().includes(searchName.toLowerCase())
+      : true;
+    const routeMatch = filterRoute ? item.route === filterRoute : true;
+    return nameMatch && routeMatch;
+  });
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-3">
         <Header />
 
@@ -33,7 +51,7 @@ const TransportReport = () => {
               <h2 className="text-xl font-bold text-green-800">
                 Transport Fee Report
               </h2>
-               <div className="flex gap-2">
+              <div className="flex gap-2">
                 <BackButton />
                 <button
                   onClick={() => navigate("/ReportsDashboard")}
@@ -46,20 +64,65 @@ const TransportReport = () => {
             </div>
           </div>
 
+          {/* Filters */}
+          <div className="mb-4 flex flex-wrap items-center gap-2">
+            {/* Search by Student Name */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mr-2">
+                Search Student:
+              </label>
+              <input
+                type="text"
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                placeholder="Enter student name"
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              />
+            </div>
+
+            {/* Filter by Route */}
+            <div>
+              <label className="text-sm font-medium text-gray-700">Route:</label>
+              <select
+                value={filterRoute}
+                onChange={(e) => setFilterRoute(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="">All</option>
+                {routes.map((r) => (
+                  <option key={r} value={r}>{r}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Clear Filters Button */}
+            {(searchName || filterRoute) && (
+              <button
+                onClick={() => {
+                  setSearchName("");
+                  setFilterRoute("");
+                }}
+                className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+              >
+                Clear Filters
+              </button>
+            )}
+          </div>
+
           {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full table-auto border border-green-500">
               <thead className="bg-green-100 text-sm">
                 <tr>
                   <th className="border border-green-500 px-2 py-1">Student Name</th>
-                  <th className="border border-green-500 px-2 py-1">Route</th>
+                  <th className="border border-green-500 px-2 py-1">Distance(KM)</th>
                   <th className="border border-green-500 px-2 py-1">Amount Paid</th>
                   <th className="border border-green-500 px-2 py-1">Pending Amount</th>
                 </tr>
               </thead>
               <tbody className="text-sm text-center">
-                {transportData.length > 0 ? (
-                  transportData.map((item, index) => (
+                {filteredData.length > 0 ? (
+                  filteredData.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-100 transition">
                       <td className="border border-green-500 px-2 py-1">
                         {item.studentName || "-"}
@@ -68,16 +131,16 @@ const TransportReport = () => {
                         {item.route || "-"}
                       </td>
                       <td className="border border-green-500 px-2 py-1">
-                        ₹{item.amountPaid}
+                        ₹{item.amountPaid || 0}
                       </td>
                       <td className="border border-green-500 px-2 py-1">
-                        ₹{item.pendingAmount}
+                        ₹{item.pendingAmount || 0}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="4" className="text-center py-4 text-gray-500">
+                    <td colSpan="4" className="text-center py-4 text-gray-500 border border-green-500">
                       No records found.
                     </td>
                   </tr>
