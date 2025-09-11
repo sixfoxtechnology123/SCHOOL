@@ -114,15 +114,21 @@ const StudentMaster = () => {
   };
 
   const handleSameAddress = (e) => {
-    const checked = e.target.checked;
-    setSameAddress(checked);
-    if (checked) {
-      setStudentData((prev) => ({
-        ...prev,
-        currentAddress: { ...prev.permanentAddress },
-      }));
-    }
-  };
+  const checked = e.target.checked;
+  setSameAddress(checked);
+  if (checked) {
+    setStudentData((prev) => ({
+      ...prev,
+      currentAddress: { ...prev.permanentAddress },
+    }));
+  } else {
+    setStudentData((prev) => ({
+      ...prev,
+      currentAddress: { vill: "", po: "", block: "", pin: "", ps: "", dist: "" },
+    }));
+  }
+};
+
 
   const handleNext = (e) => {
     e.preventDefault();
