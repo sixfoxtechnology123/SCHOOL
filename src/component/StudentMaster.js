@@ -13,6 +13,9 @@ const StudentMaster = () => {
   const [studentData, setStudentData] = useState({
     // ----- Page 1: Child Info -----
     studentId: "",
+    admitClass: "",
+    section: "",
+    rollNo: "",   //  Added Roll No field
     firstName: "",
     lastName: "",
     gender: "",
@@ -51,11 +54,13 @@ const StudentMaster = () => {
     fatherOccupation: "",
     fatherPhone: "",
     fatherEmail: "",
+    fatherNationality: "Indian",
     fatherQualification: "",
     motherName: "",
     motherOccupation: "",
     motherPhone: "",
     motherEmail: "",
+    motherNationality: "Indian",
     motherQualification: "",
     bpl: "No",
     bplNo: "",
@@ -63,6 +68,7 @@ const StudentMaster = () => {
   });
 
   const [students, setStudents] = useState([]);
+  const [sections, setSections] = useState([]); // for dropdown
   const [isEditMode, setIsEditMode] = useState(false);
   const navigate = useNavigate();
 
@@ -75,6 +81,8 @@ const StudentMaster = () => {
     }
   };
 
+  
+
   const fetchNextStudentId = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/students/latest");
@@ -85,9 +93,19 @@ const StudentMaster = () => {
     }
   };
 
+  const fetchSections = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/sections");
+      setSections(res.data || []);
+    } catch (err) {
+      console.error("Error fetching sections:", err);
+    }
+  };
+
   useEffect(() => {
     fetchStudents();
     fetchNextStudentId();
+    fetchSections();
   }, []);
 
   const handleChange = (e) => {
@@ -97,42 +115,68 @@ const StudentMaster = () => {
       setStudentData((prev) => {
         let updated = [...prev.languages];
         if (checked) updated.push(value.toUpperCase());
-        else updated = updated.filter((lang) => lang !== value);
+        else updated = updated.filter((lang) => lang !== value.toUpperCase());
         return { ...prev, languages: updated };
       });
+    } else if (e.target.tagName === "SELECT") {
+      setStudentData({ ...studentData, [name]: value });
     } else {
       setStudentData({ ...studentData, [name]: value.toUpperCase() });
     }
   };
 
-  const handleAddressChange = (e, type) => {
-    const { name, value } = e.target;
-    setStudentData({
-      ...studentData,
-      [type]: { ...studentData[type], [name]: value.toUpperCase() },
-    });
+  // ----- Handle Same Address Checkbox -----
+  const handleSameAddress = (e) => {
+    const checked = e.target.checked;
+    setSameAddress(checked);
+
+    if (checked) {
+      setStudentData((prev) => ({
+        ...prev,
+        currentAddress: { ...prev.permanentAddress },
+      }));
+    } else {
+      setStudentData((prev) => ({
+        ...prev,
+        currentAddress: {
+          vill: "",
+          po: "",
+          block: "",
+          pin: "",
+          ps: "",
+          dist: "",
+        },
+      }));
+    }
   };
 
-  const handleSameAddress = (e) => {
-  const checked = e.target.checked;
-  setSameAddress(checked);
-  if (checked) {
+  // ----- Handle Address Change -----
+  const handleAddressChange = (e, type) => {
+    const { name, value } = e.target;
     setStudentData((prev) => ({
       ...prev,
-      currentAddress: { ...prev.permanentAddress },
+      [type]: { ...prev[type], [name]: value.toUpperCase() },
     }));
-  } else {
-    setStudentData((prev) => ({
-      ...prev,
-      currentAddress: { vill: "", po: "", block: "", pin: "", ps: "", dist: "" },
-    }));
-  }
-};
-
+  };
 
   const handleNext = (e) => {
     e.preventDefault();
     setStep(2);
+  };
+
+  const handleCheckboxChange = (e) => {
+    const { value, checked } = e.target;
+    if (checked) {
+      setStudentData((prev) => ({
+        ...prev,
+        languages: [...prev.languages, value],
+      }));
+    } else {
+      setStudentData((prev) => ({
+        ...prev,
+        languages: prev.languages.filter((lang) => lang !== value),
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -157,81 +201,121 @@ const StudentMaster = () => {
   };
 
   return (
-   <div className="flex min-h-screen flex-col md:flex-row">
-      <Sidebar/>
+    <div className="flex min-h-screen flex-col md:flex-row">
+      <Sidebar />
       <div className="flex-1 overflow-y-auto p-3">
-        {/*  Added Header */}
-        <Header/>
-      <div className="p-2 bg-white shadow-md rounded-md">
-        <h2 className="text-xl sm:text-xl font-bold mb-2 text-center text-white bg-gray-800 py-1 rounded">
-          {step === 1 ? "Information of the Child" : "Family Information"}
-        </h2>
+        <Header />
+        <div className="p-2 bg-white shadow-md rounded-md">
+          <h2 className="text-xl sm:text-xl font-bold mb-2 text-center text-white bg-gray-800 py-1 rounded">
+            {step === 1 ? "Information of the Child" : "Family Information"}
+          </h2>
 
-        {/* --------- STEP 1 --------- */}
-        {step === 1 && (
-          <form onSubmit={handleNext} className="grid grid-cols-1 gap-2">
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-              <label>
-                First Name
-                <input
-                  name="firstName"
-                  value={studentData.firstName}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Last Name
-                <input
-                  name="lastName"
-                  value={studentData.lastName}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-             <label>
-              Gender
-              <select
-                name="gender"
-                value={studentData.gender}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
-              >
-                <option value="">--Select--</option>
-                <option value="MALE">Male</option>
-                <option value="FEMALE">Female</option>
-                <option value="OTHERS">Others</option>
-              </select>
-            </label>
-
-              <label>
-                Social Caste
-                <select
-                  name="socialCaste"
-                  value={studentData.socialCaste}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                >
-                  <option value="">--Select--</option>
-                  <option value="GN">GN</option>
-                  <option value="SC">SC</option>
-                  <option value="ST">ST</option>
-                  <option value="OBC">OBC</option>
-                </select>
-              </label>
-              <label>
-                Date of Birth
-                <input
-                  type="date"
-                  name="dob"
-                  value={studentData.dob}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+          {/* --------- STEP 1 --------- */}
+          {step === 1 && (
+            <form onSubmit={handleNext} className="grid grid-cols-1 gap-2">
+              {/* Student ID, Admit Class, Section, Roll No */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <label>
+                  Student ID
+                  <input
+                    name="studentId"
+                    value={studentData.studentId}
+                    readOnly
+                    className="border bg-gray-200 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Admit Class
+                  <input
+                    name="admitClass"
+                    value={studentData.admitClass}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Section
+                  <select
+                    name="section"
+                    value={studentData.section}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  >
+                    <option value="">--Select--</option>
+                    {sections.map((sec) => (
+                      <option key={sec._id} value={sec.sectionName}>
+                        {sec.sectionName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Roll No
+                  <input
+                    name="rollNo"
+                    value={studentData.rollNo}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  First Name
+                  <input
+                    name="firstName"
+                    value={studentData.firstName}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Last Name
+                  <input
+                    name="lastName"
+                    value={studentData.lastName}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Gender
+                  <select
+                    name="gender"
+                    value={studentData.gender}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  >
+                    <option value="">--Select--</option>
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHERS">Others</option>
+                  </select>
+                </label>
+                <label>
+                  Social Caste
+                  <select
+                    name="socialCaste"
+                    value={studentData.socialCaste}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  >
+                    <option value="">--Select--</option>
+                    <option value="GN">GN</option>
+                    <option value="SC">SC</option>
+                    <option value="ST">ST</option>
+                    <option value="OBC">OBC</option>
+                  </select>
+                </label>
+                <label>
+                  Date of Birth
+                  <input
+                    type="date"
+                    name="dob"
+                    value={studentData.dob}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+          
               <label>
                 Height
                 <input
@@ -277,9 +361,6 @@ const StudentMaster = () => {
                   className="border bg-gray-100 p-0 rounded w-full"
                 />
               </label>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
               <label>
                 Nationality
                 <input
@@ -289,50 +370,50 @@ const StudentMaster = () => {
                   className="border bg-gray-100 p-0 rounded w-full"
                 />
               </label>
-              <div className="col-span-4">
-                <p>Languages Known</p>
-                <label className="mr-4">
-                  <input
-                    type="checkbox"
-                    name="language"
-                    value="English"
-                    checked={studentData.languages.includes("English")}
-                    onChange={handleChange}
-                  />{" "}
-                  English
-                </label>
-                <label className="mr-4">
-                  <input
-                    type="checkbox"
-                    name="language"
-                    value="Bengali"
-                    checked={studentData.languages.includes("Bengali")}
-                    onChange={handleChange}
-                  />{" "}
-                  Bengali
-                </label>
-                <label>
-                  <input
-                    type="checkbox"
-                    name="language"
-                    value="Hindi"
-                    checked={studentData.languages.includes("Hindi")}
-                    onChange={handleChange}
-                  />{" "}
-                  Hindi
-                </label>
-              </div>
+             <div>
+              <p>Languages Known</p>
+              <label className="mr-1">
+                <input
+                  type="checkbox"
+                  name="language"
+                  value="English"
+                  checked={studentData.languages.includes("English")}
+                  onChange={handleCheckboxChange}
+                />{" "}
+                English
+              </label>
+              <label className="mr-1">
+                <input
+                  type="checkbox"
+                  name="language"
+                  value="Bengali"
+                  checked={studentData.languages.includes("Bengali")}
+                  onChange={handleCheckboxChange}
+                />{" "}
+                Bengali
+              </label>
+              <label>
+                <input
+                  type="checkbox"
+                  name="language"
+                  value="Hindi"
+                  checked={studentData.languages.includes("Hindi")}
+                  onChange={handleCheckboxChange}
+                />{" "}
+                Hindi
+              </label>
+            </div>
+
             </div>
 
           {/* Permanent Address */}
           <div>
             <p className="pl-4 font-bold mb-2 text-white bg-gray-800 py-1 rounded">Permanent Address</p>
             <div className="grid grid-cols-1 sm:grid-cols-6 gap-2">
-              {["vill", "po", "block", "pin", "ps"].map((field) => (
+              {["vill", "po", "block", "pin", "ps", "dist"].map((field) => (
                 <div key={field} className="flex flex-col">
                   <label>{field.toUpperCase()} -</label>
-                  <input
-                    
+                  <input                  
                     name={field}
                     value={studentData.permanentAddress[field]}
                     onChange={(e) => handleAddressChange(e, "permanentAddress")}
@@ -340,263 +421,270 @@ const StudentMaster = () => {
                   />
                 </div>
               ))}
-              <div className="flex flex-col">
-                <label>DIST -</label>
-                <input
-                      name="dist"
-                  value={studentData.permanentAddress.dist}
-                  onChange={(e) => handleAddressChange(e, "permanentAddress")}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </div>
             </div>
           </div>
 
-          {/* Current Address */}
-          <div>
-            <div className="pl-4 flex items-center font-semibold gap-8 bg-gray-800 text-white">
-              <p>Current Address</p>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={sameAddress}
-                  onChange={handleSameAddress}
-                />{" "}
-                Same as Permanent
-              </label>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-6 gap-2">
-              {["vill", "po", "block", "pin", "ps"].map((field) => (
-                <div key={field} className="flex flex-col">
-                  <label>{field.toUpperCase()} -</label>
+
+              {/* Current Address */}
+            <div>
+              <div className="pl-4 flex items-center font-semibold gap-8 bg-gray-800 text-white">
+                <p>Current Address</p>
+                <label>
                   <input
-                    
-                    name={field}
-                    value={studentData.currentAddress[field]}
-                    onChange={(e) => handleAddressChange(e, "currentAddress")}
+                    type="checkbox"
+                    checked={sameAddress}
+                    onChange={handleSameAddress}
+                  />{" "}
+                  Same as Permanent
+                </label>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-6 gap-2">
+                {["vill", "po", "block", "pin", "ps", "dist"].map((field) => (
+                  <div key={field} className="flex flex-col">
+                    <label>{field.toUpperCase()} -</label>
+                    <input
+                      name={field}
+                      value={studentData.currentAddress[field]}
+                      onChange={(e) => handleAddressChange(e, "currentAddress")}
+                      className="border bg-gray-100 p-0 rounded w-full"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+
+              {/* bold line after current address */}
+              <hr className="border-2 border-gray-800 my-3" />
+
+              {/* School Transport */}
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                <label>
+                  School Transport
+                  <select
+                    name="transportRequired"
+                    value={studentData.transportRequired}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  >
+                    <option>No</option>
+                    <option>Yes</option>
+                  </select>
+                </label>
+                {studentData.transportRequired === "Yes" && (
+                  <label>
+                    Distance From School (km)
+                    <input
+                      name="distanceFromSchool"
+                      value={studentData.distanceFromSchool}
+                      onChange={handleChange}
+                      className="border bg-gray-100 p-0 rounded w-full"
+                    />
+                  </label>
+                )}
+                <label>
+                  Emergency Contact No
+                  <input
+                    name="emergencyContact"
+                    value={studentData.emergencyContact}
+                    onChange={handleChange}
                     className="border bg-gray-100 p-0 rounded w-full"
                   />
-                </div>
-              ))}
-              <div className="flex flex-col">
-                <label>DIST -</label>
-                <input
-                      name="dist"
-                  value={studentData.currentAddress.dist}
-                  onChange={(e) => handleAddressChange(e, "currentAddress")}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
+                </label>
+                <label>
+                  Name of Person
+                  <input
+                    name="emergencyPerson"
+                    value={studentData.emergencyPerson}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
               </div>
-            </div>
-          </div>
 
-
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-              <label>
-                School Transport
-                <select
-                  name="transportRequired"
-                  value={studentData.transportRequired}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
+              <div className="col-span-full flex justify-between mt-4">
+                <BackButton />
+                <button
+                  type="submit"
+                  className="px-6 py-1 rounded text-white font-semibold bg-gray-800 hover:bg-gray-950 whitespace-nowrap"
                 >
-                  <option>No</option>
-                  <option>Yes</option>
-                </select>
-              </label>
-              <label>
-                Distance From School (km)
-                <input
-                  name="distanceFromSchool"
-                  value={studentData.distanceFromSchool}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Emergency Contact No
-                <input
-                  name="emergencyContact"
-                  value={studentData.emergencyContact}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Name of Person
-                <input
-                  name="emergencyPerson"
-                  value={studentData.emergencyPerson}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-            </div>
+                  Save & Next
+                </button>
+              </div>
+            </form>
+          )}
 
-            <div className="col-span-full flex justify-between mt-4">
-              <BackButton />
-              <button
-                type="submit"
-                className="px-6 py-1 rounded text-white font-semibold bg-gray-800 hover:bg-gray-950 whitespace-nowrap">
-                Save & Next
-              </button>
-            </div>
-          </form>
-        )}
+          {/* --------- STEP 2 --------- */}
+          {step === 2 && (
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <label>
+                  Father Name
+                  <input
+                    name="fatherName"
+                    value={studentData.fatherName}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Father Occupation
+                  <input
+                    name="fatherOccupation"
+                    value={studentData.fatherOccupation}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Father Phone
+                  <input
+                    name="fatherPhone"
+                    value={studentData.fatherPhone}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Father Email
+                  <input
+                    name="fatherEmail"
+                    value={studentData.fatherEmail}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Father Nationality
+                  <input
+                    name="fatherNationality"
+                    value={studentData.fatherNationality}
+                    readOnly
+                    className="border bg-gray-200 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Father Qualification
+                  <input
+                    name="fatherQualification"
+                    value={studentData.fatherQualification}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Mother Name
+                  <input
+                    name="motherName"
+                    value={studentData.motherName}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Mother Occupation
+                  <input
+                    name="motherOccupation"
+                    value={studentData.motherOccupation}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Mother Phone
+                  <input
+                    name="motherPhone"
+                    value={studentData.motherPhone}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Mother Email
+                  <input
+                    name="motherEmail"
+                    value={studentData.motherEmail}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Mother Nationality
+                  <input
+                    name="motherNationality"
+                    value={studentData.motherNationality}
+                    readOnly
+                    className="border bg-gray-200 p-0 rounded w-full"
+                  />
+                </label>
+                <label>
+                  Mother Qualification
+                  <input
+                    name="motherQualification"
+                    value={studentData.motherQualification}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+              </div>
 
-        {/* --------- STEP 2 --------- */}
-        {step === 2 && (
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-              <label>
-                Father Name
-                <input
-                  name="fatherName"
-                  value={studentData.fatherName}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Father Occupation
-                <input
-                  name="fatherOccupation"
-                  value={studentData.fatherOccupation}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Father Phone
-                <input
-                  name="fatherPhone"
-                  value={studentData.fatherPhone}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Father Email
-                <input
-                  name="fatherEmail"
-                  value={studentData.fatherEmail}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Father Qualification
-                <input
-                  name="fatherQualification"
-                  value={studentData.fatherQualification}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                <label>
+                  BPL
+                  <select
+                    name="bpl"
+                    value={studentData.bpl}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  >
+                    <option>No</option>
+                    <option>Yes</option>
+                  </select>
+                </label>
+                {studentData.bpl === "Yes" && (
+                  <label>
+                    BPL No
+                    <input
+                      name="bplNo"
+                      value={studentData.bplNo}
+                      onChange={handleChange}
+                      className="border bg-gray-100 p-0 rounded w-full"
+                    />
+                  </label>
+                )}
+                <label>
+                  Total Family Income (Yearly)
+                  <input
+                    name="familyIncome"
+                    value={studentData.familyIncome}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+              </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-              <label>
-                Mother Name
-                <input
-                  name="motherName"
-                  value={studentData.motherName}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Mother Occupation
-                <input
-                  name="motherOccupation"
-                  value={studentData.motherOccupation}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Mother Phone
-                <input
-                  name="motherPhone"
-                  value={studentData.motherPhone}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Mother Email
-                <input
-                  name="motherEmail"
-                  value={studentData.motherEmail}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Mother Qualification
-                <input
-                  name="motherQualification"
-                  value={studentData.motherQualification}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
-              <label>
-                BPL
-                <select
-                  name="bpl"
-                  value={studentData.bpl}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                >
-                  <option>No</option>
-                  <option>Yes</option>
-                </select>
-              </label>
-              <label>
-                BPL No
-                <input
-                  name="bplNo"
-                  value={studentData.bplNo}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-              <label>
-                Total Family Income (Yearly)
-                <input
-                  name="familyIncome"
-                  value={studentData.familyIncome}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                />
-              </label>
-            </div>
-
-            <div className="col-span-full flex font-semibold justify-between mt-4">
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="inline-flex items-center gap-2 bg-blue-700 font-semibold text-white
+              <div className="col-span-full flex font-semibold justify-between mt-4">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="inline-flex items-center gap-2 bg-blue-700 font-semibold text-white
                   px-3 py-1 sm:px-4 sm:py-1
                   text-sm sm:text-base
                   rounded-lg shadow hover:bg-blue-800 transition"
-              >
-                Back
-              </button>
-              <button
-                type="submit"
-                className="px-6 py-1 rounded text-white bg-gray-800 hover:bg-gray-950 whitespace-nowrap">
-                Submit
-              </button>
-            </div>
-          </form>
-        )}
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-1 rounded text-white bg-gray-800 hover:bg-gray-950 whitespace-nowrap"
+                >
+                  Submit
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 };
