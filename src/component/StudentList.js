@@ -57,7 +57,7 @@ const StudentsList = () => {
                   onClick={() => navigate("/StudentMaster")}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
                 >
-                  Add Student
+                  New Register
                 </button>
               </div>
             </div>

@@ -39,7 +39,7 @@ const Sidebar = () => {
     {
       title: "Masters",
       menus: [
-        { name: "Students", path: "/StudentList", icon: FaUserGraduate },
+        { name: "New Registration", path: "/StudentList", icon: FaUserGraduate },
         { name: "Classes & Sections", path: "/ClassesList", icon: FaBook },
         { name: "Academic Session", path: "/AcademicSessionList", icon: FaBook },
         { name: "Fees Heads", path: "/FeeHeadsList", icon: FaMoneyBill },
