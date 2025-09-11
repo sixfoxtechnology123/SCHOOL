@@ -96,12 +96,12 @@ const StudentMaster = () => {
     if (type === "checkbox" && name === "language") {
       setStudentData((prev) => {
         let updated = [...prev.languages];
-        if (checked) updated.push(value);
+        if (checked) updated.push(value.toUpperCase());
         else updated = updated.filter((lang) => lang !== value);
         return { ...prev, languages: updated };
       });
     } else {
-      setStudentData({ ...studentData, [name]: value });
+      setStudentData({ ...studentData, [name]: value.toUpperCase() });
     }
   };
 
@@ -109,7 +109,7 @@ const StudentMaster = () => {
     const { name, value } = e.target;
     setStudentData({
       ...studentData,
-      [type]: { ...studentData[type], [name]: value },
+      [type]: { ...studentData[type], [name]: value.toUpperCase() },
     });
   };
 
@@ -189,20 +189,21 @@ const StudentMaster = () => {
                   className="border bg-gray-100 p-0 rounded w-full"
                 />
               </label>
-              <label>
-                Gender
-                <select
-                  name="gender"
-                  value={studentData.gender}
-                  onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
-                >
-                  <option value="">--Select--</option>
-                  <option>Male</option>
-                  <option>Female</option>
-                  <option>Others</option>
-                </select>
-              </label>
+             <label>
+              Gender
+              <select
+                name="gender"
+                value={studentData.gender}
+                onChange={handleChange}
+                className="border bg-gray-100 p-0 rounded w-full"
+              >
+                <option value="">--Select--</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHERS">Others</option>
+              </select>
+            </label>
+
               <label>
                 Social Caste
                 <select
@@ -212,10 +213,10 @@ const StudentMaster = () => {
                   className="border bg-gray-100 p-0 rounded w-full"
                 >
                   <option value="">--Select--</option>
-                  <option>GN</option>
-                  <option>SC</option>
-                  <option>ST</option>
-                  <option>OBC</option>
+                  <option value="GN">GN</option>
+                  <option value="SC">SC</option>
+                  <option value="ST">ST</option>
+                  <option value="OBC">OBC</option>
                 </select>
               </label>
               <label>
