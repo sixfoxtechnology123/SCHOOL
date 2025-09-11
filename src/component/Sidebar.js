@@ -60,7 +60,7 @@ const Sidebar = () => {
         { name: "Class-wise Summary", path: "/ClassSummary", icon: FaBook },
         { name: "Student Payment History", path: "/StudentHistory", icon: FaHistory },
         { name: "Outstanding Fees", path: "/OutstandingFees", icon: FaExclamationTriangle },
-        { name: "Fee Head Summary", path: "/FeeHeadSummary", icon: FaListAlt },
+        { name: "Fee Head Summary", path: "/FeeHeadsReport", icon: FaListAlt },
         { name: "Transport Fees", path: "/TransportReport", icon: FaBus },
       ],
     },

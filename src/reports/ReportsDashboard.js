@@ -11,7 +11,7 @@ const reports = [
   { name: "Class Summary", route: "/ClassSummary", icon: "📊" },
   { name: "Student History", route: "/StudentHistory", icon: "📚" },
   { name: "Outstanding Fees", route: "/OutstandingFees", icon: "💰" },
-  { name: "Fee Head Summary", route: "/FeeHeadSummary", icon: "🧾" },
+  { name: "Fee Head Summary", route: "/FeeHeadsReport", icon: "🧾" },
   { name: "Transport Report", route: "/TransportReport", icon: "🚌" },
 ];
 

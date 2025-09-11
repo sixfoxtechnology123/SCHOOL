@@ -4,11 +4,12 @@ import BackButton from "../component/BackButton";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../component/Sidebar";
 import Header from "../component/Header";
-import { FaThLarge } from "react-icons/fa";
+import { FaThLarge, FaEye } from "react-icons/fa";
 
 const DailyCollection = () => {
   const [data, setData] = useState([]);
   const [filterDate, setFilterDate] = useState("");
+  const [selectedReport, setSelectedReport] = useState(null); // ✅ holds clicked row data
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +25,9 @@ const DailyCollection = () => {
               date: new Date().toISOString(),
               totalStudents: 0,
               totalAmount: 0,
+              students: [
+                { name: "Demo Student", class: "10", section: "A" },
+              ],
             },
           ]);
         }
@@ -36,6 +40,9 @@ const DailyCollection = () => {
             date: new Date().toISOString(),
             totalStudents: 0,
             totalAmount: 0,
+            students: [
+              { name: "Demo Student", class: "10", section: "A" },
+            ],
           },
         ]);
       });
@@ -111,6 +118,7 @@ const DailyCollection = () => {
                 <th className="border border-green-500 px-2 py-1">
                   Total Amount Collected
                 </th>
+                <th className="border border-green-500 px-2 py-1">Action</th>
               </tr>
             </thead>
             <tbody className="text-sm text-center">
@@ -125,12 +133,22 @@ const DailyCollection = () => {
                   <td className="border border-green-500 px-2 py-1">
                     ₹{row.totalAmount}
                   </td>
+                
+                  <td className="border border-green-500 px-2 py-1">
+                    <button
+                      onClick={() => setSelectedReport(row)}
+                      className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600"
+                    >
+                      View
+                    </button>
+                  </td>
+
                 </tr>
               ))}
               {filteredData.length === 0 && (
                 <tr>
                   <td
-                    colSpan="3"
+                    colSpan="4"
                     className="text-center text-gray-500 py-2 border border-green-500"
                   >
                     No records found
@@ -140,6 +158,62 @@ const DailyCollection = () => {
             </tbody>
           </table>
         </div>
+
+        {/* ✅ Report Modal */}
+        {selectedReport && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+            <div className="bg-white rounded-lg shadow-lg p-5 w-3/4 max-w-2xl">
+              <h3 className="text-lg font-bold mb-3 text-green-700">
+                Report Details ({new Date(selectedReport.date).toLocaleDateString("en-GB")})
+              </h3>
+
+              <table className="w-full table-auto border border-green-500 mb-4">
+                <thead className="bg-green-100 text-sm">
+                  <tr>
+                    <th className="border border-green-500 px-2 py-1">Name</th>
+                    <th className="border border-green-500 px-2 py-1">Class</th>
+                    <th className="border border-green-500 px-2 py-1">Section</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm text-center">
+                  {selectedReport.students && selectedReport.students.length > 0 ? (
+                    selectedReport.students.map((s, i) => (
+                      <tr key={i} className="hover:bg-gray-50">
+                        <td className="border border-green-500 px-2 py-1">
+                          {s.name}
+                        </td>
+                        <td className="border border-green-500 px-2 py-1">
+                          {s.class}
+                        </td>
+                        <td className="border border-green-500 px-2 py-1">
+                          {s.section}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="3"
+                        className="text-gray-500 py-2 border border-green-500"
+                      >
+                        No student records found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setSelectedReport(null)}
+                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

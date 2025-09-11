@@ -1,29 +1,39 @@
 const Payment = require("../models/Payment");
 
-//  Get daily collection summary
+//  Get daily collection summary with student details
 exports.getDailyCollections = async (req, res) => {
   try {
     const records = await Payment.aggregate([
       {
         $group: {
-          _id: "$date", // since your schema stores date as String
-          totalStudents: { $addToSet: "$student" }, // unique students
-          totalAmount: { $sum: "$totalAmount" }
-        }
+          _id: "$date",
+          students: {
+            $push: {
+              name: "$student",
+              class: "$className",
+              section: "$section",
+            },
+          },
+          totalAmount: { $sum: "$totalAmount" },
+        },
       },
       {
         $project: {
           date: "$_id",
-          totalStudents: { $size: "$totalStudents" },
+          totalStudents: { $size: "$students" },
           totalAmount: 1,
-          _id: 0
-        }
+          students: 1,
+          _id: 0,
+        },
       },
-      { $sort: { date: 1 } }
+      { $sort: { date: 1 } },
     ]);
 
     res.json(records);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching daily collection", error });
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error fetching daily collection", error });
   }
 };
