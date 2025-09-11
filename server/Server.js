@@ -28,6 +28,7 @@ const dailyCollectionRoutes = require("./routes/dailycollectionRoutes");
 const classSummaryRoutes = require("./routes/classSummaryRoutes");
 const transportReportRoutes = require("./routes/transportReportRoutes");
 const feeHeadreportRoutes = require("./routes/feeheadsreportRoutes");
+const studentPaymentHistoryRoutes = require("./routes/studentpaymenthistoryRoutes");
 
 app.use("/api/classes", classRoutes);
 app.use("/api/feeheads", feeHeadRoutes);
@@ -42,6 +43,7 @@ app.use("/api/transport-report", transportReportRoutes);
 app.use("/api/reports", dailyCollectionRoutes);
 app.use("/api/reports", classSummaryRoutes);
 app.use("/api/reports", feeHeadreportRoutes);
+app.use("/api/reports", studentPaymentHistoryRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5001;

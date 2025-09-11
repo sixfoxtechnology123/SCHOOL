@@ -9,7 +9,7 @@ const reports = [
       { name: "Daily Collection (All Students)", route: "/DailyCollection", icon: "🗓️" },
   { name: "Daily Collection (User-wise)", route: "/DailyCollectionUser", icon: "👤🗓️" },
   { name: "Class Summary", route: "/ClassSummary", icon: "📊" },
-  { name: "Student History", route: "/StudentHistory", icon: "📚" },
+  { name: "Student History", route: "/StudentPaymentHistory", icon: "📚" },
   { name: "Outstanding Fees", route: "/OutstandingFees", icon: "💰" },
   { name: "Fee Head Summary", route: "/FeeHeadsReport", icon: "🧾" },
   { name: "Transport Report", route: "/TransportReport", icon: "🚌" },

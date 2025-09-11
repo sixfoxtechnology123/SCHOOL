@@ -23,7 +23,7 @@ import Header from "./component/Header";
 import DailyCollection from "./reports/DailyCollection";
 import DailyCollectionUser from "./reports/DailyCollectionUser";
 import ClassSummary from "./reports/ClassSummary";
-import StudentHistory from "./reports/StudentHistory";
+import StudentPaymentHistory from "./reports/StudentPaymentHistory";
 import OutstandingFees from "./reports/OutstandingFees";
 import FeeHeadsReport from "./reports/FeeHeadsReport";
 import TransportReport from "./reports/TransportReport";
@@ -61,7 +61,7 @@ function App() {
       <Route path="/DailyCollection" element={<DailyCollection/>} />
       <Route path="/DailyCollectionUser" element={<DailyCollectionUser/>} />
       <Route path="/ClassSummary" element={<ClassSummary/>} />
-      <Route path="/StudentHistory" element={<StudentHistory/>} />
+      <Route path="/StudentPaymentHistory" element={<StudentPaymentHistory/>} />
       <Route path="/OutstandingFees" element={<OutstandingFees/>} />
       <Route path="/FeeHeadsReport" element={<FeeHeadsReport/>} />
       <Route path="/TransportReport" element={<TransportReport/>} />
