@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
-import { Link } from "react-router-dom";
 
 const StudentMaster = () => {
   const [step, setStep] = useState(1);
   const [sameAddress, setSameAddress] = useState(false);
-
   const [studentData, setStudentData] = useState({
-    // ----- Page 1: Child Info -----
     studentId: "",
     admitClass: "",
     section: "",
-    rollNo: "",   //  Added Roll No field
+    rollNo: "",
     firstName: "",
     lastName: "",
     gender: "",
@@ -26,52 +23,38 @@ const StudentMaster = () => {
     bloodGroup: "",
     brothers: "",
     sisters: "",
-    nationality: "Indian",
+    nationality: "INDIAN",
     languages: [],
-    permanentAddress: {
-      vill: "",
-      po: "",
-      block: "",
-      pin: "",
-      ps: "",
-      dist: "",
-    },
-    currentAddress: {
-      vill: "",
-      po: "",
-      block: "",
-      pin: "",
-      ps: "",
-      dist: "",
-    },
+    permanentAddress: { vill: "", po: "", block: "", pin: "", ps: "", dist: "" },
+    currentAddress: { vill: "", po: "", block: "", pin: "", ps: "", dist: "" },
     transportRequired: "No",
     distanceFromSchool: "",
     emergencyContact: "",
     emergencyPerson: "",
-
-    // ----- Page 2: Family Info -----
     fatherName: "",
     fatherOccupation: "",
     fatherPhone: "",
     fatherEmail: "",
-    fatherNationality: "Indian",
+    fatherNationality: "INDIAN",
     fatherQualification: "",
     motherName: "",
     motherOccupation: "",
     motherPhone: "",
     motherEmail: "",
-    motherNationality: "Indian",
+    motherNationality: "INDIAN",
     motherQualification: "",
     bpl: "No",
     bplNo: "",
     familyIncome: "",
   });
 
+  const [classList, setClassList] = useState([]);
+  const [sections, setSections] = useState([]);
   const [students, setStudents] = useState([]);
-  const [sections, setSections] = useState([]); // for dropdown
   const [isEditMode, setIsEditMode] = useState(false);
   const navigate = useNavigate();
 
+  // Fetch students for roll number generation
   const fetchStudents = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/students");
@@ -81,36 +64,47 @@ const StudentMaster = () => {
     }
   };
 
-  
-
+  // Fetch next Student ID
   const fetchNextStudentId = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/students/latest");
-      const nextId = res.data?.studentId || "ST0001";
+      const nextId = res.data?.studentId || "G0101";
       setStudentData((prev) => ({ ...prev, studentId: nextId }));
     } catch (err) {
       console.error("Error getting student ID:", err);
     }
   };
 
-  const fetchSections = async () => {
+  // Fetch class list
+  const fetchClassList = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/sections");
-      setSections(res.data || []);
+      const res = await axios.get("http://localhost:5000/api/classes/unique/classes");
+      setClassList(res.data || []); // e.g., ["Class - I", "Class - II"]
     } catch (err) {
-      console.error("Error fetching sections:", err);
+      console.error("Error fetching class list:", err);
     }
   };
 
+const fetchSections = async (className) => {
+  try {
+    const res = await axios.get(`http://localhost:5000/api/classes/sections/${encodeURIComponent(className)}`);
+    // store array of objects with { _id, section }
+    setSections(res.data || []);
+  } catch (err) {
+    console.error("Error fetching sections:", err);
+  }
+};
+
+
   useEffect(() => {
+    fetchClassList();
     fetchStudents();
+    
     fetchNextStudentId();
-    fetchSections();
   }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-
     if (type === "checkbox" && name === "language") {
       setStudentData((prev) => {
         let updated = [...prev.languages];
@@ -125,38 +119,31 @@ const StudentMaster = () => {
     }
   };
 
-  // ----- Handle Same Address Checkbox -----
   const handleSameAddress = (e) => {
     const checked = e.target.checked;
     setSameAddress(checked);
-
     if (checked) {
-      setStudentData((prev) => ({
-        ...prev,
-        currentAddress: { ...prev.permanentAddress },
-      }));
+      setStudentData((prev) => ({ ...prev, currentAddress: { ...prev.permanentAddress } }));
     } else {
       setStudentData((prev) => ({
         ...prev,
-        currentAddress: {
-          vill: "",
-          po: "",
-          block: "",
-          pin: "",
-          ps: "",
-          dist: "",
-        },
+        currentAddress: { vill: "", po: "", block: "", pin: "", ps: "", dist: "" },
       }));
     }
   };
 
-  // ----- Handle Address Change -----
   const handleAddressChange = (e, type) => {
     const { name, value } = e.target;
-    setStudentData((prev) => ({
-      ...prev,
-      [type]: { ...prev[type], [name]: value.toUpperCase() },
-    }));
+    setStudentData((prev) => ({ ...prev, [type]: { ...prev[type], [name]: value.toUpperCase() } }));
+  };
+
+  const handleCheckboxChange = (e) => {
+    const { value, checked } = e.target;
+    if (checked) {
+      setStudentData((prev) => ({ ...prev, languages: [...prev.languages, value] }));
+    } else {
+      setStudentData((prev) => ({ ...prev, languages: prev.languages.filter((lang) => lang !== value) }));
+    }
   };
 
   const handleNext = (e) => {
@@ -164,30 +151,11 @@ const StudentMaster = () => {
     setStep(2);
   };
 
-  const handleCheckboxChange = (e) => {
-    const { value, checked } = e.target;
-    if (checked) {
-      setStudentData((prev) => ({
-        ...prev,
-        languages: [...prev.languages, value],
-      }));
-    } else {
-      setStudentData((prev) => ({
-        ...prev,
-        languages: prev.languages.filter((lang) => lang !== value),
-      }));
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     try {
       if (isEditMode) {
-        await axios.put(
-          `http://localhost:5000/api/students/${studentData._id}`,
-          studentData
-        );
+        await axios.put(`http://localhost:5000/api/students/${studentData._id}`, studentData);
         alert("Student updated successfully!");
       } else {
         await axios.post("http://localhost:5000/api/students", studentData);
@@ -210,72 +178,97 @@ const StudentMaster = () => {
             <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-1 px-3 rounded flex-1">
               {step === 1 ? "Information of the Child" : "Family Information"}
             </h2>
-
             <div className="flex gap-2 ml-2">
-              <Link
-                to="/IdCardForm"
-                className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-900"
-              >
-                ID Card
-              </Link>
-              <Link
-                to="/UdiseForm"
-                className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-900"
-              >
-                UDISE
-              </Link>
+              <Link to="/IdCardForm" className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-900">ID Card</Link>
+              <Link to="/UdiseForm" className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-900">UDISE</Link>
             </div>
           </div>
 
-
-          {/* --------- STEP 1 --------- */}
           {step === 1 && (
-            <form onSubmit={handleNext} className="grid grid-cols-1  gap-2">
-              {/* Student ID, Admit Class, Section, Roll No */}
+            <form onSubmit={handleNext} className="grid grid-cols-1 gap-2">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                 <label>
                   Student ID
-                  <input
-                    name="studentId"
-                    value={studentData.studentId}
-                    readOnly
-                    className="border bg-gray-200 p-0 rounded w-full"
-                  />
+                  <input name="studentId" value={studentData.studentId} readOnly className="border bg-gray-200 p-0 rounded w-full" />
                 </label>
-                <label>
-                  Admit Class
-                  <input
-                    name="admitClass"
-                    value={studentData.admitClass}
-                    onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
-                  />
-                </label>
-                <label>
-                  Section
-                  <select
-                    name="section"
-                    value={studentData.section}
-                    onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
-                  >
-                    <option value="">--Select--</option>
-                    {sections.map((sec) => (
-                      <option key={sec._id} value={sec.sectionName}>
-                        {sec.sectionName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Roll No
-                  <input
-                    name="rollNo"
-                    value={studentData.rollNo}
-                    onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
-                  />
-                </label>
+               {/* Admit Class */}
+              <label>
+                Admit Class
+                <select
+                  name="admitClass"
+                  value={studentData.admitClass}
+                  onChange={async (e) => {
+                    const selectedClass = e.target.value;
+                    setStudentData({ ...studentData, admitClass: selectedClass, section: "", rollNo: "" });
+
+                    // Fetch sections for this class
+                    try {
+                      const res = await axios.get(
+                        `http://localhost:5000/api/classes/sections/${encodeURIComponent(selectedClass)}`
+                      );
+                      setSections(res.data || []); // sections is an array of strings now
+                    } catch (err) {
+                      console.error("Error fetching sections:", err);
+                    }
+                  }}
+                  className="border bg-gray-100 p-0 rounded w-full"
+                >
+                  <option value="">--Select Class--</option>
+                  {classList.map((cls, index) => (
+                    <option key={index} value={cls}>{cls}</option>
+                  ))}
+                </select>
+              </label>
+
+              {/* Section */}
+              <label>
+                Section
+                <select
+                  name="section"
+                  value={studentData.section}
+                  onChange={async (e) => {
+                    const selectedSection = e.target.value;
+
+                    // update state with section
+                    setStudentData((prev) => ({ ...prev, section: selectedSection, rollNo: "" }));
+
+                    // Fetch next roll number when class + section are selected
+                    if (studentData.admitClass && selectedSection) {
+                      try {
+                        const res = await axios.get(
+                          `http://localhost:5000/api/students/next-roll/${encodeURIComponent(
+                            studentData.admitClass
+                          )}/${encodeURIComponent(selectedSection)}`
+                        );
+                        console.log("Next Roll from backend:", res.data); // 🔍 check here
+                        setStudentData((prev) => ({ ...prev, rollNo: res.data.rollNo.toString() }));
+                      } catch (err) {
+                        console.error("Error fetching next roll:", err);
+                      }
+                    }
+                  }}
+                  className="border bg-gray-100 p-0 rounded w-full"
+                >
+                  <option value="">--Select Section--</option>
+                  {sections.map((sec, index) => (
+                    <option key={index} value={sec}>
+                      {sec}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {/* Roll No */}
+              <label>
+                Roll No
+                <input
+                  name="rollNo"
+                  value={studentData.rollNo || ""}
+                  readOnly
+                  className="border bg-gray-100 p-0 rounded w-full"
+                />
+              </label>
+
                 <label>
                   First Name
                   <input
@@ -426,7 +419,7 @@ const StudentMaster = () => {
 
           {/* Permanent Address */}
           <div>
-            <p className="pl-4 font-bold mb-2 text-white bg-gray-800 py-1 rounded">Permanent Address</p>
+            <p className="pl-4 font-bold mb-2 text-white bg-gray-800 py-0 rounded">Permanent Address</p>
             <div className="grid grid-cols-1 sm:grid-cols-6 gap-2">
               {["vill", "po", "block", "pin", "ps", "dist"].map((field) => (
                 <div key={field} className="flex flex-col">
@@ -445,7 +438,7 @@ const StudentMaster = () => {
 
               {/* Current Address */}
             <div>
-              <div className="pl-4 flex items-center font-semibold gap-8 bg-gray-800 text-white">
+              <div className="pl-4 flex items-center font-semibold rounded gap-8 bg-gray-800 text-white">
                 <p>Current Address</p>
                 <label>
                   <input
@@ -685,7 +678,9 @@ const StudentMaster = () => {
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="inline-flex items-center gap-2 bg-blue-700 font-semibold text-white
+                  className="inline-flex items-center gap-2 bg-blue-700 font-semibo
+                  
+                  ld text-white
                   px-3 py-1 sm:px-4 sm:py-1
                   text-sm sm:text-base
                   rounded-lg shadow hover:bg-blue-800 transition"
@@ -694,7 +689,7 @@ const StudentMaster = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-1 rounded text-white bg-gray-800 hover:bg-gray-950 whitespace-nowrap"
+                  className="px-6 py-1 rounded text-white bg-green-600 hover:bg-green-700 whitespace-nowrap"
                 >
                   Submit
                 </button>
@@ -706,5 +701,4 @@ const StudentMaster = () => {
     </div>
   );
 };
-
 export default StudentMaster;

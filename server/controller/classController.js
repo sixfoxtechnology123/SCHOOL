@@ -1,4 +1,3 @@
-// controllers/classController.js
 const mongoose = require("mongoose");
 const ClassMaster = require("../models/Class");
 
@@ -34,6 +33,34 @@ exports.getAllClasses = async (_req, res) => {
     res.status(500).json({ error: err.message || "Failed to fetch classes" });
   }
 };
+
+// GET unique class names (for dropdown)
+exports.getUniqueClasses = async (_req, res) => {
+  try {
+    const classes = await ClassMaster.distinct("className");
+    res.json(classes);
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Failed to fetch unique classes" });
+  }
+};
+// GET sections by class
+exports.getSectionsByClass = async (req, res) => {
+  try {
+    const { className } = req.params;
+    if (!className) return res.status(400).json({ error: "className is required" });
+
+    // fetch documents matching className
+    const sections = await ClassMaster.find({ className }).select("section -_id").lean();
+    
+    // remove duplicates
+    const uniqueSections = [...new Set(sections.map(s => s.section))];
+
+    res.json(uniqueSections);
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Failed to fetch sections" });
+  }
+};
+
 
 // POST create class
 exports.createClass = async (req, res) => {

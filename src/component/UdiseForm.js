@@ -57,7 +57,7 @@ const UdiseForm = () => {
         <div className="p-2 bg-white shadow-md rounded-md">
           {/* Heading same style as ID Card */}
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-1 px-3 rounded flex-1">
+            <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-0 px-3 rounded flex-1">
               UDISE Form
             </h2>
           </div>
@@ -366,7 +366,7 @@ const UdiseForm = () => {
               <BackButton />
               <button
                 type="submit"
-                className="px-4 py-1 bg-gray-800 text-white rounded"
+                className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
               >
                 Submit
               </button>

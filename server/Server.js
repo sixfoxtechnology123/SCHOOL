@@ -22,6 +22,8 @@ const transportRoutes = require("./routes/transportRoute");
 const userRoutes = require("./routes/userRoutes");
 const studentRoutes = require("./routes/studentRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
+const idCardRoutes = require("./routes/idCardRoutes");
+const udiseRoutes = require("./routes/udiseRoutes");
 
 
 const dailyCollectionRoutes = require("./routes/dailycollectionRoutes");
@@ -38,6 +40,8 @@ app.use("/api/transportroutes", transportRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/payments", paymentRoutes);  
+app.use("/api/idcards", idCardRoutes);
+app.use("/api/udise", udiseRoutes);
 
 app.use("/api/transport-report", transportReportRoutes);
 app.use("/api/reports", dailyCollectionRoutes);

@@ -56,7 +56,7 @@ const IdCardForm = () => {
         <Header />
         <div className="p-2 bg-white shadow-md rounded-md">
           <div className="flex justify-between items-center mb-2">
-            <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-1 px-3 rounded flex-1">
+            <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-0 px-3 rounded flex-1">
               ID Card Form
             </h2>
           </div>
@@ -140,7 +140,7 @@ const IdCardForm = () => {
 
             {/* Permanent Address Section */}
             <div className="col-span-full">
-              <p className="pl-4 font-bold mb-2 text-white bg-gray-800 py-1 rounded">
+              <p className="pl-4 font-bold mb-2 text-white bg-gray-800 py-0 rounded">
             Address
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-6 gap-2">
@@ -167,7 +167,7 @@ const IdCardForm = () => {
               <BackButton />
               <button
                 type="submit"
-                className="px-4 py-1 bg-gray-800 text-white rounded"
+                className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
               >
                 Submit
               </button>

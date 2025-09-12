@@ -1,23 +1,57 @@
-// models/StudentMaster.js
 const mongoose = require("mongoose");
 
-const studentSchema = new mongoose.Schema(
-  {
-    studentId: { type: String, required: true, unique: true }, // ST0001
-    name: { type: String, required: true },
-    className: { type: String, required: true }, // Link to Classes
-    section: { type: String, enum: ["A", "B", "C"], required: true },
-    rollNo: { type: Number, required: true },
-    dob: { type: String, required: true },
-    fatherName: { type: String, required: true },
-    motherName: { type: String, required: true },
-    address: { type: String, required: true },
-    phoneNo: { type: String, required: true, match: /^[0-9]{10}$/ },
+const studentSchema = new mongoose.Schema({
+  studentId: { type: String, required: true, unique: true }, // IMPORTANT
+  admitClass: String,
+  section: String,
+  rollNo: String,
+  firstName: String,
+  lastName: String,
+  gender: String,
+  socialCaste: String,
+  dob: String,
+  height: String,
+  weight: String,
+  bloodGroup: String,
+  brothers: String,
+  sisters: String,
+  nationality: String,
+  languages: [String],
+  permanentAddress: {
+    vill: String,
+    po: String,
+    block: String,
+    pin: String,
+    ps: String,
+    dist: String,
   },
-  {
-    timestamps: false,
-    collection: "studentmaster",
-  }
-);
+  currentAddress: {
+    vill: String,
+    po: String,
+    block: String,
+    pin: String,
+    ps: String,
+    dist: String,
+  },
+  transportRequired: String,
+  distanceFromSchool: String,
+  emergencyContact: String,
+  emergencyPerson: String,
+  fatherName: String,
+  fatherOccupation: String,
+  fatherPhone: String,
+  fatherEmail: String,
+  fatherNationality: String,
+  fatherQualification: String,
+  motherName: String,
+  motherOccupation: String,
+  motherPhone: String,
+  motherEmail: String,
+  motherNationality: String,
+  motherQualification: String,
+  bpl: String,
+  bplNo: String,
+  familyIncome: String,
+});
 
-module.exports = mongoose.model("StudentMaster", studentSchema);
+module.exports = mongoose.model("Student", studentSchema);
