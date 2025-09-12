@@ -28,6 +28,8 @@ import OutstandingFees from "./reports/OutstandingFees";
 import FeeHeadsReport from "./reports/FeeHeadsReport";
 import TransportReport from "./reports/TransportReport";
 import ReportsDashboard from "./reports/ReportsDashboard";
+import IdCardForm from "./component/IdCardForm";
+import UdiseForm from "./component/UdiseForm";
 
 
 
@@ -66,6 +68,8 @@ function App() {
       <Route path="/FeeHeadsReport" element={<FeeHeadsReport/>} />
       <Route path="/TransportReport" element={<TransportReport/>} />
       <Route path="/ReportsDashboard" element={<ReportsDashboard/>} />
+      <Route path="/IdCardForm" element={<IdCardForm/>} />
+      <Route path="/UdiseForm" element={<UdiseForm/>} />
 
     </Routes>
   );

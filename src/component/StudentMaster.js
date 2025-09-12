@@ -4,7 +4,7 @@ import BackButton from "../component/BackButton";
 import { useNavigate } from "react-router-dom";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
-
+import { Link } from "react-router-dom";
 
 const StudentMaster = () => {
   const [step, setStep] = useState(1);
@@ -206,13 +206,31 @@ const StudentMaster = () => {
       <div className="flex-1 overflow-y-auto p-3">
         <Header />
         <div className="p-2 bg-white shadow-md rounded-md">
-          <h2 className="text-xl sm:text-xl font-bold mb-2 text-center text-white bg-gray-800 py-1 rounded">
-            {step === 1 ? "Information of the Child" : "Family Information"}
-          </h2>
+          <div className="flex justify-between items-center mb-2 ">
+            <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-1 px-3 rounded flex-1">
+              {step === 1 ? "Information of the Child" : "Family Information"}
+            </h2>
+
+            <div className="flex gap-2 ml-2">
+              <Link
+                to="/IdCardForm"
+                className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-900"
+              >
+                ID Card
+              </Link>
+              <Link
+                to="/UdiseForm"
+                className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-900"
+              >
+                UDISE
+              </Link>
+            </div>
+          </div>
+
 
           {/* --------- STEP 1 --------- */}
           {step === 1 && (
-            <form onSubmit={handleNext} className="grid grid-cols-1 gap-2">
+            <form onSubmit={handleNext} className="grid grid-cols-1  gap-2">
               {/* Student ID, Admit Class, Section, Roll No */}
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                 <label>
