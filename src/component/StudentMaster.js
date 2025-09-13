@@ -101,10 +101,13 @@ const StudentMaster = () => {
     fetchStudents();
     fetchNextStudentId();
 
-    if (studentItem) { // <--- added to load student for edit
-      setStudentData(studentItem);
-      setIsEditMode(true);
-    }
+    if (studentItem) {
+  // Normalize languages to uppercase so checkboxes match
+  const normalizedLanguages = (studentItem.languages || []).map((l) => l.toUpperCase());
+  setStudentData({ ...studentItem, languages: normalizedLanguages });
+  setIsEditMode(true);
+}
+
     // eslint-disable-next-line
   }, []);
 
@@ -142,14 +145,17 @@ const StudentMaster = () => {
     setStudentData((prev) => ({ ...prev, [type]: { ...prev[type], [name]: value.toUpperCase() } }));
   };
 
-  const handleCheckboxChange = (e) => {
-    const { value, checked } = e.target;
-    if (checked) {
-      setStudentData((prev) => ({ ...prev, languages: [...prev.languages, value] }));
-    } else {
-      setStudentData((prev) => ({ ...prev, languages: prev.languages.filter((lang) => lang !== value) }));
-    }
-  };
+const handleCheckboxChange = (e) => {
+  const { value, checked } = e.target;
+  const val = value.toUpperCase(); // store uppercase consistently
+  setStudentData((prev) => ({
+    ...prev,
+    languages: checked
+      ? [...prev.languages, val]
+      : prev.languages.filter((lang) => lang !== val),
+  }));
+};
+
 
   const handleNext = (e) => {
     e.preventDefault();
@@ -398,7 +404,7 @@ const StudentMaster = () => {
                   type="checkbox"
                   name="language"
                   value="English"
-                  checked={studentData.languages.includes("English")}
+                  checked={studentData.languages.includes("ENGLISH")}
                   onChange={handleCheckboxChange}
                 />{" "}
                 English
@@ -408,7 +414,7 @@ const StudentMaster = () => {
                   type="checkbox"
                   name="language"
                   value="Bengali"
-                  checked={studentData.languages.includes("Bengali")}
+                  checked={studentData.languages.includes("BENGALI")}
                   onChange={handleCheckboxChange}
                 />{" "}
                 Bengali
@@ -418,11 +424,12 @@ const StudentMaster = () => {
                   type="checkbox"
                   name="language"
                   value="Hindi"
-                  checked={studentData.languages.includes("Hindi")}
+                  checked={studentData.languages.includes("HINDI")}
                   onChange={handleCheckboxChange}
                 />{" "}
                 Hindi
               </label>
+
             </div>
 
             </div>
@@ -709,71 +716,77 @@ const StudentMaster = () => {
           )}
 
           {/* --------- STEP 3 --------- */}
-         {step === 3 && (
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData();
-                formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
-                formData.append("motherPhoto", e.target.motherPhoto.files[0]);
-                formData.append("childPhoto", e.target.childPhoto.files[0]);
+        {step === 3 && (
+  <form
+    onSubmit={async (e) => {
+      e.preventDefault();
+      const formData = new FormData();
 
-                // Append all other student data from state
-                Object.keys(studentData).forEach((key) => {
-                  if (typeof studentData[key] !== "object") {
-                    formData.append(key, studentData[key]);
-                  } else if (key === "permanentAddress" || key === "currentAddress") {
-                    Object.keys(studentData[key]).forEach((sub) => {
-                      formData.append(`${key}[${sub}]`, studentData[key][sub]);
-                    });
-                  }
-                });
+      // Append photos
+      formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
+      formData.append("motherPhoto", e.target.motherPhoto.files[0]);
+      formData.append("childPhoto", e.target.childPhoto.files[0]);
 
-                try {
-                  await axios.post("http://localhost:5000/api/students", formData, {
-                    headers: { "Content-Type": "multipart/form-data" },
-                  });
-                  alert("Student and Photos saved successfully!");
-                  navigate("/StudentList", { replace: true });
-                } catch (err) {
-                  console.error("Error saving student with photos:", err);
-                  alert("Failed to save student");
-                }
-              }}
-              className="grid grid-cols-1 gap-4"
-            >       
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <label>
-                  Affix Photo of Father
-                  <input type="file" name="fatherPhoto" accept="image/*" required  className="border bg-gray-100 p-1 rounded w-full" />
-                </label>
-                <label>
-                  Affix Photo of Mother
-                  <input type="file" name="motherPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full"/>
-                </label>
-                <label>
-                  Affix Photo of Child
-                  <input type="file" name="childPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full" />
-                </label>
-              </div>
+      // Append studentData fields
+      Object.keys(studentData).forEach((key) => {
+        if (key === "languages") {
+          // Handle languages array
+          studentData.languages.forEach((lang) => formData.append("languages[]", lang));
+        } else if (key === "permanentAddress" || key === "currentAddress") {
+          Object.keys(studentData[key]).forEach((sub) => {
+            formData.append(`${key}[${sub}]`, studentData[key][sub]);
+          });
+        } else {
+          formData.append(key, studentData[key]);
+        }
+      });
 
-              <div className="flex justify-between mt-4">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="px-4 py-1 bg-blue-700 text-white rounded hover:bg-blue-800"
-                >
-                  Back
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-                >
-                  Submit
-                </button>
-              </div>
-            </form>
-          )}
+      try {
+        await axios.post("http://localhost:5000/api/students", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        alert("Student and Photos saved successfully!");
+        navigate("/StudentList", { replace: true });
+      } catch (err) {
+        console.error("Error saving student with photos:", err);
+        alert("Failed to save student");
+      }
+    }}
+    className="grid grid-cols-1 gap-4"
+  >
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <label>
+        Affix Photo of Father
+        <input type="file" name="fatherPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full" />
+      </label>
+      <label>
+        Affix Photo of Mother
+        <input type="file" name="motherPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full"/>
+      </label>
+      <label>
+        Affix Photo of Child
+        <input type="file" name="childPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full" />
+      </label>
+    </div>
+
+    <div className="flex justify-between mt-4">
+      <button
+        type="button"
+        onClick={() => setStep(2)}
+        className="px-4 py-1 bg-blue-700 text-white rounded hover:bg-blue-800"
+      >
+        Back
+      </button>
+      <button
+        type="submit"
+        className="px-6 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+      >
+        Submit
+      </button>
+    </div>
+  </form>
+)}
+
 
         </div>
       </div>

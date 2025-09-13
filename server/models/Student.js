@@ -4,7 +4,7 @@ const studentSchema = new mongoose.Schema({
   studentId: { type: String, required: true, unique: true }, // IMPORTANT
   admitClass: String,
   section: String,
-  rollNo: String,
+  rollNo: { type: Number }, // Optional: Number is cleaner
   firstName: String,
   lastName: String,
   gender: String,
@@ -16,7 +16,7 @@ const studentSchema = new mongoose.Schema({
   brothers: String,
   sisters: String,
   nationality: String,
-  languages: [String],
+  languages: { type: [String], default: [] }, // ✅ Ensure always array
   permanentAddress: {
     vill: String,
     po: String,
@@ -55,8 +55,6 @@ const studentSchema = new mongoose.Schema({
   fatherPhoto: { data: Buffer, contentType: String },
   motherPhoto: { data: Buffer, contentType: String },
   childPhoto: { data: Buffer, contentType: String },
-
-
 });
 
 module.exports = mongoose.model("StudentMaster", studentSchema);

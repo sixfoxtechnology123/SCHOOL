@@ -76,6 +76,7 @@ export const getAllStudents = async (_req, res) => {
     const enriched = students.map((s) => ({
       ...s,
       classLabel: classMap[s.className] || s.className,
+      languages: s.languages || [], // <-- ensure always array
     }));
 
     res.json(enriched);
@@ -93,6 +94,7 @@ export const createStudent = async (req, res) => {
       ...req.body,
       studentId,
       rollNo,
+      languages: req.body.languages || [], // <-- ensure default empty array
       fatherPhoto: req.files?.fatherPhoto
         ? { data: req.files.fatherPhoto[0].buffer, contentType: req.files.fatherPhoto[0].mimetype }
         : null,
@@ -121,6 +123,7 @@ export const updateStudent = async (req, res) => {
     if (!student) return res.status(404).json({ error: "Student not found" });
 
     Object.assign(student, payload);
+    student.languages = payload.languages || student.languages || []; // <-- ensure always array
 
     if (req.files?.fatherPhoto) {
       student.fatherPhoto = { data: req.files.fatherPhoto[0].buffer, contentType: req.files.fatherPhoto[0].mimetype };
@@ -150,7 +153,7 @@ export const deleteStudent = async (req, res) => {
   }
 };
 
-// ✅ NEW API to get full student info (Child + Family + IdCard + Udise)
+//  NEW API to get full student info (Child + Family + IdCard + Udise)
 export const getFullStudentInfo = async (req, res) => {
   try {
     const { id } = req.params;
@@ -162,7 +165,10 @@ export const getFullStudentInfo = async (req, res) => {
     const udiseInfo = await UdiseInfo.findOne({ studentId: student.studentId }).lean();
 
     res.json({
-      childInfo: student,
+      childInfo: {
+        ...student,
+        languages: student.languages || [], // <-- ensure always an array
+      },
       familyInfo: {
         fatherName: student.fatherName,
         fatherOccupation: student.fatherOccupation,
