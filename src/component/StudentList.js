@@ -123,7 +123,6 @@ const generatePDF = async (student) => {
 </div>
   `;
 
-  // Helper for rows
   const twoColRow = (label1, value1, label2, value2) => `
     <div style="display:flex; padding:2px 0;">
       <div style="flex:1; display:flex;">
@@ -138,29 +137,14 @@ const generatePDF = async (student) => {
     </div>
   `;
 
-  // Fixed header vertical alignment
-  const sectionHeader = (title) => `
-    <div style="
-      background-color:#4f81bd;
-      color:#fff;
-      height:26px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      margin:4px 0;
-      font-weight:bold;
-      font-size:13px;
-    ">
-      ${title}
-    </div>
-  `;
-
-  // Address block
   const formatAddressBlock = (title, addr) => {
     if (!addr) return "";
     return `
-      ${sectionHeader(title)}
-      <div style="padding:5px 10px; border:1px solid #000; margin-bottom:12px;">
+      <div class="pdf-section-header"
+        style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
+        ${title}
+      </div>
+      <div style="padding:0 10px 5px 10px; border:1px solid #000;">
         ${twoColRow("Vill", addr.vill, "PO", addr.po)}
         ${twoColRow("Block", addr.block, "PS", addr.ps)}
         ${twoColRow("Dist", addr.dist, "PIN", addr.pin)}
@@ -172,23 +156,29 @@ const generatePDF = async (student) => {
 <div style="border:1px solid #000; padding:0 15px 15px 15px; position:relative; z-index:1;">
   <!-- Header -->
   <div style="display:flex; justify-content:space-between; align-items:center; margin:0 0 12px 0;">
-    <img src="/logo.jpg" style="height:60px;" />
+    <img src="/logo1.jpg" style="height:60px;" />
     <div style="text-align:center; flex:1; margin:0 20px;">
-      <h2 style="margin:0; font-size:18pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
+      <h2 style="margin:2px 0 0 0; font-size:18pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
       <p style="margin:2px 0; color:#004080;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
-      <h3 style="margin:2px 0 0 0; font-size:14pt; color:#006400;">APPLICATION FOR ADMISSION</h3>
+      <h3 style="margin:2px 0 0 0; font-size:14pt; color:#1e40af;">APPLICATION FOR ADMISSION</h3>
     </div>
-    <img src="/logo.jpg" style="height:60px;" />
+    <img src="/logo1.jpg" style="height:60px;" />
   </div>
-  <hr style="border:1px solid #004080; margin-bottom:12px;"/>
+  <hr style="border:1px solid #004080;"/>
 
   <!-- Photos -->
-  ${sectionHeader("Photos")}
+  <div class="pdf-section-header"
+    style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
+    Photos
+  </div>
   ${imagesHTML}
 
   <!-- Child Information -->
-  ${sectionHeader("Child Information")}
-  <div style="padding:5px 10px; border:1px solid #000; margin-bottom:12px;">
+  <div class="pdf-section-header"
+    style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
+    Child Information
+  </div>
+  <div style="padding:0 10px 5px 10px; border:1px solid #000;">
     ${twoColRow("Student ID", student.studentId, "Name", getName(student))}
     ${twoColRow("Class", getClass(student), "Section", student.section)}
     ${twoColRow("Roll No", student.rollNo, "Gender", student.gender)}
@@ -207,8 +197,11 @@ const generatePDF = async (student) => {
   ${formatAddressBlock("Current Address", student.currentAddress)}
 
   <!-- Family Information -->
-  ${sectionHeader("Family Information")}
-  <div style="padding:5px 10px; border:1px solid #000;">
+  <div class="pdf-section-header"
+    style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
+    Family Information
+  </div>
+  <div style="padding:0 10px 5px 10px; border:1px solid #000;">
     ${twoColRow("Father", student.fatherName, "Occupation", student.fatherOccupation)}
     ${twoColRow("Father Phone", student.fatherPhone, "Father Email", student.fatherEmail)}
     ${twoColRow("Father Nationality", student.fatherNationality, "Father Qualification", student.fatherQualification)}
@@ -223,7 +216,6 @@ const generatePDF = async (student) => {
 </div>
   `;
 
-  // Render HTML into canvas
   document.body.appendChild(container);
   const canvas = await html2canvas(container, { scale: 2 });
   const imgData = canvas.toDataURL("image/png");
@@ -231,14 +223,12 @@ const generatePDF = async (student) => {
   const pdfWidth = doc.internal.pageSize.getWidth();
   const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-  // Add image
   doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-
-
 
   doc.save(`${student.studentId || "student"}.pdf`);
   document.body.removeChild(container);
 };
+
 
 
   return (
