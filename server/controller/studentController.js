@@ -1,11 +1,12 @@
 import StudentMaster from "../models/Student.js";
 import ClassMaster from "../models/Class.js";
+import IdCardInfo from "../models/IdCard.js";
+import UdiseInfo from "../models/Udise.js";
 
 const PREFIX = "G";
-const PAD = 4;          // Example: G0001
-const START_NUM = 101;  // First ID = G0101
+const PAD = 4;
+const START_NUM = 101;
 
-// Generate next Student ID
 async function generateNextStudentId() {
   const lastStudent = await StudentMaster.aggregate([
     { $match: { studentId: { $regex: `^${PREFIX}\\d+$` } } },
@@ -26,7 +27,6 @@ async function generateNextStudentId() {
   return `${PREFIX}${String(nextNum).padStart(PAD, "0")}`;
 }
 
-// Generate next Roll No (per class + section)
 async function generateNextRollNo(admitClass, section) {
   const last = await StudentMaster.find({ admitClass, section })
     .sort({ rollNo: -1 })
@@ -37,7 +37,6 @@ async function generateNextRollNo(admitClass, section) {
   return parseInt(last[0].rollNo, 10) + 1;
 }
 
-// GET next Student ID
 export const getLatestStudentId = async (_req, res) => {
   try {
     const nextId = await generateNextStudentId();
@@ -47,7 +46,6 @@ export const getLatestStudentId = async (_req, res) => {
   }
 };
 
-// GET next Roll No
 export const getNextRollNo = async (req, res) => {
   try {
     const { className, section } = req.params;
@@ -68,7 +66,6 @@ export const getNextRollNo = async (req, res) => {
   }
 };
 
-// GET all students
 export const getAllStudents = async (_req, res) => {
   try {
     const students = await StudentMaster.find().lean();
@@ -87,7 +84,6 @@ export const getAllStudents = async (_req, res) => {
   }
 };
 
-// POST create student with photos in MongoDB
 export const createStudent = async (req, res) => {
   try {
     const studentId = await generateNextStudentId();
@@ -115,7 +111,6 @@ export const createStudent = async (req, res) => {
   }
 };
 
-// PUT update student
 export const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -127,7 +122,6 @@ export const updateStudent = async (req, res) => {
 
     Object.assign(student, payload);
 
-    // Update photos if uploaded
     if (req.files?.fatherPhoto) {
       student.fatherPhoto = { data: req.files.fatherPhoto[0].buffer, contentType: req.files.fatherPhoto[0].mimetype };
     }
@@ -145,7 +139,6 @@ export const updateStudent = async (req, res) => {
   }
 };
 
-// DELETE student
 export const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
@@ -154,5 +147,43 @@ export const deleteStudent = async (req, res) => {
     res.json({ message: "Student deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to delete student" });
+  }
+};
+
+// ✅ NEW API to get full student info (Child + Family + IdCard + Udise)
+export const getFullStudentInfo = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const student = await StudentMaster.findById(id).lean();
+    if (!student) return res.status(404).json({ error: "Student not found" });
+
+    const idCardInfo = await IdCardInfo.findOne({ studentId: student.studentId }).lean();
+    const udiseInfo = await UdiseInfo.findOne({ studentId: student.studentId }).lean();
+
+    res.json({
+      childInfo: student,
+      familyInfo: {
+        fatherName: student.fatherName,
+        fatherOccupation: student.fatherOccupation,
+        fatherPhone: student.fatherPhone,
+        fatherEmail: student.fatherEmail,
+        fatherNationality: student.fatherNationality,
+        fatherQualification: student.fatherQualification,
+        motherName: student.motherName,
+        motherOccupation: student.motherOccupation,
+        motherPhone: student.motherPhone,
+        motherEmail: student.motherEmail,
+        motherNationality: student.motherNationality,
+        motherQualification: student.motherQualification,
+        bpl: student.bpl,
+        bplNo: student.bplNo,
+        familyIncome: student.familyIncome
+      },
+      idCardInfo: idCardInfo || {},
+      udiseInfo: udiseInfo || {}
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Failed to fetch full student info" });
   }
 };

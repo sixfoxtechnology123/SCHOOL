@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
 
@@ -53,6 +53,8 @@ const StudentMaster = () => {
   const [students, setStudents] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const studentItem = location.state?.studentItem; // <--- added
 
   // Fetch students for roll number generation
   const fetchStudents = async () => {
@@ -79,28 +81,31 @@ const StudentMaster = () => {
   const fetchClassList = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/classes/unique/classes");
-      setClassList(res.data || []); // e.g., ["Class - I", "Class - II"]
+      setClassList(res.data || []); 
     } catch (err) {
       console.error("Error fetching class list:", err);
     }
   };
 
-const fetchSections = async (className) => {
-  try {
-    const res = await axios.get(`http://localhost:5000/api/classes/sections/${encodeURIComponent(className)}`);
-    // store array of objects with { _id, section }
-    setSections(res.data || []);
-  } catch (err) {
-    console.error("Error fetching sections:", err);
-  }
-};
-
+  const fetchSections = async (className) => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/classes/sections/${encodeURIComponent(className)}`);
+      setSections(res.data || []);
+    } catch (err) {
+      console.error("Error fetching sections:", err);
+    }
+  };
 
   useEffect(() => {
     fetchClassList();
     fetchStudents();
-    
     fetchNextStudentId();
+
+    if (studentItem) { // <--- added to load student for edit
+      setStudentData(studentItem);
+      setIsEditMode(true);
+    }
+    // eslint-disable-next-line
   }, []);
 
   const handleChange = (e) => {

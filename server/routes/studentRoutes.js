@@ -6,21 +6,21 @@ import {
   createStudent,
   updateStudent,
   deleteStudent,
-  getNextRollNo
+  getNextRollNo,
+  getFullStudentInfo  // NEW: import full info method
 } from "../controller/studentController.js";
 
 const router = express.Router();
-
-// --- Multer setup to store images in memory (not in project folder) ---
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// --- Routes ---
 router.get("/", getAllStudents);
 router.get("/latest", getLatestStudentId);
 router.get("/next-roll/:className/:section", getNextRollNo);
 
-// --- Create student with photo upload ---
+//  NEW API Route
+router.get("/:id/fullinfo", getFullStudentInfo);
+
 router.post(
   "/",
   upload.fields([
@@ -34,11 +34,10 @@ router.post(
 router.put("/:id", updateStudent);
 router.delete("/:id", deleteStudent);
 
-// --- Optional: serve images for frontend ---
 router.get("/students/:id/photo/:type", async (req, res) => {
   try {
-    const student = await Student.findById(req.params.id);
-    const type = req.params.type; // fatherPhoto, motherPhoto, childPhoto
+    const student = await StudentMaster.findById(req.params.id);
+    const type = req.params.type;
 
     if (!student || !student[type]) return res.status(404).send("Image not found");
 
