@@ -80,138 +80,171 @@ const StudentsList = () => {
     return id.includes(searchTermLower) || name.includes(searchTermLower);
   });
 
- const generatePDF = async (student) => {
+const generatePDF = async (student) => {
   const doc = new jsPDF("p", "pt", "a4");
   const container = document.createElement("div");
   container.style.width = "800px";
   container.style.padding = "20px";
-  container.style.fontSize = "12px";
   container.style.fontFamily = "Arial, sans-serif";
+  container.style.fontSize = "12px";
+  container.style.color = "#000";
+  container.style.position = "relative";
+  container.style.background = "#fff";
 
-  const formatAddress = (addr) => {
-    if (!addr) return "";
-    return `
-    <b>Vill</b> - ${addr.vill || ""} 
-    <b>PO</b> - ${addr.po || ""} 
-    <b>Block</b> - ${addr.block || ""} 
-    <b>PS</b> - ${addr.ps || ""} 
-    <b>Dist</b> - ${addr.dist || ""} 
-    <b>PIN</b>- ${addr.pin || ""}
-    `;
-      };
-
-  // Convert binary Base64 object to data URL
   const getImageSrc = (photoObj) => {
     if (!photoObj || !photoObj.data || !photoObj.contentType) return "";
-    // If your photoObj.data is a Binary object, convert to Base64 string
     let base64String = "";
     if (photoObj.data && photoObj.data.buffer) {
-      // Node Buffer style (if fetched via MongoDB driver)
       const binary = new Uint8Array(photoObj.data.buffer);
       base64String = btoa(String.fromCharCode(...binary));
     } else if (photoObj.data && typeof photoObj.data === "string") {
-      // Already Base64 string
       base64String = photoObj.data.replace(/^data:.*;base64,/, "");
     }
     return `data:${photoObj.contentType};base64,${base64String}`;
   };
 
-  // Images in order: Father, Mother, Child
- const imagesHTML = `
-  <div style="display:flex; gap:20px; margin:20px 0;">
-    ${student.fatherPhoto ? `
-      <div style="text-align:center;">
-        <p style="margin-bottom:5px;"><strong>Father Photo</strong></p>
-        <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; display:block; margin:0 auto;" />
-      </div>` : ""}
-    ${student.motherPhoto ? `
-      <div style="text-align:center;">
-        <p style="margin-bottom:5px;"><strong>Mother Photo</strong></p>
-        <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; display:block; margin:0 auto;" />
-      </div>` : ""}
-    ${student.childPhoto ? `
-      <div style="text-align:center;">
-        <p style="margin-bottom:5px;"><strong>Child Photo</strong></p>
-        <img src="${getImageSrc(student.childPhoto)}" style="height:100px; display:block; margin:0 auto;" />
-      </div>` : ""}
-  </div>
-`;
-
-
-  container.innerHTML = `
-    <div style="display: flex; align-items: center; margin-bottom: 20px;">
-      <img src="/logo.jpg" style="height: 60px; margin-right: 20px;" />
-      <div>
-        <h2 style="margin:0; font-size:18pt;">CENTRAL PUBLIC SCHOOL</h2>
-        <p style="margin:0;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
-        <h3 style="margin:0;">APPLICATION FOR ADMISSION</h3>
-      </div>
-    </div>
-    <hr style="margin-bottom: 20px;" />
-
-    ${imagesHTML}
-
-    <!-- Child Information -->
-    <h4><strong>Child Information</strong></h4>
-    <div style="margin-bottom: 15px;">
-      <p><strong>Student ID:</strong> ${student.studentId || ""}</p>
-      <p><strong>Name:</strong> ${getName(student)}</p>
-      <p><strong>Class:</strong> ${getClass(student)}</p>
-      <p><strong>Section:</strong> ${student.section || ""}</p>
-      <p><strong>Roll No:</strong> ${student.rollNo || ""}</p>
-      <p><strong>Gender:</strong> ${student.gender || ""}</p>
-      <p><strong>Social Cast:</strong> ${student.socialCaste || ""}</p>
-      <p><strong>DOB:</strong> ${formatDOB(student.dob)}</p>
-      <p><strong>Height:</strong> ${student.height || ""}</p>
-      <p><strong>Weight:</strong> ${student.weight || ""}</p>
-      <p><strong>Blood Group:</strong> ${student.bloodGroup || ""}</p>
-      <p><strong>No Of Brothers:</strong> ${student.brothers || ""}</p>
-      <p><strong>No Of Sisters:</strong> ${student.sisters || ""}</p>
-      <p><strong>Nationality:</strong> ${student.nationality || ""}</p>
-      <p><strong>Languages:</strong> ${(student.languages || []).join(", ")}</p>
-      <p><strong>Transport Required:</strong> ${student.transportRequired || ""}</p>
-      <p><strong>Distance from School(KM):</strong> ${student.distanceFromSchool || ""}</p>
-
-      <p><strong>Emergency Person:</strong> ${student.emergencyPerson || ""}</p>
-      <p><strong>Emergency Contact:</strong> ${student.emergencyContact || ""}</p>
-
-      <h4><strong>Permanent Address</strong></h4>
-      <pre style="margin-bottom:10px;">${formatAddress(student.permanentAddress)}</pre>
-
-      <h4><strong>Current Address</strong></h4>
-      <pre style="margin-bottom:10px;">${formatAddress(student.currentAddress)}</pre>
-    </div>
-
-    <!-- Family Information -->
-    <h4><strong>Family Information</strong></h4>
+  const imagesHTML = `
+<div style="display:flex; justify-content:center; gap:40px; margin:15px 0; text-align:center;">
+  ${student.fatherPhoto ? `
     <div>
-      <p><strong>Father:</strong> ${student.fatherName || ""}</p>
-      <p><strong>Father Occupation:</strong> ${student.fatherOccupation || ""}</p>
-      <p><strong>Father Phone:</strong> ${student.fatherPhone || ""}</p>
-      <p><strong>Father Email:</strong> ${student.fatherEmail || ""}</p>
-      <p><strong>Father Nationality:</strong> ${student.fatherNationality || ""}</p>
-      <p><strong>Father Qualification:</strong> ${student.fatherQualification || ""}</p>
+      <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; border:1px solid #000;"/><br/>
+      <strong>Father Photo</strong>
+    </div>` : ""}
+  ${student.motherPhoto ? `
+    <div>
+      <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; border:1px solid #000;"/><br/>
+      <strong>Mother Photo</strong>
+    </div>` : ""}
+  ${student.childPhoto ? `
+    <div>
+      <img src="${getImageSrc(student.childPhoto)}" style="height:100px; border:1px solid #000;"/><br/>
+      <strong>Child Photo</strong>
+    </div>` : ""}
+</div>
+  `;
 
-      <p><strong>Mother:</strong> ${student.motherName || ""}</p>
-      <p><strong>Mother Occupation:</strong> ${student.motherOccupation || ""}</p>
-      <p><strong>Mother Phone:</strong> ${student.motherPhone || ""}</p>
-      <p><strong>Mother Email:</strong> ${student.motherEmail || ""}</p>
-      <p><strong>Mother Nationality:</strong> ${student.motherNationality || ""}</p>
-      <p><strong>Mother Qualification:</strong> ${student.motherQualification || ""}</p>
-
-      <p><strong>BPL:</strong> ${student.bpl || ""}</p>
-      <p><strong>BPL No:</strong> ${student.bplNo || ""}</p>
-      <p><strong>Family Income:</strong> ${student.familyIncome || ""}</p>
+  // Helper for rows (2 fields per row, aligned with :)
+  const twoColRow = (label1, value1, label2, value2) => `
+    <div style="display:flex; padding:2px 0;">
+      <div style="flex:1; display:flex;">
+        <div style="min-width:120px;"><strong>${label1}</strong></div>
+        <div>: ${value1 || ""}</div>
+      </div>
+      ${label2 ? `
+      <div style="flex:1; display:flex;">
+        <div style="min-width:120px;"><strong>${label2}</strong></div>
+        <div>: ${value2 || ""}</div>
+      </div>` : ""}
     </div>
   `;
 
+  const sectionHeader = (title) => `
+    <div style="
+      background-color:#4f81bd;
+      color:#fff;
+      text-align:center;
+      height:26px;
+      line-height:26px;
+      margin:4px 0;
+      font-weight:bold;
+      font-size:13px;
+    ">
+      ${title}
+    </div>
+  `;
+
+  // Permanent/Current Address with row structure
+  const formatAddressBlock = (title, addr) => {
+    if (!addr) return "";
+    return `
+      ${sectionHeader(title)}
+      <div style="padding:5px 10px; border:1px solid #000; margin-bottom:12px;">
+        ${twoColRow("Vill", addr.vill, "PO", addr.po)}
+        ${twoColRow("Block", addr.block, "PS", addr.ps)}
+        ${twoColRow("Dist", addr.dist, "PIN", addr.pin)}
+      </div>
+    `;
+  };
+
+  container.innerHTML = `
+<div style="border:1px solid #000; padding:15px; position:relative; z-index:1;">
+  <!-- Header -->
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <img src="/logo.jpg" style="height:60px;" />
+    <div style="text-align:center; flex:1; margin:0 20px;">
+      <h2 style="margin:0; font-size:18pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
+      <p style="margin:2px 0; color:#004080;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
+      <h3 style="margin:5px 0 0 0; font-size:14pt; color:#006400;">APPLICATION FOR ADMISSION</h3>
+    </div>
+    <img src="/logo.jpg" style="height:60px;" />
+  </div>
+  <hr style="border:1px solid #004080; margin-bottom:12px;"/>
+
+  <!-- Photos -->
+  ${sectionHeader("Photos")}
+  ${imagesHTML}
+
+  <!-- Child Information -->
+  ${sectionHeader("Child Information")}
+  <div style="padding:5px 10px; border:1px solid #000; margin-bottom:12px;">
+    ${twoColRow("Student ID", student.studentId, "Name", getName(student))}
+    ${twoColRow("Class", getClass(student), "Section", student.section)}
+    ${twoColRow("Roll No", student.rollNo, "Gender", student.gender)}
+    ${twoColRow("Social Cast", student.socialCaste, "DOB", formatDOB(student.dob))}
+    ${twoColRow("Height", student.height, "Weight", student.weight)}
+    ${twoColRow("Blood Group", student.bloodGroup, "Nationality", student.nationality)}
+    ${twoColRow("Languages", (student.languages || []).join(", "), "Transport Required", student.transportRequired)}
+    ${twoColRow("Distance from School(KM)", student.distanceFromSchool, "Emergency Person", student.emergencyPerson)}
+    ${twoColRow("Emergency Contact", student.emergencyContact, "", "")}
+  </div>
+
+  <!-- Permanent Address -->
+  ${formatAddressBlock("Permanent Address", student.permanentAddress)}
+
+  <!-- Current Address -->
+  ${formatAddressBlock("Current Address", student.currentAddress)}
+
+  <!-- Family Information -->
+  ${sectionHeader("Family Information")}
+  <div style="padding:5px 10px; border:1px solid #000;">
+    ${twoColRow("Father", student.fatherName, "Occupation", student.fatherOccupation)}
+    ${twoColRow("Father Phone", student.fatherPhone, "Father Email", student.fatherEmail)}
+    ${twoColRow("Father Nationality", student.fatherNationality, "Father Qualification", student.fatherQualification)}
+
+    ${twoColRow("Mother", student.motherName, "Occupation", student.motherOccupation)}
+    ${twoColRow("Mother Phone", student.motherPhone, "Mother Email", student.motherEmail)}
+    ${twoColRow("Mother Nationality", student.motherNationality, "Mother Qualification", student.motherQualification)}
+
+    ${twoColRow("BPL", student.bpl, "BPL No", student.bplNo)}
+    ${twoColRow("Family Income", student.familyIncome, "", "")}
+  </div>
+</div>
+  `;
+
+  // Render HTML into canvas
   document.body.appendChild(container);
   const canvas = await html2canvas(container, { scale: 2 });
   const imgData = canvas.toDataURL("image/png");
   const imgProps = doc.getImageProperties(imgData);
   const pdfWidth = doc.internal.pageSize.getWidth();
   const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+  // Add image
   doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+  // Watermark: from bottom-left to top-right
+  doc.setFontSize(50);
+  doc.setTextColor(200, 200, 200);
+  doc.setFont("helvetica", "bold");
+
+  const watermarkText = "CENTRAL PUBLIC SCHOOL";
+  const angle = Math.atan2(-pdfHeight, pdfWidth) * (180 / Math.PI); // diagonal angle
+
+  doc.text(watermarkText, 20, pdfHeight - 20, {
+    angle: angle,
+    align: "left",
+  });
+
   doc.save(`${student.studentId || "student"}.pdf`);
   document.body.removeChild(container);
 };
