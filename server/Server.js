@@ -1,7 +1,7 @@
-const dotenv = require("dotenv");
-const cors = require("cors");
-const connectDB = require("./db/db");
-const express = require("express");
+import dotenv from "dotenv";
+import cors from "cors";
+import express from "express";
+import connectDB from "./db/db.js";
 
 // Load env
 dotenv.config();
@@ -14,23 +14,22 @@ app.use(express.json());
 app.use(cors());
 
 // Routes
-const classRoutes = require("./routes/classRoutes");
-const feeHeadRoutes = require("./routes/feeHeadRoutes");
-const academicSessionRoutes = require("./routes/academicSessionRoutes");
-const feeStructureRoutes = require("./routes/feeStructureRoutes");
-const transportRoutes = require("./routes/transportRoute");
-const userRoutes = require("./routes/userRoutes");
-const studentRoutes = require("./routes/studentRoutes");
-const paymentRoutes = require("./routes/paymentRoutes");
-const idCardRoutes = require("./routes/idCardRoutes");
-const udiseRoutes = require("./routes/udiseRoutes");
+import classRoutes from "./routes/classRoutes.js";
+import feeHeadRoutes from "./routes/feeHeadRoutes.js";
+import academicSessionRoutes from "./routes/academicSessionRoutes.js";
+import feeStructureRoutes from "./routes/feeStructureRoutes.js";
+import transportRoutes from "./routes/transportRoute.js";
+import userRoutes from "./routes/userRoutes.js";
+import studentRoutes from "./routes/studentRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import idCardRoutes from "./routes/idCardRoutes.js";
+import udiseRoutes from "./routes/udiseRoutes.js";
 
-
-const dailyCollectionRoutes = require("./routes/dailycollectionRoutes");
-const classSummaryRoutes = require("./routes/classSummaryRoutes");
-const transportReportRoutes = require("./routes/transportReportRoutes");
-const feeHeadreportRoutes = require("./routes/feeheadsreportRoutes");
-const studentPaymentHistoryRoutes = require("./routes/studentpaymenthistoryRoutes");
+import dailyCollectionRoutes from "./routes/dailycollectionRoutes.js";
+import classSummaryRoutes from "./routes/classSummaryRoutes.js";
+import transportReportRoutes from "./routes/transportReportRoutes.js";
+import feeHeadreportRoutes from "./routes/feeheadsreportRoutes.js";
+import studentPaymentHistoryRoutes from "./routes/studentpaymenthistoryRoutes.js";
 
 app.use("/api/classes", classRoutes);
 app.use("/api/feeheads", feeHeadRoutes);
@@ -39,7 +38,7 @@ app.use("/api/fees", feeStructureRoutes);
 app.use("/api/transportroutes", transportRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/students", studentRoutes);
-app.use("/api/payments", paymentRoutes);  
+app.use("/api/payments", paymentRoutes);
 app.use("/api/idcards", idCardRoutes);
 app.use("/api/udise", udiseRoutes);
 

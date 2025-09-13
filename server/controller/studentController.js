@@ -1,11 +1,11 @@
-const StudentMaster = require("../models/Student");
-const ClassMaster = require("../models/Class");
+import StudentMaster from "../models/Student.js";
+import ClassMaster from "../models/Class.js";
 
 const PREFIX = "G";
 const PAD = 4;          // Example: G0001
 const START_NUM = 101;  // First ID = G0101
 
-//  Generate next Student ID
+// Generate next Student ID
 async function generateNextStudentId() {
   const lastStudent = await StudentMaster.aggregate([
     { $match: { studentId: { $regex: `^${PREFIX}\\d+$` } } },
@@ -19,7 +19,7 @@ async function generateNextStudentId() {
   ]);
 
   if (!lastStudent.length) {
-    return `${PREFIX}${String(START_NUM).padStart(PAD, "0")}`; // G0101
+    return `${PREFIX}${String(START_NUM).padStart(PAD, "0")}`;
   }
 
   const nextNum = lastStudent[0].numId + 1;
@@ -33,13 +33,12 @@ async function generateNextRollNo(admitClass, section) {
     .limit(1)
     .lean();
 
-  if (!last.length) return 1; // first student in section
+  if (!last.length) return 1;
   return parseInt(last[0].rollNo, 10) + 1;
 }
 
-
 // GET next Student ID
-exports.getLatestStudentId = async (_req, res) => {
+export const getLatestStudentId = async (_req, res) => {
   try {
     const nextId = await generateNextStudentId();
     res.json({ studentId: nextId });
@@ -48,16 +47,14 @@ exports.getLatestStudentId = async (_req, res) => {
   }
 };
 
-exports.getNextRollNo = async (req, res) => {
+// GET next Roll No
+export const getNextRollNo = async (req, res) => {
   try {
     const { className, section } = req.params;
-    // console.log("getNextRollNo called with:", className, section);
 
     const lastStudent = await StudentMaster.find({ admitClass: className, section })
       .sort({ rollNo: -1 })
       .limit(1);
-
-    // console.log("Last student found:", lastStudent);
 
     let nextRoll = 1;
     if (lastStudent.length) {
@@ -71,12 +68,8 @@ exports.getNextRollNo = async (req, res) => {
   }
 };
 
-
-
-
-
 // GET all students
-exports.getAllStudents = async (_req, res) => {
+export const getAllStudents = async (_req, res) => {
   try {
     const students = await StudentMaster.find().lean();
     const classIds = [...new Set(students.map((s) => s.className))];
@@ -94,43 +87,66 @@ exports.getAllStudents = async (_req, res) => {
   }
 };
 
-// POST create student
-exports.createStudent = async (req, res) => {
+// POST create student with photos in MongoDB
+export const createStudent = async (req, res) => {
   try {
     const studentId = await generateNextStudentId();
     const rollNo = await generateNextRollNo(req.body.admitClass, req.body.section);
 
-    const doc = new StudentMaster({ 
-      ...req.body, 
+    const newStudent = new StudentMaster({
+      ...req.body,
       studentId,
-      rollNo 
+      rollNo,
+      fatherPhoto: req.files?.fatherPhoto
+        ? { data: req.files.fatherPhoto[0].buffer, contentType: req.files.fatherPhoto[0].mimetype }
+        : null,
+      motherPhoto: req.files?.motherPhoto
+        ? { data: req.files.motherPhoto[0].buffer, contentType: req.files.motherPhoto[0].mimetype }
+        : null,
+      childPhoto: req.files?.childPhoto
+        ? { data: req.files.childPhoto[0].buffer, contentType: req.files.childPhoto[0].mimetype }
+        : null,
     });
 
-    await doc.save();
-    res.status(201).json(doc);
+    await newStudent.save();
+    res.status(201).json(newStudent);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to create student" });
   }
 };
 
 // PUT update student
-exports.updateStudent = async (req, res) => {
+export const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
     const payload = { ...req.body };
     if (payload.studentId) delete payload.studentId;
 
-    const updated = await StudentMaster.findByIdAndUpdate(id, payload, { new: true });
-    if (!updated) return res.status(404).json({ error: "Student not found" });
+    const student = await StudentMaster.findById(id);
+    if (!student) return res.status(404).json({ error: "Student not found" });
 
-    res.json(updated);
+    Object.assign(student, payload);
+
+    // Update photos if uploaded
+    if (req.files?.fatherPhoto) {
+      student.fatherPhoto = { data: req.files.fatherPhoto[0].buffer, contentType: req.files.fatherPhoto[0].mimetype };
+    }
+    if (req.files?.motherPhoto) {
+      student.motherPhoto = { data: req.files.motherPhoto[0].buffer, contentType: req.files.motherPhoto[0].mimetype };
+    }
+    if (req.files?.childPhoto) {
+      student.childPhoto = { data: req.files.childPhoto[0].buffer, contentType: req.files.childPhoto[0].mimetype };
+    }
+
+    await student.save();
+    res.json(student);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to update student" });
   }
 };
 
 // DELETE student
-exports.deleteStudent = async (req, res) => {
+export const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
     const deleted = await StudentMaster.findByIdAndDelete(id);

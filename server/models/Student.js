@@ -52,6 +52,11 @@ const studentSchema = new mongoose.Schema({
   bpl: String,
   bplNo: String,
   familyIncome: String,
+  fatherPhoto: { data: Buffer, contentType: String },
+  motherPhoto: { data: Buffer, contentType: String },
+  childPhoto: { data: Buffer, contentType: String },
+
+
 });
 
 module.exports = mongoose.model("StudentMaster", studentSchema);

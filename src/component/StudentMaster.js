@@ -175,9 +175,14 @@ const fetchSections = async (className) => {
         <Header />
         <div className="p-2 bg-white shadow-md rounded-md">
           <div className="flex justify-between items-center mb-2 ">
-            <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-1 px-3 rounded flex-1">
-              {step === 1 ? "Information of the Child" : "Family Information"}
+          <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-1 px-3 rounded flex-1">
+              {step === 1
+                ? "Child Information"
+                : step === 2
+                ? "Family Information"
+                : "Photo Upload"}
             </h2>
+
             <div className="flex gap-2 ml-2">
               <Link to="/IdCardForm" className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-900">ID Card</Link>
               <Link to="/UdiseForm" className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-900">UDISE</Link>
@@ -687,15 +692,84 @@ const fetchSections = async (className) => {
                 >
                   Back
                 </button>
+             <button
+              type="button"
+              onClick={() => setStep(3)}
+              className="px-6 py-1 rounded text-white font-semibold bg-gray-800 hover:bg-gray-950 whitespace-nowrap"
+            >
+              Save & Next
+            </button>
+              </div>
+            </form>
+          )}
+
+          {/* --------- STEP 3 --------- */}
+         {step === 3 && (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData();
+                formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
+                formData.append("motherPhoto", e.target.motherPhoto.files[0]);
+                formData.append("childPhoto", e.target.childPhoto.files[0]);
+
+                // Append all other student data from state
+                Object.keys(studentData).forEach((key) => {
+                  if (typeof studentData[key] !== "object") {
+                    formData.append(key, studentData[key]);
+                  } else if (key === "permanentAddress" || key === "currentAddress") {
+                    Object.keys(studentData[key]).forEach((sub) => {
+                      formData.append(`${key}[${sub}]`, studentData[key][sub]);
+                    });
+                  }
+                });
+
+                try {
+                  await axios.post("http://localhost:5000/api/students", formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  });
+                  alert("Student and Photos saved successfully!");
+                  navigate("/StudentList", { replace: true });
+                } catch (err) {
+                  console.error("Error saving student with photos:", err);
+                  alert("Failed to save student");
+                }
+              }}
+              className="grid grid-cols-1 gap-4"
+            >       
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <label className="flex flex-col">
+                  Affix Photo of Father
+                  <input type="file" name="fatherPhoto" accept="image/*" required />
+                </label>
+                <label className="flex flex-col">
+                  Affix Photo of Mother
+                  <input type="file" name="motherPhoto" accept="image/*" required />
+                </label>
+                <label className="flex flex-col">
+                  Affix Photo of Child
+                  <input type="file" name="childPhoto" accept="image/*" required />
+                </label>
+              </div>
+
+              <div className="flex justify-between mt-4">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="px-4 py-1 bg-blue-700 text-white rounded hover:bg-blue-800"
+                >
+                  Back
+                </button>
                 <button
                   type="submit"
-                  className="px-6 py-1 rounded text-white bg-green-600 hover:bg-green-700 whitespace-nowrap"
+                  className="px-6 py-1 bg-green-600 text-white rounded hover:bg-green-700"
                 >
                   Submit
                 </button>
               </div>
             </form>
           )}
+
         </div>
       </div>
     </div>
