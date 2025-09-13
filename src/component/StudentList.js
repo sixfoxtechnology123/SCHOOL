@@ -5,10 +5,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FaTrash, FaEdit } from "react-icons/fa";
 import BackButton from "../component/BackButton";
 import Sidebar from "../component/Sidebar";
-import Header from "../component/Header";  //  Import Header
+import Header from "../component/Header";
 
 const StudentsList = () => {
   const [students, setStudents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -23,6 +24,7 @@ const StudentsList = () => {
 
   useEffect(() => {
     fetchStudents();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.key]); // Refresh when coming back from StudentMaster
 
   const deleteStudent = async (id) => {
@@ -40,19 +42,82 @@ const StudentsList = () => {
     navigate("/");
   };
 
+  // Helper: robust name getter
+  const getName = (stu) => {
+    if (!stu) return "";
+    const first = stu.firstName || stu.first_name || "";
+    const last = stu.lastName || stu.last_name || "";
+    if (first || last) return `${first} ${last}`.trim();
+    if (stu.name) return stu.name;
+    if (stu.fullName) return stu.fullName;
+    return "";
+  };
+
+  // Helper: robust class getter
+  const getClass = (stu) => {
+    return stu.admitClass || stu.className || stu.class || stu.classLabel || "";
+  };
+
+  // Helper: robust phone getter (choose fatherPhone or fallback)
+  const getPhone = (stu) => {
+    return stu.fatherPhone || stu.phoneNo || stu.contact || stu.father_phone || "";
+  };
+
+  // Format DOB to DDMMYYYY (no separators)
+  const formatDOB = (dob) => {
+    if (!dob) return "";
+    // If dob is "YYYY-MM-DD" or "YYYY-MM-DDT..."
+    if (typeof dob === "string" && dob.includes("-")) {
+      const datePart = dob.split("T")[0]; // remove time if any
+      const parts = datePart.split("-");
+      if (parts.length === 3) {
+        const [y, m, d] = parts;
+        return `${d.padStart(2, "0")}/${m.padStart(2, "0")}/${y}`;
+      }
+    }
+    // Fallback: try Date parse
+    const dt = new Date(dob);
+    if (!isNaN(dt)) {
+      const d = String(dt.getDate()).padStart(2, "0");
+      const m = String(dt.getMonth() + 1).padStart(2, "0");
+      const y = String(dt.getFullYear());
+      return `${d}${m}${y}`;
+    }
+    return "";
+  };
+
+  const searchTermLower = searchTerm.trim().toLowerCase();
+  const filteredStudents = students.filter((s) => {
+    if (!searchTermLower) return true;
+    const id = (s.studentId || "").toString().toLowerCase();
+    const name = getName(s).toLowerCase();
+    return id.includes(searchTermLower) || name.includes(searchTermLower);
+  });
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar />
       <div className="flex-1 overflow-y-auto p-3">
-        {/*  Added Header */}
-        <Header/>
+        <Header />
 
         <div className="p-2 bg-white shadow-md rounded-md">
           <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+              {/* Left: Title */}
               <h2 className="text-xl font-bold text-green-800">Students</h2>
-              <div className="flex gap-4">
+
+              {/* Right: Back, Search, New Register */}
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
                 <BackButton />
+
+                <input
+                  type="text"
+                  placeholder="Search by Student ID or Name"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
+                />
+
                 <button
                   onClick={() => navigate("/StudentMaster")}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
@@ -74,45 +139,25 @@ const StudentsList = () => {
                 <th className="border border-green-500 px-2 py-1">DOB</th>
                 <th className="border border-green-500 px-2 py-1">Father</th>
                 <th className="border border-green-500 px-2 py-1">Mother</th>
-                <th className="border border-green-500 px-2 py-1">Address</th>
                 <th className="border border-green-500 px-2 py-1">Phone No</th>
                 <th className="border border-green-500 px-2 py-1">Action</th>
               </tr>
             </thead>
             <tbody className="text-center">
-              {students.length > 0 ? (
-                students.map((stu) => (
+              {filteredStudents.length > 0 ? (
+                filteredStudents.map((stu) => (
                   <tr key={stu._id} className="hover:bg-gray-100 transition">
+                    <td className="border border-green-500 px-2 py-1">{stu.studentId}</td>
+                    <td className="border border-green-500 px-2 py-1">{getName(stu)}</td>
+                    <td className="border border-green-500 px-2 py-1">{getClass(stu)}</td>
+                    <td className="border border-green-500 px-2 py-1">{stu.section || ""}</td>
+                    <td className="border border-green-500 px-2 py-1">{stu.rollNo || ""}</td>
                     <td className="border border-green-500 px-2 py-1">
-                      {stu.studentId}
+                      {formatDOB(stu.dob)}
                     </td>
-                    <td className="border border-green-500 px-2 py-1">
-                      {stu.name}
-                    </td>
-                    <td className="border border-green-500 px-2 py-1">
-                      {stu.className}
-                    </td>
-                    <td className="border border-green-500 px-2 py-1">
-                      {stu.section}
-                    </td>
-                    <td className="border border-green-500 px-2 py-1">
-                      {stu.rollNo}
-                    </td>
-                    <td className="border border-green-500 px-2 py-1">
-                      {stu.dob ? new Date(stu.dob).toLocaleDateString() : ""}
-                    </td>
-                    <td className="border border-green-500 px-2 py-1">
-                      {stu.fatherName}
-                    </td>
-                    <td className="border border-green-500 px-2 py-1">
-                      {stu.motherName}
-                    </td>
-                    <td className="border border-green-500 px-2 py-1">
-                      {stu.address}
-                    </td>
-                    <td className="border border-green-500 px-2 py-1">
-                      {stu.phoneNo}
-                    </td>
+                    <td className="border border-green-500 px-2 py-1">{stu.fatherName || ""}</td>
+                    <td className="border border-green-500 px-2 py-1">{stu.motherName || ""}</td>
+                    <td className="border border-green-500 px-2 py-1">{getPhone(stu)}</td>
                     <td className="border border-green-500 px-2 py-1">
                       <div className="flex justify-center items-center gap-4">
                         <button
@@ -135,7 +180,7 @@ const StudentsList = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="11" className="text-center py-4 text-gray-500">
+                  <td colSpan="10" className="text-center py-4 text-gray-500">
                     No students found.
                   </td>
                 </tr>
