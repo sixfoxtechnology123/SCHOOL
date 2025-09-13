@@ -104,26 +104,26 @@ const generatePDF = async (student) => {
   };
 
   const imagesHTML = `
-<div style="display:flex; justify-content:center; gap:40px; margin:15px 0; text-align:center;">
+<div style="display:flex; justify-content:center; gap:40px; margin:5px 0; text-align:center;">
   ${student.fatherPhoto ? `
     <div>
-      <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; border:1px solid #000;"/><br/>
+      <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; border:1px solid #000;"/>
       <strong>Father Photo</strong>
     </div>` : ""}
   ${student.motherPhoto ? `
     <div>
-      <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; border:1px solid #000;"/><br/>
+      <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; border:1px solid #000;"/>
       <strong>Mother Photo</strong>
     </div>` : ""}
   ${student.childPhoto ? `
     <div>
-      <img src="${getImageSrc(student.childPhoto)}" style="height:100px; border:1px solid #000;"/><br/>
+      <img src="${getImageSrc(student.childPhoto)}" style="height:100px; border:1px solid #000;"/>
       <strong>Child Photo</strong>
     </div>` : ""}
 </div>
   `;
 
-  // Helper for rows (2 fields per row, aligned with :)
+  // Helper for rows
   const twoColRow = (label1, value1, label2, value2) => `
     <div style="display:flex; padding:2px 0;">
       <div style="flex:1; display:flex;">
@@ -138,13 +138,15 @@ const generatePDF = async (student) => {
     </div>
   `;
 
+  // Fixed header vertical alignment
   const sectionHeader = (title) => `
     <div style="
       background-color:#4f81bd;
       color:#fff;
-      text-align:center;
       height:26px;
-      line-height:26px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       margin:4px 0;
       font-weight:bold;
       font-size:13px;
@@ -153,7 +155,7 @@ const generatePDF = async (student) => {
     </div>
   `;
 
-  // Permanent/Current Address with row structure
+  // Address block
   const formatAddressBlock = (title, addr) => {
     if (!addr) return "";
     return `
@@ -167,14 +169,14 @@ const generatePDF = async (student) => {
   };
 
   container.innerHTML = `
-<div style="border:1px solid #000; padding:15px; position:relative; z-index:1;">
+<div style="border:1px solid #000; padding:0 15px 15px 15px; position:relative; z-index:1;">
   <!-- Header -->
-  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; margin:0 0 12px 0;">
     <img src="/logo.jpg" style="height:60px;" />
     <div style="text-align:center; flex:1; margin:0 20px;">
       <h2 style="margin:0; font-size:18pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
       <p style="margin:2px 0; color:#004080;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
-      <h3 style="margin:5px 0 0 0; font-size:14pt; color:#006400;">APPLICATION FOR ADMISSION</h3>
+      <h3 style="margin:2px 0 0 0; font-size:14pt; color:#006400;">APPLICATION FOR ADMISSION</h3>
     </div>
     <img src="/logo.jpg" style="height:60px;" />
   </div>
@@ -232,18 +234,7 @@ const generatePDF = async (student) => {
   // Add image
   doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-  // Watermark: from bottom-left to top-right
-  doc.setFontSize(50);
-  doc.setTextColor(200, 200, 200);
-  doc.setFont("helvetica", "bold");
 
-  const watermarkText = "CENTRAL PUBLIC SCHOOL";
-  const angle = Math.atan2(-pdfHeight, pdfWidth) * (180 / Math.PI); // diagonal angle
-
-  doc.text(watermarkText, 20, pdfHeight - 20, {
-    angle: angle,
-    align: "left",
-  });
 
   doc.save(`${student.studentId || "student"}.pdf`);
   document.body.removeChild(container);
