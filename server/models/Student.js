@@ -54,4 +54,4 @@ const studentSchema = new mongoose.Schema({
   familyIncome: String,
 });
 
-module.exports = mongoose.model("Student", studentSchema);
+module.exports = mongoose.model("StudentMaster", studentSchema);

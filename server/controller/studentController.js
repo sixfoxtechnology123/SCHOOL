@@ -5,7 +5,7 @@ const PREFIX = "G";
 const PAD = 4;          // Example: G0001
 const START_NUM = 101;  // First ID = G0101
 
-// 🔹 Generate next Student ID
+//  Generate next Student ID
 async function generateNextStudentId() {
   const lastStudent = await StudentMaster.aggregate([
     { $match: { studentId: { $regex: `^${PREFIX}\\d+$` } } },
@@ -26,7 +26,7 @@ async function generateNextStudentId() {
   return `${PREFIX}${String(nextNum).padStart(PAD, "0")}`;
 }
 
-// 🔹 Generate next Roll No (per class + section)
+// Generate next Roll No (per class + section)
 async function generateNextRollNo(admitClass, section) {
   const last = await StudentMaster.find({ admitClass, section })
     .sort({ rollNo: -1 })
@@ -51,13 +51,13 @@ exports.getLatestStudentId = async (_req, res) => {
 exports.getNextRollNo = async (req, res) => {
   try {
     const { className, section } = req.params;
-    console.log("getNextRollNo called with:", className, section);
+    // console.log("getNextRollNo called with:", className, section);
 
     const lastStudent = await StudentMaster.find({ admitClass: className, section })
       .sort({ rollNo: -1 })
       .limit(1);
 
-    console.log("Last student found:", lastStudent);
+    // console.log("Last student found:", lastStudent);
 
     let nextRoll = 1;
     if (lastStudent.length) {
