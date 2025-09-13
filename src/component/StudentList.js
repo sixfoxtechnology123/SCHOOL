@@ -80,7 +80,7 @@ const StudentsList = () => {
     return id.includes(searchTermLower) || name.includes(searchTermLower);
   });
 
-  const generatePDF = async (student) => {
+ const generatePDF = async (student) => {
   const doc = new jsPDF("p", "pt", "a4");
   const container = document.createElement("div");
   container.style.width = "800px";
@@ -88,25 +88,55 @@ const StudentsList = () => {
   container.style.fontSize = "12px";
   container.style.fontFamily = "Arial, sans-serif";
 
- const formatAddress = (addr) => {
-  if (!addr) return "";
-  return `
-    <b>Vill</b> - ${addr.vill || ""}
-    <b>PO</b> - ${addr.po || ""}
-    <b>Block</b> - ${addr.block || ""}
-    <b>PS</b> - ${addr.ps || ""}
-    <b>Dist</b> - ${addr.dist || ""}
+  const formatAddress = (addr) => {
+    if (!addr) return "";
+    return `
+    <b>Vill</b> - ${addr.vill || ""} 
+    <b>PO</b> - ${addr.po || ""} 
+    <b>Block</b> - ${addr.block || ""} 
+    <b>PS</b> - ${addr.ps || ""} 
+    <b>Dist</b> - ${addr.dist || ""} 
     <b>PIN</b>- ${addr.pin || ""}
-  `;
-};
+    `;
+      };
 
+  // Convert binary Base64 object to data URL
+  const getImageSrc = (photoObj) => {
+    if (!photoObj || !photoObj.data || !photoObj.contentType) return "";
+    // If your photoObj.data is a Binary object, convert to Base64 string
+    let base64String = "";
+    if (photoObj.data && photoObj.data.buffer) {
+      // Node Buffer style (if fetched via MongoDB driver)
+      const binary = new Uint8Array(photoObj.data.buffer);
+      base64String = btoa(String.fromCharCode(...binary));
+    } else if (photoObj.data && typeof photoObj.data === "string") {
+      // Already Base64 string
+      base64String = photoObj.data.replace(/^data:.*;base64,/, "");
+    }
+    return `data:${photoObj.contentType};base64,${base64String}`;
+  };
 
+  // Images in order: Father, Mother, Child
+ const imagesHTML = `
+  <div style="display:flex; gap:20px; margin:20px 0;">
+    ${student.fatherPhoto ? `
+      <div style="text-align:center;">
+        <p style="margin-bottom:5px;"><strong>Father Photo</strong></p>
+        <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; display:block; margin:0 auto;" />
+      </div>` : ""}
+    ${student.motherPhoto ? `
+      <div style="text-align:center;">
+        <p style="margin-bottom:5px;"><strong>Mother Photo</strong></p>
+        <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; display:block; margin:0 auto;" />
+      </div>` : ""}
+    ${student.childPhoto ? `
+      <div style="text-align:center;">
+        <p style="margin-bottom:5px;"><strong>Child Photo</strong></p>
+        <img src="${getImageSrc(student.childPhoto)}" style="height:100px; display:block; margin:0 auto;" />
+      </div>` : ""}
+  </div>
+`;
 
-  const imagesHTML = `
-    ${student.childPhoto ? `<p><strong>Child Photo:</strong><br/><img src="/uploads/${student.childPhoto}" style="height:100px;"/></p>` : ""}
-    ${student.fatherPhoto ? `<p><strong>Father Photo:</strong><br/><img src="/uploads/${student.fatherPhoto}" style="height:100px;"/></p>` : ""}
-    ${student.motherPhoto ? `<p><strong>Mother Photo:</strong><br/><img src="/uploads/${student.motherPhoto}" style="height:100px;"/></p>` : ""}
-  `;
 
   container.innerHTML = `
     <div style="display: flex; align-items: center; margin-bottom: 20px;">
@@ -118,6 +148,8 @@ const StudentsList = () => {
       </div>
     </div>
     <hr style="margin-bottom: 20px;" />
+
+    ${imagesHTML}
 
     <!-- Child Information -->
     <h4><strong>Child Information</strong></h4>
@@ -143,15 +175,11 @@ const StudentsList = () => {
       <p><strong>Emergency Person:</strong> ${student.emergencyPerson || ""}</p>
       <p><strong>Emergency Contact:</strong> ${student.emergencyContact || ""}</p>
 
-     <!-- Permanent Address -->
       <h4><strong>Permanent Address</strong></h4>
       <pre style="margin-bottom:10px;">${formatAddress(student.permanentAddress)}</pre>
 
-      <!-- Current Address -->
       <h4><strong>Current Address</strong></h4>
       <pre style="margin-bottom:10px;">${formatAddress(student.currentAddress)}</pre>
-
-      ${imagesHTML}
     </div>
 
     <!-- Family Information -->
@@ -170,8 +198,6 @@ const StudentsList = () => {
       <p><strong>Mother Email:</strong> ${student.motherEmail || ""}</p>
       <p><strong>Mother Nationality:</strong> ${student.motherNationality || ""}</p>
       <p><strong>Mother Qualification:</strong> ${student.motherQualification || ""}</p>
-
-     
 
       <p><strong>BPL:</strong> ${student.bpl || ""}</p>
       <p><strong>BPL No:</strong> ${student.bplNo || ""}</p>
