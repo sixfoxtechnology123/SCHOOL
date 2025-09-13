@@ -114,7 +114,7 @@ const StudentsList = () => {
       <div>
         <h2 style="margin:0; font-size:18pt;">CENTRAL PUBLIC SCHOOL</h2>
         <p style="margin:0;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
-        <h3 style="margin-top:10px;">APPLICATION FOR ADMISSION</h3>
+        <h3 style="margin:0;">APPLICATION FOR ADMISSION</h3>
       </div>
     </div>
     <hr style="margin-bottom: 20px;" />
