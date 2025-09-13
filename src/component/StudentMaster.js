@@ -738,17 +738,17 @@ const fetchSections = async (className) => {
               className="grid grid-cols-1 gap-4"
             >       
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <label className="flex flex-col">
+                <label>
                   Affix Photo of Father
-                  <input type="file" name="fatherPhoto" accept="image/*" required />
+                  <input type="file" name="fatherPhoto" accept="image/*" required  className="border bg-gray-100 p-1 rounded w-full" />
                 </label>
-                <label className="flex flex-col">
+                <label>
                   Affix Photo of Mother
-                  <input type="file" name="motherPhoto" accept="image/*" required />
+                  <input type="file" name="motherPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full"/>
                 </label>
-                <label className="flex flex-col">
+                <label>
                   Affix Photo of Child
-                  <input type="file" name="childPhoto" accept="image/*" required />
+                  <input type="file" name="childPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full" />
                 </label>
               </div>
 

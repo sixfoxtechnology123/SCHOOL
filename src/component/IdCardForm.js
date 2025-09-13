@@ -158,9 +158,9 @@ const IdCardForm = () => {
               </div>
             </div>
 
-            <label className="col-span-full">
+            <label className="col-span-1">
               Upload Photo (School Uniform)
-              <input type="file" name="photo" onChange={handleChange} />
+              <input type="file" name="photo" onChange={handleChange} className="border bg-gray-100 p-1 rounded w-full"/>
             </label>
 
             <div className="col-span-full flex justify-between">
