@@ -210,19 +210,34 @@ const StudentMaster = () => {
             </h2>
 
             <div className="flex gap-2 ml-2">
+           {/* <Link
+                to="/IdCardForm"
+                // state={{ studentId: studentData.studentId }}
+                state={{ studentData }
+                className={`px-3 py-1 rounded text-white ${
+                  studentData._id ? "bg-green-700 hover:bg-green-900" : "bg-gray-400 cursor-not-allowed"
+                }`}
+                disabled={!studentData._id} // disables the button if student not saved
+              >
+                ID Card
+              </Link> */}
               <Link
                 to="/IdCardForm"
+                state={{ studentData }} // send whole object
                 className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-900"
               >
                 ID Card
               </Link>
-              <Link
-                to="/UdiseForm"
-                className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-900"
-              >
-                UDISE
-              </Link>
-            </div>
+
+            <Link
+              to="/UdiseForm"
+              state={{ studentId: studentData.studentId }} // pass studentId
+              className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-900"
+            >
+              UDISE
+            </Link>
+          </div>
+
           </div>
 
           {step === 1 && (

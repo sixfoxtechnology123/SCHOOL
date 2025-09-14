@@ -1,16 +1,10 @@
-// routes/idCardRoutes.js
 const express = require("express");
 const router = express.Router();
-const {
-  getAllIdCards,
-  createIdCard,
-  updateIdCard,
-  deleteIdCard,
-} = require("../controller/idCardController");
+const multer = require("multer");
+const upload = multer(); // memory storage
+const { getIdCardByStudentId, saveIdCard } = require("../controller/idCardController");
 
-router.get("/", getAllIdCards);
-router.post("/", createIdCard);
-router.put("/:id", updateIdCard);
-router.delete("/:id", deleteIdCard);
+router.get("/:studentId", getIdCardByStudentId);
+router.post("/", upload.single("photo"), saveIdCard);
 
 module.exports = router;

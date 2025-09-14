@@ -1,4 +1,3 @@
-// models/IdCard.js
 const mongoose = require("mongoose");
 
 const addressSchema = new mongoose.Schema({
@@ -12,6 +11,7 @@ const addressSchema = new mongoose.Schema({
 
 const idCardSchema = new mongoose.Schema(
   {
+    studentId: { type: String, required: true, unique: true },
     studentName: String,
     dob: String,
     className: String,
@@ -21,7 +21,10 @@ const idCardSchema = new mongoose.Schema(
     contactNo: String,
     whatsappNo: String,
     permanentAddress: addressSchema,
-    photo: String, // path or base64 URL
+    photo: {
+      data: Buffer,
+      contentType: String,
+    },
   },
   { timestamps: true }
 );
