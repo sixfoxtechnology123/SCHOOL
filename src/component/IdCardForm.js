@@ -169,7 +169,7 @@ const IdCardForm = ({ studentId }) => {
       <div className="flex-1 overflow-y-auto p-3">
         <Header />
         <div className="p-2 bg-white shadow-md rounded-md">
-          <h2 className="text-xl font-bold text-center mb-2 text-white bg-gray-800 py-1 rounded">
+          <h2 className="text-xl font-bold text-center mb-2 text-white bg-gray-800 py-0 rounded">
             ID Card Form
           </h2>
 
@@ -295,7 +295,7 @@ const IdCardForm = ({ studentId }) => {
             </div>
 
             <label className="col-span-1">
-              Upload Photo
+              <span className="font-bold">Upload Child Photo</span>
               <input
                 type="file"
                 name="photo"
@@ -320,7 +320,7 @@ const IdCardForm = ({ studentId }) => {
               {!isAlreadyFilled && (
                 <button
                   type="submit"
-                  className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+                  className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded"
                 >
                   Save
                 </button>
@@ -328,7 +328,7 @@ const IdCardForm = ({ studentId }) => {
               {isAlreadyFilled && !isEditMode && (
                 <button
                   type="button"
-                  className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                  className="px-4 py-0 bg-blue-600 hover:bg-blue-700 text-white rounded"
                   onClick={() => setIsEditMode(true)}
                 >
                   Edit
@@ -337,7 +337,7 @@ const IdCardForm = ({ studentId }) => {
               {isAlreadyFilled && isEditMode && (
                 <button
                   type="submit"
-                  className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+                  className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded"
                 >
                   Update
                 </button>

@@ -1,44 +1,44 @@
-// models/Udise.js
 const mongoose = require("mongoose");
+
+// Nested address schema like ID Card
+const addressSchema = new mongoose.Schema({
+  vill: { type: String, default: "" },
+  po: { type: String, default: "" },
+  block: { type: String, default: "" },
+  pin: { type: String, default: "" },
+  ps: { type: String, default: "" },
+  dist: { type: String, default: "" },
+});
 
 const udiseSchema = new mongoose.Schema(
   {
-    studentName: String,
-    gender: String,
-    height: String,
-    weight: String,
-    dob: String,
-    className: String,
-    motherTongue: String,
-    socialCategory: String,
+    studentId: { type: String, required: true, unique: true },
+    studentName: { type: String, default: "" },
+    gender: { type: String, default: "" },
+    height: { type: String, default: "" },
+    weight: { type: String, default: "" },
+    dob: { type: String, default: "" },
+    className: { type: String, default: "" },
+    socialCategory: { type: String, default: "" },
 
-    fatherName: String,
-    motherName: String,
-    guardianName: String,
-
-    religion: String,
+    fatherName: { type: String, default: "" },
+    motherName: { type: String, default: "" },
+    guardianName: { type: String, default: "" },
+    religion: { type: String, default: "" },
     nationality: { type: String, default: "INDIAN" },
-    bpl: String,
-    bplNo: String,
-    ews: String,
-    annualIncome: String,
-    guardianQualification: String,
+    bplBeneficiary: { type: String, default: "" },
+    guardianQualification: { type: String, default: "" },
+    annualIncome: { type: String, default: "" },
+    contactNo: { type: String, default: "" },
 
-    contactNo: String,
-    cwsn: String, // child with special needs
-    locality: String,
+    permanentAddress: { type: addressSchema, default: () => ({}) },
 
-    // Address details
-    dist: String,
-    block: String,
-    panchayat: String,
-    po: String,
-    ps: String,
-    pin: String,
-
-    photo: String,
+    photo: {
+      data: Buffer,
+      contentType: String,
+    },
   },
-  { timestamps: true }
+  { timestamps: false }
 );
 
 module.exports = mongoose.model("Udise", udiseSchema);

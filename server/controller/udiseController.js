@@ -1,47 +1,72 @@
-// controllers/udiseController.js
+// controller/udiseController.js
 const Udise = require("../models/Udise");
+const StudentMaster = require("../models/Student");
 
-// GET all UDISE records
-exports.getAllUdise = async (_req, res) => {
+// Get UDISE by studentId
+exports.getUdiseByStudentId = async (req, res) => {
   try {
-    const records = await Udise.find().lean();
-    res.json(records);
+    const { studentId } = req.params;
+
+    let udise = await Udise.findOne({ studentId });
+
+    if (!udise) {
+      const student = await StudentMaster.findOne({ studentId });
+      if (!student) return res.status(404).json({ error: "Student not found" });
+
+      udise = {
+        _id: null,
+        studentId: student.studentId,
+        studentName: student.studentName || "",
+        gender: student.gender || "",
+        dob: student.dob || "",
+        className: student.className || "",
+        fatherName: student.fatherName || "",
+        motherName: student.motherName || "",
+        guardianName: student.guardianName || "",
+        religion: student.religion || "",
+        nationality: "INDIAN",
+        bpl: student.bpl || "",
+        annualIncome: student.annualIncome || "",
+        guardianQualification: student.guardianQualification || "",
+        contactNo: student.contactNo || "",
+        dist: student.permanentAddress?.dist || "",
+        block: student.permanentAddress?.block || "",
+        po: student.permanentAddress?.po || "",
+        ps: student.permanentAddress?.ps || "",
+        pin: student.permanentAddress?.pin || "",
+        photo: null,
+      };
+    }
+
+    res.json(udise);
   } catch (err) {
-    res.status(500).json({ error: err.message || "Failed to fetch UDISE records" });
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch UDISE" });
   }
 };
 
-// POST create UDISE record
-exports.createUdise = async (req, res) => {
+// Create or Update UDISE
+exports.saveUdise = async (req, res) => {
   try {
-    const doc = new Udise(req.body);
-    await doc.save();
-    res.status(201).json(doc);
-  } catch (err) {
-    res.status(500).json({ error: err.message || "Failed to create UDISE record" });
-  }
-};
+    const studentId = req.body.studentId || req.params.studentId;
+    const photo = req.file ? { data: req.file.buffer, contentType: req.file.mimetype } : undefined;
 
-// PUT update UDISE record
-exports.updateUdise = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updated = await Udise.findByIdAndUpdate(id, req.body, { new: true });
-    if (!updated) return res.status(404).json({ error: "UDISE record not found" });
-    res.json(updated);
-  } catch (err) {
-    res.status(500).json({ error: err.message || "Failed to update UDISE record" });
-  }
-};
+    let udise = await Udise.findOne({ studentId });
 
-// DELETE UDISE record
-exports.deleteUdise = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deleted = await Udise.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ error: "UDISE record not found" });
-    res.json({ message: "UDISE record deleted successfully" });
+    if (udise) {
+      // update fields
+      Object.assign(udise, req.body);
+      if (photo) udise.photo = photo;
+      await udise.save();
+      return res.json({ message: "UDISE updated successfully", udise });
+    } else {
+      udise = new Udise({ ...req.body, studentId });
+      if (photo) udise.photo = photo;
+      await udise.save();
+      return res.json({ message: "UDISE created successfully", udise });
+    }
   } catch (err) {
-    res.status(500).json({ error: err.message || "Failed to delete UDISE record" });
+    console.error(err);
+    res.status(500).json({ error: "Failed to save UDISE" });
   }
 };

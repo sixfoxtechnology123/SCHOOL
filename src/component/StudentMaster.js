@@ -231,7 +231,7 @@ const StudentMaster = () => {
 
             <Link
               to="/UdiseForm"
-              state={{ studentId: studentData.studentId }} // pass studentId
+              state={{ studentData }} // pass studentId
               className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-900"
             >
               UDISE
@@ -577,7 +577,7 @@ const StudentMaster = () => {
                 <BackButton />
                 <button
                   type="submit"
-                  className="px-6 py-1 rounded text-white font-semibold bg-gray-800 hover:bg-gray-950 whitespace-nowrap"
+                  className="px-6 py-0 rounded text-white font-semibold bg-gray-800 hover:bg-gray-950 whitespace-nowrap"
                 >
                   Save & Next
                 </button>
@@ -750,7 +750,7 @@ const StudentMaster = () => {
              <button
               type="button"
               onClick={() => setStep(3)}
-              className="px-6 py-1 rounded text-white font-semibold bg-gray-800 hover:bg-gray-950 whitespace-nowrap"
+              className="px-6 py-0 rounded text-white font-semibold bg-gray-800 hover:bg-gray-950 whitespace-nowrap"
             >
               Save & Next
             </button>
@@ -857,13 +857,13 @@ const StudentMaster = () => {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
-                  className="px-4 py-1 bg-blue-700 text-white rounded hover:bg-blue-800"
+                  className="px-4 py-0 bg-blue-700 text-white rounded hover:bg-blue-800"
                 >
                   Back
                 </button>
                 <button
                   type="submit"
-                  className={`px-6 py-1 rounded text-white font-semibold ${
+                  className={`px-6 py-0 rounded text-white font-semibold ${
                     isEditMode
                       ? "bg-yellow-500 hover:bg-yellow-600"
                       : "bg-green-600 hover:bg-green-700"
