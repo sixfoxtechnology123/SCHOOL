@@ -10,8 +10,6 @@ const IdCardForm = ({ studentId }) => {
   const navigate = useNavigate();
   const studentData = location.state?.studentData;
 
-  console.log("Received studentData:", studentData);
-
   const [formData, setFormData] = useState({
     studentName: "",
     dob: "",
@@ -33,42 +31,58 @@ const IdCardForm = ({ studentId }) => {
   });
 
   const [photoPreview, setPhotoPreview] = useState(null);
+  const [isAlreadyFilled, setIsAlreadyFilled] = useState(false);
 
   useEffect(() => {
-    if (studentData) {
-      setFormData({
-        ...studentData,
-        studentName: `${studentData.firstName || ""} ${studentData.lastName || ""}`.trim(),
-        dob: studentData.dob ? studentData.dob.split("T")[0] : "",
-        photo: null,
-      });
+    const fetchIdCard = async () => {
+      try {
+        let idCardRes = null;
 
-      if (studentData.photo && studentData.photo.data) {
-        const blob = new Blob(
-          [new Uint8Array(studentData.photo.data.data)],
-          { type: studentData.photo.contentType }
-        );
-        setPhotoPreview(URL.createObjectURL(blob));
-      }
-    } else if (studentId) {
-      axios.get(`/api/idcards/${studentId}`).then((res) => {
-        const data = res.data;
-        setFormData({
-          ...data,
-          studentName: `${data.firstName || ""} ${data.lastName || ""}`.trim(),
-          dob: data.dob ? data.dob.split("T")[0] : "",
-          photo: null,
-        });
-
-        if (data.photo && data.photo.data) {
-          const blob = new Blob(
-            [new Uint8Array(data.photo.data.data)],
-            { type: data.photo.contentType }
-          );
-          setPhotoPreview(URL.createObjectURL(blob));
+        if (studentData?.studentId) {
+          idCardRes = await axios.get(`http://localhost:5000/api/idcards/student/${studentData.studentId}`);
+        } else if (studentId) {
+          idCardRes = await axios.get(`http://localhost:5000/api/idcards/student/${studentId}`);
         }
-      });
-    }
+
+        if (idCardRes?.data) {
+          const data = idCardRes.data;
+          setFormData({
+            ...data,
+            dob: data.dob ? data.dob.split("T")[0] : "",
+            photo: null,
+          });
+
+          if (data.photo && data.photo.data) {
+            const blob = new Blob(
+              [new Uint8Array(data.photo.data.data)],
+              { type: data.photo.contentType }
+            );
+            setPhotoPreview(URL.createObjectURL(blob));
+          }
+
+          setIsAlreadyFilled(true); // mark ID card as already filled
+        } else if (studentData) {
+          setFormData({
+            ...studentData,
+            studentName: `${studentData.firstName || ""} ${studentData.lastName || ""}`.trim(),
+            dob: studentData.dob ? studentData.dob.split("T")[0] : "",
+            photo: null,
+          });
+        }
+      } catch (err) {
+        if (studentData) {
+          setFormData({
+            ...studentData,
+            studentName: `${studentData.firstName || ""} ${studentData.lastName || ""}`.trim(),
+            dob: studentData.dob ? studentData.dob.split("T")[0] : "",
+            photo: null,
+          });
+        }
+        console.log("No existing ID card found", err);
+      }
+    };
+
+    fetchIdCard();
   }, [studentData, studentId]);
 
   const handleChange = (e) => {
@@ -103,7 +117,7 @@ const IdCardForm = ({ studentId }) => {
     data.append("permanentAddress", JSON.stringify(formData.permanentAddress));
     if (formData.photo) data.append("photo", formData.photo);
 
-    //  Pass the actual studentId like "G0102" from the studentData
+    // Pass actual studentId
     if (studentData?.studentId) {
       data.append("studentId", studentData.studentId);
     } else if (studentId) {
@@ -133,6 +147,13 @@ const IdCardForm = ({ studentId }) => {
           <h2 className="text-xl font-bold text-center mb-2 text-white bg-gray-800 py-1 rounded">
             ID Card Form
           </h2>
+
+          {isAlreadyFilled && (
+            <p className="text-red-600 font-bold mb-2 text-center">
+              ID Card already filled for this student
+            </p>
+          )}
+
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
             <label>
               Student’s Name
@@ -141,7 +162,8 @@ const IdCardForm = ({ studentId }) => {
                 name="studentName"
                 value={formData.studentName}
                 onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                disabled
               />
             </label>
 
@@ -152,7 +174,8 @@ const IdCardForm = ({ studentId }) => {
                 name="dob"
                 value={formData.dob}
                 onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                disabled
               />
             </label>
 
@@ -163,7 +186,8 @@ const IdCardForm = ({ studentId }) => {
                 name="admitClass"
                 value={formData.admitClass}
                 onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                disabled
               />
             </label>
 
@@ -174,7 +198,8 @@ const IdCardForm = ({ studentId }) => {
                 name="bloodGroup"
                 value={formData.bloodGroup}
                 onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                disabled
               />
             </label>
 
@@ -185,7 +210,8 @@ const IdCardForm = ({ studentId }) => {
                 name="fatherName"
                 value={formData.fatherName}
                 onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                disabled
               />
             </label>
 
@@ -196,7 +222,8 @@ const IdCardForm = ({ studentId }) => {
                 name="motherName"
                 value={formData.motherName}
                 onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                disabled
               />
             </label>
 
@@ -207,7 +234,8 @@ const IdCardForm = ({ studentId }) => {
                 name="fatherPhone"
                 value={formData.fatherPhone}
                 onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                disabled
               />
             </label>
 
@@ -220,6 +248,7 @@ const IdCardForm = ({ studentId }) => {
                 onChange={handleChange}
                 placeholder="Whatsapp number"
                 className="border bg-gray-100 p-0 rounded w-full"
+                
               />
             </label>
 
@@ -235,7 +264,8 @@ const IdCardForm = ({ studentId }) => {
                       name={field}
                       value={formData.permanentAddress[field]}
                       onChange={handleAddressChange}
-                      className="border bg-gray-100 p-0 rounded w-full"
+                      className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                      disabled
                     />
                   </div>
                 ))}
@@ -249,6 +279,7 @@ const IdCardForm = ({ studentId }) => {
                 name="photo"
                 onChange={handleChange}
                 className="border bg-gray-100 p-1 rounded w-full"
+                
               />
             </label>
 
@@ -260,15 +291,17 @@ const IdCardForm = ({ studentId }) => {
               />
             )}
 
-            <div className="col-span-full flex justify-between">
-              <BackButton />
-              <button
-                type="submit"
-                className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
-              >
-                Save
-              </button>
-            </div>
+            {!isAlreadyFilled && (
+              <div className="col-span-full flex justify-between">
+                <BackButton />
+                <button
+                  type="submit"
+                  className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+                >
+                  Save
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>
