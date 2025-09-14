@@ -3,10 +3,11 @@ import axios from "axios";
 import BackButton from "../component/BackButton";
 import Sidebar from "../component/Sidebar";
 import Header from "./Header";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const IdCardForm = ({ studentId }) => {
-  const location = useLocation();  
+  const location = useLocation();
+  const navigate = useNavigate();
   const studentData = location.state?.studentData;
 
   console.log("Received studentData:", studentData);
@@ -14,11 +15,11 @@ const IdCardForm = ({ studentId }) => {
   const [formData, setFormData] = useState({
     studentName: "",
     dob: "",
-    className: "",
+    admitClass: "",
     bloodGroup: "",
     fatherName: "",
     motherName: "",
-    contactNo: "",
+    fatherPhone: "",
     whatsappNo: "",
     permanentAddress: {
       vill: "",
@@ -33,51 +34,51 @@ const IdCardForm = ({ studentId }) => {
 
   const [photoPreview, setPhotoPreview] = useState(null);
 
-useEffect(() => {
-  if (studentData) {
-    setFormData({
-      ...studentData,
-      // Combine first and last name for display
-      studentName: `${studentData.firstName || ""} ${studentData.lastName || ""}`.trim(),
-      dob: studentData.dob ? studentData.dob.split("T")[0] : "",
-      photo: null,
-    });
-
-    if (studentData.photo && studentData.photo.data) {
-      const blob = new Blob(
-        [new Uint8Array(studentData.photo.data.data)],
-        { type: studentData.photo.contentType }
-      );
-      setPhotoPreview(URL.createObjectURL(blob));
-    }
-  } else if (studentId) {
-    axios.get(`/api/idcards/${studentId}`).then((res) => {
-      const data = res.data;
+  useEffect(() => {
+    if (studentData) {
       setFormData({
-        ...data,
-        studentName: `${data.firstName || ""} ${data.lastName || ""}`.trim(),
-        dob: data.dob ? data.dob.split("T")[0] : "",
+        ...studentData,
+        studentName: `${studentData.firstName || ""} ${studentData.lastName || ""}`.trim(),
+        dob: studentData.dob ? studentData.dob.split("T")[0] : "",
         photo: null,
       });
 
-      if (data.photo && data.photo.data) {
+      if (studentData.photo && studentData.photo.data) {
         const blob = new Blob(
-          [new Uint8Array(data.photo.data.data)],
-          { type: data.photo.contentType }
+          [new Uint8Array(studentData.photo.data.data)],
+          { type: studentData.photo.contentType }
         );
         setPhotoPreview(URL.createObjectURL(blob));
       }
-    });
-  }
-}, [studentData, studentId]);
+    } else if (studentId) {
+      axios.get(`/api/idcards/${studentId}`).then((res) => {
+        const data = res.data;
+        setFormData({
+          ...data,
+          studentName: `${data.firstName || ""} ${data.lastName || ""}`.trim(),
+          dob: data.dob ? data.dob.split("T")[0] : "",
+          photo: null,
+        });
 
+        if (data.photo && data.photo.data) {
+          const blob = new Blob(
+            [new Uint8Array(data.photo.data.data)],
+            { type: data.photo.contentType }
+          );
+          setPhotoPreview(URL.createObjectURL(blob));
+        }
+      });
+    }
+  }, [studentData, studentId]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (files) {
       setFormData({ ...formData, [name]: files[0] });
       setPhotoPreview(URL.createObjectURL(files[0]));
-    } else setFormData({ ...formData, [name]: value });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
   };
 
   const handleAddressChange = (e) => {
@@ -91,18 +92,35 @@ useEffect(() => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const data = new FormData();
-    Object.keys(formData).forEach((key) => {
-      if (key === "photo" && formData.photo) data.append(key, formData.photo);
-      else if (key === "permanentAddress") data.append(key, JSON.stringify(formData[key]));
-      else data.append(key, formData[key]);
-    });
+    data.append("studentName", formData.studentName);
+    data.append("dob", formData.dob);
+    data.append("className", formData.admitClass);
+    data.append("bloodGroup", formData.bloodGroup);
+    data.append("fatherName", formData.fatherName);
+    data.append("motherName", formData.motherName);
+    data.append("contactNo", formData.fatherPhone);
+    data.append("whatsappNo", formData.whatsappNo);
+    data.append("permanentAddress", JSON.stringify(formData.permanentAddress));
+    if (formData.photo) data.append("photo", formData.photo);
+
+    //  Pass the actual studentId like "G0102" from the studentData
+    if (studentData?.studentId) {
+      data.append("studentId", studentData.studentId);
+    } else if (studentId) {
+      data.append("studentId", studentId);
+    }
 
     try {
-      await axios.post("/api/idcards", data);
+      await axios.post("http://localhost:5000/api/idcards", data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
       alert("ID Card saved!");
+      navigate("/StudentList");
     } catch (err) {
-      console.error("Error saving ID card:", err);
-      alert("Failed to save ID card");
+      alert(
+        "Failed to save ID card: " +
+          (err.response?.data?.message || err.message)
+      );
     }
   };
 
@@ -142,7 +160,7 @@ useEffect(() => {
               Class
               <input
                 type="text"
-                name="className"
+                name="admitClass"
                 value={formData.admitClass}
                 onChange={handleChange}
                 className="border bg-gray-100 p-0 rounded w-full"
@@ -186,7 +204,7 @@ useEffect(() => {
               Contact No
               <input
                 type="text"
-                name="contactNo"
+                name="fatherPhone"
                 value={formData.fatherPhone}
                 onChange={handleChange}
                 className="border bg-gray-100 p-0 rounded w-full"

@@ -26,7 +26,7 @@ const idCardSchema = new mongoose.Schema(
       contentType: String,
     },
   },
-  { timestamps: true }
+  { timestamps: false }
 );
 
 module.exports = mongoose.model("IdCard", idCardSchema);
