@@ -101,12 +101,18 @@ const StudentMaster = () => {
     fetchStudents();
     fetchNextStudentId();
 
-    if (studentItem) {
+ if (studentItem) {
   // Normalize languages to uppercase so checkboxes match
   const normalizedLanguages = (studentItem.languages || []).map((l) => l.toUpperCase());
   setStudentData({ ...studentItem, languages: normalizedLanguages });
   setIsEditMode(true);
+
+  //  Fetch sections for the student's saved class so dropdown fills
+  if (studentItem.admitClass) {
+    fetchSections(studentItem.admitClass);
+  }
 }
+
 
     // eslint-disable-next-line
   }, []);
@@ -207,7 +213,8 @@ const handleCheckboxChange = (e) => {
                   Student ID
                   <input name="studentId" value={studentData.studentId} readOnly className="border bg-gray-200 p-0 rounded w-full" />
                 </label>
-               {/* Admit Class */}
+
+              {/* Admit Class */}
               <label>
                 Admit Class
                 <select
@@ -215,14 +222,13 @@ const handleCheckboxChange = (e) => {
                   value={studentData.admitClass}
                   onChange={async (e) => {
                     const selectedClass = e.target.value;
-                    setStudentData({ ...studentData, admitClass: selectedClass, section: "", rollNo: "" });
+                    setStudentData((prev) => ({ ...prev, admitClass: selectedClass, section: "", rollNo: "" }));
 
-                    // Fetch sections for this class
                     try {
                       const res = await axios.get(
                         `http://localhost:5000/api/classes/sections/${encodeURIComponent(selectedClass)}`
                       );
-                      setSections(res.data || []); // sections is an array of strings now
+                      setSections(res.data || []);
                     } catch (err) {
                       console.error("Error fetching sections:", err);
                     }
@@ -244,24 +250,26 @@ const handleCheckboxChange = (e) => {
                   value={studentData.section}
                   onChange={async (e) => {
                     const selectedSection = e.target.value;
+                    const selectedClass = studentData.admitClass; // now already updated from above
 
-                    // update state with section
                     setStudentData((prev) => ({ ...prev, section: selectedSection, rollNo: "" }));
 
-                    // Fetch next roll number when class + section are selected
-                    if (studentData.admitClass && selectedSection) {
+                  if (
+                      (selectedClass && selectedSection) &&
+                      (!isEditMode ||
+                        selectedClass !== studentItem?.admitClass ||
+                        selectedSection !== studentItem?.section)
+                    ) {
                       try {
                         const res = await axios.get(
-                          `http://localhost:5000/api/students/next-roll/${encodeURIComponent(
-                            studentData.admitClass
-                          )}/${encodeURIComponent(selectedSection)}`
+                          `http://localhost:5000/api/students/next-roll/${encodeURIComponent(selectedClass)}/${encodeURIComponent(selectedSection)}`
                         );
-                        console.log("Next Roll from backend:", res.data); // 🔍 check here
                         setStudentData((prev) => ({ ...prev, rollNo: res.data.rollNo.toString() }));
                       } catch (err) {
                         console.error("Error fetching next roll:", err);
                       }
                     }
+
                   }}
                   className="border bg-gray-100 p-0 rounded w-full"
                 >
@@ -273,6 +281,7 @@ const handleCheckboxChange = (e) => {
                   ))}
                 </select>
               </label>
+
 
               {/* Roll No */}
               <label>
@@ -717,75 +726,75 @@ const handleCheckboxChange = (e) => {
 
           {/* --------- STEP 3 --------- */}
         {step === 3 && (
-  <form
-    onSubmit={async (e) => {
-      e.preventDefault();
-      const formData = new FormData();
+        <form
+          onSubmit={async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
 
-      // Append photos
-      formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
-      formData.append("motherPhoto", e.target.motherPhoto.files[0]);
-      formData.append("childPhoto", e.target.childPhoto.files[0]);
+            // Append photos
+            formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
+            formData.append("motherPhoto", e.target.motherPhoto.files[0]);
+            formData.append("childPhoto", e.target.childPhoto.files[0]);
 
-      // Append studentData fields
-      Object.keys(studentData).forEach((key) => {
-        if (key === "languages") {
-          // Handle languages array
-          studentData.languages.forEach((lang) => formData.append("languages[]", lang));
-        } else if (key === "permanentAddress" || key === "currentAddress") {
-          Object.keys(studentData[key]).forEach((sub) => {
-            formData.append(`${key}[${sub}]`, studentData[key][sub]);
-          });
-        } else {
-          formData.append(key, studentData[key]);
-        }
-      });
+            // Append studentData fields
+            Object.keys(studentData).forEach((key) => {
+              if (key === "languages") {
+                // Handle languages array
+                studentData.languages.forEach((lang) => formData.append("languages[]", lang));
+              } else if (key === "permanentAddress" || key === "currentAddress") {
+                Object.keys(studentData[key]).forEach((sub) => {
+                  formData.append(`${key}[${sub}]`, studentData[key][sub]);
+                });
+              } else {
+                formData.append(key, studentData[key]);
+              }
+            });
 
-      try {
-        await axios.post("http://localhost:5000/api/students", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        alert("Student and Photos saved successfully!");
-        navigate("/StudentList", { replace: true });
-      } catch (err) {
-        console.error("Error saving student with photos:", err);
-        alert("Failed to save student");
-      }
-    }}
-    className="grid grid-cols-1 gap-4"
-  >
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-      <label>
-        Affix Photo of Father
-        <input type="file" name="fatherPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full" />
-      </label>
-      <label>
-        Affix Photo of Mother
-        <input type="file" name="motherPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full"/>
-      </label>
-      <label>
-        Affix Photo of Child
-        <input type="file" name="childPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full" />
-      </label>
-    </div>
+            try {
+              await axios.post("http://localhost:5000/api/students", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+              });
+              alert("Student and Photos saved successfully!");
+              navigate("/StudentList", { replace: true });
+            } catch (err) {
+              console.error("Error saving student with photos:", err);
+              alert("Failed to save student");
+            }
+          }}
+          className="grid grid-cols-1 gap-4"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <label>
+              Affix Photo of Father
+              <input type="file" name="fatherPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full" />
+            </label>
+            <label>
+              Affix Photo of Mother
+              <input type="file" name="motherPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full"/>
+            </label>
+            <label>
+              Affix Photo of Child
+              <input type="file" name="childPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full" />
+            </label>
+          </div>
 
-    <div className="flex justify-between mt-4">
-      <button
-        type="button"
-        onClick={() => setStep(2)}
-        className="px-4 py-1 bg-blue-700 text-white rounded hover:bg-blue-800"
-      >
-        Back
-      </button>
-      <button
-        type="submit"
-        className="px-6 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-      >
-        Submit
-      </button>
-    </div>
-  </form>
-)}
+          <div className="flex justify-between mt-4">
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              className="px-4 py-1 bg-blue-700 text-white rounded hover:bg-blue-800"
+            >
+              Back
+            </button>
+            <button
+              type="submit"
+              className="px-6 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Submit
+            </button>
+          </div>
+        </form>
+      )}
 
 
         </div>

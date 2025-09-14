@@ -33,9 +33,15 @@ async function generateNextRollNo(admitClass, section) {
     .limit(1)
     .lean();
 
-  if (!last.length) return 1;
-  return parseInt(last[0].rollNo, 10) + 1;
+  let nextRoll = 1;
+  if (last.length) {
+    nextRoll = parseInt(last[0].rollNo, 10) + 1;
+  }
+
+  // pad to 2 digits → 01, 02, … 09, 10
+  return String(nextRoll).padStart(2, "0");
 }
+
 
 export const getLatestStudentId = async (_req, res) => {
   try {
@@ -54,12 +60,14 @@ export const getNextRollNo = async (req, res) => {
       .sort({ rollNo: -1 })
       .limit(1);
 
-    let nextRoll = 1;
+   let nextRoll = 1;
     if (lastStudent.length) {
       nextRoll = parseInt(lastStudent[0].rollNo, 10) + 1;
     }
 
-    res.json({ rollNo: nextRoll });
+    const formattedRoll = String(nextRoll).padStart(2, "0");
+    res.json({ rollNo: formattedRoll });
+
   } catch (err) {
     console.error("Error in getNextRollNo:", err);
     res.status(500).json({ error: err.message });
