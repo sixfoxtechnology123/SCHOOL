@@ -52,12 +52,12 @@ const IdCardForm = ({ studentId }) => {
 
         if (idCardRes?.data && idCardRes.data._id) {
           const data = idCardRes.data;
-          setFormData({
-            ...formData,
+          setFormData((prev) => ({
+            ...prev,
             ...data,
             dob: data.dob ? data.dob.split("T")[0] : "",
             photo: null,
-          });
+          }));
 
           if (data.photo && data.photo.data) {
             const blob = new Blob([new Uint8Array(data.photo.data.data)], {
@@ -69,37 +69,43 @@ const IdCardForm = ({ studentId }) => {
           setIdCardId(data._id);
           setIsAlreadyFilled(true);
         } else if (studentData) {
-          setFormData({
-            ...formData,
+          // Combine firstName + lastName into full name
+          const fullName = [studentData.firstName, studentData.lastName]
+            .filter(Boolean)
+            .join(" ");
+          setFormData((prev) => ({
+            ...prev,
             ...studentData,
-            studentName: studentData.studentName || "",
+            studentName: studentData.studentName || fullName,
             dob: studentData.dob ? studentData.dob.split("T")[0] : "",
-          });
+          }));
         }
       } catch (err) {
         if (studentData) {
-          setFormData({
-            ...formData,
+          const fullName = [studentData.firstName, studentData.lastName]
+            .filter(Boolean)
+            .join(" ");
+          setFormData((prev) => ({
+            ...prev,
             ...studentData,
-            studentName: studentData.studentName || "",
+            studentName: studentData.studentName || fullName,
             dob: studentData.dob ? studentData.dob.split("T")[0] : "",
-          });
+          }));
         }
         console.log("No existing ID card found", err);
       }
     };
 
     fetchIdCard();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentData, studentId]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (files) {
-      setFormData({ ...formData, [name]: files[0] });
+      setFormData((prev) => ({ ...prev, [name]: files[0] }));
       setPhotoPreview(URL.createObjectURL(files[0]));
     } else {
-      setFormData({ ...formData, [name]: value });
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -132,23 +138,21 @@ const IdCardForm = ({ studentId }) => {
     }
 
     try {
- if (isAlreadyFilled && isEditMode) {
-  // update
-  await axios.put(
-    `http://localhost:5000/api/idcards/${studentData?.studentId || studentId}`,
-    data,
-    { headers: { "Content-Type": "multipart/form-data" } }
-  );
-  alert("ID Card updated!");
-} else {
-  // create
-  await axios.post(
-    `http://localhost:5000/api/idcards/${studentData?.studentId || studentId}`,
-    data,
-    { headers: { "Content-Type": "multipart/form-data" } }
-  );
-  alert("ID Card saved!");
-}
+      if (isAlreadyFilled && isEditMode) {
+        await axios.put(
+          `http://localhost:5000/api/idcards/${studentData?.studentId || studentId}`,
+          data,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+        alert("ID Card updated!");
+      } else {
+        await axios.post(
+          `http://localhost:5000/api/idcards/${studentData?.studentId || studentId}`,
+          data,
+          { headers: { "Content-Type": "multipart/form-data" } }
+        );
+        alert("ID Card saved!");
+      }
 
       navigate("/StudentList");
     } catch (err) {
@@ -186,7 +190,7 @@ const IdCardForm = ({ studentId }) => {
                 name="studentName"
                 value={formData.studentName}
                 disabled
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
 
@@ -197,7 +201,7 @@ const IdCardForm = ({ studentId }) => {
                 name="dob"
                 value={formData.dob}
                 disabled
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
 
@@ -208,7 +212,7 @@ const IdCardForm = ({ studentId }) => {
                 name="admitClass"
                 value={formData.admitClass}
                 disabled
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
 
@@ -219,7 +223,7 @@ const IdCardForm = ({ studentId }) => {
                 name="bloodGroup"
                 value={formData.bloodGroup}
                 disabled
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
 
@@ -230,7 +234,7 @@ const IdCardForm = ({ studentId }) => {
                 name="fatherName"
                 value={formData.fatherName}
                 disabled
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
 
@@ -241,7 +245,7 @@ const IdCardForm = ({ studentId }) => {
                 name="motherName"
                 value={formData.motherName}
                 disabled
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
 
@@ -252,11 +256,10 @@ const IdCardForm = ({ studentId }) => {
                 name="fatherPhone"
                 value={formData.fatherPhone}
                 disabled
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
 
-            {/* Editable only in edit mode */}
             <label>
               Whatsapp No
               <input
@@ -284,14 +287,13 @@ const IdCardForm = ({ studentId }) => {
                       value={formData.permanentAddress[field]}
                       onChange={handleAddressChange}
                       disabled
-                      className="border bg-gray-100 p-0 rounded w-full"
+                      className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Photo editable only in edit mode */}
             <label className="col-span-1">
               Upload Photo
               <input

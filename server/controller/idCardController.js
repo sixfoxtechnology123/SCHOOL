@@ -2,28 +2,61 @@ const IdCard = require("../models/IdCard");
 const StudentMaster = require("../models/Student");
 
 // Get ID Card by studentId
+// Get ID Card by studentId
 exports.getIdCardByStudentId = async (req, res) => {
   try {
     const { studentId } = req.params;
 
     let idCard = await IdCard.findOne({ studentId });
+
     if (!idCard) {
-      // Prefill from student if ID Card does not exist
+      // Prefill from StudentMaster if ID Card does not exist
       const student = await StudentMaster.findOne({ studentId });
       if (!student) return res.status(404).json({ error: "Student not found" });
 
       idCard = {
-        studentId,
-        studentName: student.studentName,
-        dob: student.dob,
-        className: student.className,
-        bloodGroup: student.bloodGroup,
-        fatherName: student.fatherName,
-        motherName: student.motherName,
-        contactNo: student.contactNo,
-        whatsappNo: student.whatsappNo,
-        permanentAddress: student.permanentAddress || {},
+        _id: null, // frontend expects _id
+        studentId: student.studentId,
+        studentName: student.studentName || "",
+        dob: student.dob || "",
+        admitClass: student.className || "",   // <-- renamed for frontend
+        bloodGroup: student.bloodGroup || "",
+        fatherName: student.fatherName || "",
+        motherName: student.motherName || "",
+        fatherPhone: student.contactNo || "",  // <-- renamed for frontend
+        whatsappNo: student.whatsappNo || "",
+        permanentAddress: student.permanentAddress || {
+          vill: "",
+          po: "",
+          block: "",
+          pin: "",
+          ps: "",
+          dist: "",
+        },
         photo: null,
+      };
+    } else {
+      // Map existing ID card to frontend fields
+      idCard = {
+        _id: idCard._id,
+        studentId: idCard.studentId,
+        studentName: idCard.studentName || "",
+        dob: idCard.dob || "",
+        admitClass: idCard.className || "",   // <-- renamed
+        bloodGroup: idCard.bloodGroup || "",
+        fatherName: idCard.fatherName || "",
+        motherName: idCard.motherName || "",
+        fatherPhone: idCard.contactNo || "",  // <-- renamed
+        whatsappNo: idCard.whatsappNo || "",
+        permanentAddress: idCard.permanentAddress || {
+          vill: "",
+          po: "",
+          block: "",
+          pin: "",
+          ps: "",
+          dist: "",
+        },
+        photo: idCard.photo || null,
       };
     }
 
@@ -33,6 +66,7 @@ exports.getIdCardByStudentId = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch ID Card" });
   }
 };
+
 
 // Create or Update ID Card (by studentId)
 exports.saveIdCard = async (req, res) => {
