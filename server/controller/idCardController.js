@@ -34,7 +34,7 @@ exports.getIdCardByStudentId = async (req, res) => {
   }
 };
 
-// Create or Update ID Card
+// Create or Update ID Card (by studentId)
 exports.saveIdCard = async (req, res) => {
   try {
     const {
@@ -58,7 +58,7 @@ exports.saveIdCard = async (req, res) => {
     let idCard = await IdCard.findOne({ studentId });
 
     if (idCard) {
-      // Update existing
+      // Update existing by studentId
       idCard.studentName = studentName;
       idCard.dob = dob;
       idCard.className = className;
@@ -71,6 +71,7 @@ exports.saveIdCard = async (req, res) => {
       if (photo) idCard.photo = photo;
 
       await idCard.save();
+      return res.json({ message: "ID Card updated successfully", idCard });
     } else {
       // Create new
       idCard = new IdCard({
@@ -87,9 +88,8 @@ exports.saveIdCard = async (req, res) => {
         photo,
       });
       await idCard.save();
+      return res.json({ message: "ID Card created successfully", idCard });
     }
-
-    res.json({ message: "ID Card saved successfully", idCard });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to save ID Card" });

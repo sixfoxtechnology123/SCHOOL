@@ -32,6 +32,8 @@ const IdCardForm = ({ studentId }) => {
 
   const [photoPreview, setPhotoPreview] = useState(null);
   const [isAlreadyFilled, setIsAlreadyFilled] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [idCardId, setIdCardId] = useState(null);
 
   useEffect(() => {
     const fetchIdCard = async () => {
@@ -39,43 +41,48 @@ const IdCardForm = ({ studentId }) => {
         let idCardRes = null;
 
         if (studentData?.studentId) {
-          idCardRes = await axios.get(`http://localhost:5000/api/idcards/student/${studentData.studentId}`);
+          idCardRes = await axios.get(
+            `http://localhost:5000/api/idcards/${studentData.studentId}`
+          );
         } else if (studentId) {
-          idCardRes = await axios.get(`http://localhost:5000/api/idcards/student/${studentId}`);
+          idCardRes = await axios.get(
+            `http://localhost:5000/api/idcards/${studentId}`
+          );
         }
 
-        if (idCardRes?.data) {
+        if (idCardRes?.data && idCardRes.data._id) {
           const data = idCardRes.data;
           setFormData({
+            ...formData,
             ...data,
             dob: data.dob ? data.dob.split("T")[0] : "",
             photo: null,
           });
 
           if (data.photo && data.photo.data) {
-            const blob = new Blob(
-              [new Uint8Array(data.photo.data.data)],
-              { type: data.photo.contentType }
-            );
+            const blob = new Blob([new Uint8Array(data.photo.data.data)], {
+              type: data.photo.contentType,
+            });
             setPhotoPreview(URL.createObjectURL(blob));
           }
 
-          setIsAlreadyFilled(true); // mark ID card as already filled
+          setIdCardId(data._id);
+          setIsAlreadyFilled(true);
         } else if (studentData) {
           setFormData({
+            ...formData,
             ...studentData,
-            studentName: `${studentData.firstName || ""} ${studentData.lastName || ""}`.trim(),
+            studentName: studentData.studentName || "",
             dob: studentData.dob ? studentData.dob.split("T")[0] : "",
-            photo: null,
           });
         }
       } catch (err) {
         if (studentData) {
           setFormData({
+            ...formData,
             ...studentData,
-            studentName: `${studentData.firstName || ""} ${studentData.lastName || ""}`.trim(),
+            studentName: studentData.studentName || "",
             dob: studentData.dob ? studentData.dob.split("T")[0] : "",
-            photo: null,
           });
         }
         console.log("No existing ID card found", err);
@@ -83,6 +90,7 @@ const IdCardForm = ({ studentId }) => {
     };
 
     fetchIdCard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [studentData, studentId]);
 
   const handleChange = (e) => {
@@ -117,7 +125,6 @@ const IdCardForm = ({ studentId }) => {
     data.append("permanentAddress", JSON.stringify(formData.permanentAddress));
     if (formData.photo) data.append("photo", formData.photo);
 
-    // Pass actual studentId
     if (studentData?.studentId) {
       data.append("studentId", studentData.studentId);
     } else if (studentId) {
@@ -125,10 +132,24 @@ const IdCardForm = ({ studentId }) => {
     }
 
     try {
-      await axios.post("http://localhost:5000/api/idcards", data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      alert("ID Card saved!");
+ if (isAlreadyFilled && isEditMode) {
+  // update
+  await axios.put(
+    `http://localhost:5000/api/idcards/${studentData?.studentId || studentId}`,
+    data,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  alert("ID Card updated!");
+} else {
+  // create
+  await axios.post(
+    `http://localhost:5000/api/idcards/${studentData?.studentId || studentId}`,
+    data,
+    { headers: { "Content-Type": "multipart/form-data" } }
+  );
+  alert("ID Card saved!");
+}
+
       navigate("/StudentList");
     } catch (err) {
       alert(
@@ -148,22 +169,24 @@ const IdCardForm = ({ studentId }) => {
             ID Card Form
           </h2>
 
-          {isAlreadyFilled && (
+          {isAlreadyFilled && !isEditMode && (
             <p className="text-red-600 font-bold mb-2 text-center">
               ID Card already filled for this student
             </p>
           )}
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <form
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 sm:grid-cols-4 gap-3"
+          >
             <label>
               Student’s Name
               <input
                 type="text"
                 name="studentName"
                 value={formData.studentName}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
                 disabled
+                className="border bg-gray-100 p-0 rounded w-full"
               />
             </label>
 
@@ -173,9 +196,8 @@ const IdCardForm = ({ studentId }) => {
                 type="date"
                 name="dob"
                 value={formData.dob}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
                 disabled
+                className="border bg-gray-100 p-0 rounded w-full"
               />
             </label>
 
@@ -185,9 +207,8 @@ const IdCardForm = ({ studentId }) => {
                 type="text"
                 name="admitClass"
                 value={formData.admitClass}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
                 disabled
+                className="border bg-gray-100 p-0 rounded w-full"
               />
             </label>
 
@@ -197,9 +218,8 @@ const IdCardForm = ({ studentId }) => {
                 type="text"
                 name="bloodGroup"
                 value={formData.bloodGroup}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
                 disabled
+                className="border bg-gray-100 p-0 rounded w-full"
               />
             </label>
 
@@ -209,9 +229,8 @@ const IdCardForm = ({ studentId }) => {
                 type="text"
                 name="fatherName"
                 value={formData.fatherName}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
                 disabled
+                className="border bg-gray-100 p-0 rounded w-full"
               />
             </label>
 
@@ -221,9 +240,8 @@ const IdCardForm = ({ studentId }) => {
                 type="text"
                 name="motherName"
                 value={formData.motherName}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
                 disabled
+                className="border bg-gray-100 p-0 rounded w-full"
               />
             </label>
 
@@ -233,12 +251,12 @@ const IdCardForm = ({ studentId }) => {
                 type="text"
                 name="fatherPhone"
                 value={formData.fatherPhone}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
                 disabled
+                className="border bg-gray-100 p-0 rounded w-full"
               />
             </label>
 
+            {/* Editable only in edit mode */}
             <label>
               Whatsapp No
               <input
@@ -246,9 +264,10 @@ const IdCardForm = ({ studentId }) => {
                 name="whatsappNo"
                 value={formData.whatsappNo}
                 onChange={handleChange}
-                placeholder="Whatsapp number"
-                className="border bg-gray-100 p-0 rounded w-full"
-                
+                disabled={isAlreadyFilled && !isEditMode}
+                className={`border p-0 rounded w-full ${
+                  isAlreadyFilled && !isEditMode ? "bg-gray-100" : ""
+                }`}
               />
             </label>
 
@@ -264,22 +283,25 @@ const IdCardForm = ({ studentId }) => {
                       name={field}
                       value={formData.permanentAddress[field]}
                       onChange={handleAddressChange}
-                      className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
                       disabled
+                      className="border bg-gray-100 p-0 rounded w-full"
                     />
                   </div>
                 ))}
               </div>
             </div>
 
+            {/* Photo editable only in edit mode */}
             <label className="col-span-1">
               Upload Photo
               <input
                 type="file"
                 name="photo"
                 onChange={handleChange}
-                className="border bg-gray-100 p-1 rounded w-full"
-                
+                disabled={isAlreadyFilled && !isEditMode}
+                className={`border p-1 rounded w-full ${
+                  isAlreadyFilled && !isEditMode ? "bg-gray-100" : ""
+                }`}
               />
             </label>
 
@@ -291,17 +313,34 @@ const IdCardForm = ({ studentId }) => {
               />
             )}
 
-            {!isAlreadyFilled && (
-              <div className="col-span-full flex justify-between">
-                <BackButton />
+            <div className="col-span-full flex justify-between">
+              <BackButton />
+              {!isAlreadyFilled && (
                 <button
                   type="submit"
                   className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
                 >
                   Save
                 </button>
-              </div>
-            )}
+              )}
+              {isAlreadyFilled && !isEditMode && (
+                <button
+                  type="button"
+                  className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                  onClick={() => setIsEditMode(true)}
+                >
+                  Edit
+                </button>
+              )}
+              {isAlreadyFilled && isEditMode && (
+                <button
+                  type="submit"
+                  className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded"
+                >
+                  Update
+                </button>
+              )}
+            </div>
           </form>
         </div>
       </div>
