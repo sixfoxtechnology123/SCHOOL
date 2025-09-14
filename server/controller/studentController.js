@@ -38,10 +38,8 @@ async function generateNextRollNo(admitClass, section) {
     nextRoll = parseInt(last[0].rollNo, 10) + 1;
   }
 
-  // pad to 2 digits → 01, 02, … 09, 10
   return String(nextRoll).padStart(2, "0");
 }
-
 
 export const getLatestStudentId = async (_req, res) => {
   try {
@@ -60,16 +58,13 @@ export const getNextRollNo = async (req, res) => {
       .sort({ rollNo: -1 })
       .limit(1);
 
-   let nextRoll = 1;
+    let nextRoll = 1;
     if (lastStudent.length) {
       nextRoll = parseInt(lastStudent[0].rollNo, 10) + 1;
     }
 
-    const formattedRoll = String(nextRoll).padStart(2, "0");
-    res.json({ rollNo: formattedRoll });
-
+    res.json({ rollNo: String(nextRoll).padStart(2, "0") });
   } catch (err) {
-    console.error("Error in getNextRollNo:", err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -84,7 +79,7 @@ export const getAllStudents = async (_req, res) => {
     const enriched = students.map((s) => ({
       ...s,
       classLabel: classMap[s.className] || s.className,
-      languages: s.languages || [], // <-- ensure always array
+      languages: s.languages || [],
     }));
 
     res.json(enriched);
@@ -102,7 +97,7 @@ export const createStudent = async (req, res) => {
       ...req.body,
       studentId,
       rollNo,
-      languages: req.body.languages || [], // <-- ensure default empty array
+      languages: req.body.languages || [],
       fatherPhoto: req.files?.fatherPhoto
         ? { data: req.files.fatherPhoto[0].buffer, contentType: req.files.fatherPhoto[0].mimetype }
         : null,
@@ -121,31 +116,51 @@ export const createStudent = async (req, res) => {
   }
 };
 
+// ✅ FIXED updateStudent function
 export const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
     const payload = { ...req.body };
-    if (payload.studentId) delete payload.studentId;
+    delete payload.studentId; // prevent manual ID changes
 
     const student = await StudentMaster.findById(id);
     if (!student) return res.status(404).json({ error: "Student not found" });
 
-    Object.assign(student, payload);
-    student.languages = payload.languages || student.languages || []; // <-- ensure always array
+    // Assign all fields from payload EXCEPT photos
+    Object.keys(payload).forEach((key) => {
+      if (key !== "fatherPhoto" && key !== "motherPhoto" && key !== "childPhoto") {
+        student[key] = payload[key];
+      }
+    });
 
-    if (req.files?.fatherPhoto) {
-      student.fatherPhoto = { data: req.files.fatherPhoto[0].buffer, contentType: req.files.fatherPhoto[0].mimetype };
+    // Ensure languages array is updated
+    student.languages = payload.languages || student.languages || [];
+    student.markModified("languages");
+
+    // Update photos ONLY if new files uploaded
+    if (req.files?.fatherPhoto?.length) {
+      student.fatherPhoto = {
+        data: req.files.fatherPhoto[0].buffer,
+        contentType: req.files.fatherPhoto[0].mimetype,
+      };
     }
-    if (req.files?.motherPhoto) {
-      student.motherPhoto = { data: req.files.motherPhoto[0].buffer, contentType: req.files.motherPhoto[0].mimetype };
+    if (req.files?.motherPhoto?.length) {
+      student.motherPhoto = {
+        data: req.files.motherPhoto[0].buffer,
+        contentType: req.files.motherPhoto[0].mimetype,
+      };
     }
-    if (req.files?.childPhoto) {
-      student.childPhoto = { data: req.files.childPhoto[0].buffer, contentType: req.files.childPhoto[0].mimetype };
+    if (req.files?.childPhoto?.length) {
+      student.childPhoto = {
+        data: req.files.childPhoto[0].buffer,
+        contentType: req.files.childPhoto[0].mimetype,
+      };
     }
 
     await student.save();
-    res.json(student);
+    res.json(student); // Return updated student for frontend
   } catch (err) {
+    console.error("Error updating student:", err);
     res.status(500).json({ error: err.message || "Failed to update student" });
   }
 };
@@ -161,11 +176,9 @@ export const deleteStudent = async (req, res) => {
   }
 };
 
-//  NEW API to get full student info (Child + Family + IdCard + Udise)
 export const getFullStudentInfo = async (req, res) => {
   try {
     const { id } = req.params;
-
     const student = await StudentMaster.findById(id).lean();
     if (!student) return res.status(404).json({ error: "Student not found" });
 
@@ -173,10 +186,7 @@ export const getFullStudentInfo = async (req, res) => {
     const udiseInfo = await UdiseInfo.findOne({ studentId: student.studentId }).lean();
 
     res.json({
-      childInfo: {
-        ...student,
-        languages: student.languages || [], // <-- ensure always an array
-      },
+      childInfo: { ...student, languages: student.languages || [] },
       familyInfo: {
         fatherName: student.fatherName,
         fatherOccupation: student.fatherOccupation,

@@ -1,4 +1,3 @@
-// pages/StudentsList.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -24,10 +23,19 @@ const StudentsList = () => {
     }
   };
 
+  // Initial fetch
   useEffect(() => {
     fetchStudents();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.key]);
+  }, []);
+
+  // Refresh if navigated back from StudentMaster with state.refresh
+  useEffect(() => {
+    if (location.state?.refresh) {
+      fetchStudents();
+      // Reset the state so it doesn't refresh again accidentally
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   const deleteStudent = async (id) => {
     if (!window.confirm("Are you sure you want to delete this student?")) return;
@@ -79,6 +87,7 @@ const StudentsList = () => {
     const name = getName(s).toLowerCase();
     return id.includes(searchTermLower) || name.includes(searchTermLower);
   });
+
 
 const generatePDF = async (student) => {
   const doc = new jsPDF("p", "pt", "a4");
@@ -231,7 +240,7 @@ const generatePDF = async (student) => {
 
 
 
-  return (
+   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar />
       <div className="flex-1 overflow-y-auto p-3">

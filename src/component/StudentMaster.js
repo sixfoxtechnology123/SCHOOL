@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-import Sidebar from '../component/Sidebar';
+import Sidebar from "../component/Sidebar";
 import Header from "./Header";
 
 const StudentMaster = () => {
@@ -54,7 +54,7 @@ const StudentMaster = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const studentItem = location.state?.studentItem; // <--- added
+  const studentItem = location.state?.studentItem;
 
   // Fetch students for roll number generation
   const fetchStudents = async () => {
@@ -81,7 +81,7 @@ const StudentMaster = () => {
   const fetchClassList = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/classes/unique/classes");
-      setClassList(res.data || []); 
+      setClassList(res.data || []);
     } catch (err) {
       console.error("Error fetching class list:", err);
     }
@@ -89,7 +89,9 @@ const StudentMaster = () => {
 
   const fetchSections = async (className) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/classes/sections/${encodeURIComponent(className)}`);
+      const res = await axios.get(
+        `http://localhost:5000/api/classes/sections/${encodeURIComponent(className)}`
+      );
       setSections(res.data || []);
     } catch (err) {
       console.error("Error fetching sections:", err);
@@ -99,21 +101,18 @@ const StudentMaster = () => {
   useEffect(() => {
     fetchClassList();
     fetchStudents();
-    fetchNextStudentId();
 
- if (studentItem) {
-  // Normalize languages to uppercase so checkboxes match
-  const normalizedLanguages = (studentItem.languages || []).map((l) => l.toUpperCase());
-  setStudentData({ ...studentItem, languages: normalizedLanguages });
-  setIsEditMode(true);
+    if (studentItem) {
+      const normalizedLanguages = (studentItem.languages || []).map((l) => l.toUpperCase());
+      setStudentData({ ...studentItem, languages: normalizedLanguages });
+      setIsEditMode(true);
 
-  //  Fetch sections for the student's saved class so dropdown fills
-  if (studentItem.admitClass) {
-    fetchSections(studentItem.admitClass);
-  }
-}
-
-
+      if (studentItem.admitClass) {
+        fetchSections(studentItem.admitClass);
+      }
+    } else {
+      fetchNextStudentId();
+    }
     // eslint-disable-next-line
   }, []);
 
@@ -148,36 +147,46 @@ const StudentMaster = () => {
 
   const handleAddressChange = (e, type) => {
     const { name, value } = e.target;
-    setStudentData((prev) => ({ ...prev, [type]: { ...prev[type], [name]: value.toUpperCase() } }));
+    setStudentData((prev) => ({
+      ...prev,
+      [type]: { ...prev[type], [name]: value.toUpperCase() },
+    }));
   };
 
-const handleCheckboxChange = (e) => {
-  const { value, checked } = e.target;
-  const val = value.toUpperCase(); // store uppercase consistently
-  setStudentData((prev) => ({
-    ...prev,
-    languages: checked
-      ? [...prev.languages, val]
-      : prev.languages.filter((lang) => lang !== val),
-  }));
-};
-
+  const handleCheckboxChange = (e) => {
+    const { value, checked } = e.target;
+    const val = value.toUpperCase();
+    setStudentData((prev) => ({
+      ...prev,
+      languages: checked
+        ? [...prev.languages, val]
+        : prev.languages.filter((lang) => lang !== val),
+    }));
+  };
 
   const handleNext = (e) => {
     e.preventDefault();
     setStep(2);
   };
 
+  // STEP 2 SUBMIT (Update/Save)
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (isEditMode) {
-        await axios.put(`http://localhost:5000/api/students/${studentData._id}`, studentData);
+        await axios.put(
+          `http://localhost:5000/api/students/${studentData._id}`,
+          studentData
+        );
         alert("Student updated successfully!");
       } else {
         await axios.post("http://localhost:5000/api/students", studentData);
         alert("Student saved successfully!");
       }
+
+      // REFRESH STUDENTS STATE
+      await fetchStudents();
+
       navigate("/StudentList", { replace: true });
     } catch (err) {
       console.error("Save failed:", err);
@@ -192,7 +201,7 @@ const handleCheckboxChange = (e) => {
         <Header />
         <div className="p-2 bg-white shadow-md rounded-md">
           <div className="flex justify-between items-center mb-2 ">
-          <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-1 px-3 rounded flex-1">
+            <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-1 px-3 rounded flex-1">
               {step === 1
                 ? "Child Information"
                 : step === 2
@@ -201,8 +210,18 @@ const handleCheckboxChange = (e) => {
             </h2>
 
             <div className="flex gap-2 ml-2">
-              <Link to="/IdCardForm" className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-900">ID Card</Link>
-              <Link to="/UdiseForm" className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-900">UDISE</Link>
+              <Link
+                to="/IdCardForm"
+                className="px-3 py-1 bg-green-700 text-white rounded hover:bg-green-900"
+              >
+                ID Card
+              </Link>
+              <Link
+                to="/UdiseForm"
+                className="px-3 py-1 bg-blue-700 text-white rounded hover:bg-blue-900"
+              >
+                UDISE
+              </Link>
             </div>
           </div>
 
@@ -724,79 +743,122 @@ const handleCheckboxChange = (e) => {
             </form>
           )}
 
-          {/* --------- STEP 3 --------- */}
-        {step === 3 && (
-        <form
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
+           {/* --------- STEP 3 --------- */}
+          {step === 3 && (
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const formData = new FormData();
 
-            // Append photos
-            formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
-            formData.append("motherPhoto", e.target.motherPhoto.files[0]);
-            formData.append("childPhoto", e.target.childPhoto.files[0]);
+                // Photos only required in NEW mode
+                if (!isEditMode) {
+                  if (!e.target.fatherPhoto.files[0] || !e.target.motherPhoto.files[0] || !e.target.childPhoto.files[0]) {
+                    alert("Please upload all 3 photos!");
+                    return;
+                  }
+                }
 
-            // Append studentData fields
-            Object.keys(studentData).forEach((key) => {
-              if (key === "languages") {
-                // Handle languages array
-                studentData.languages.forEach((lang) => formData.append("languages[]", lang));
-              } else if (key === "permanentAddress" || key === "currentAddress") {
-                Object.keys(studentData[key]).forEach((sub) => {
-                  formData.append(`${key}[${sub}]`, studentData[key][sub]);
+                if (e.target.fatherPhoto.files[0])
+                  formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
+                if (e.target.motherPhoto.files[0])
+                  formData.append("motherPhoto", e.target.motherPhoto.files[0]);
+                if (e.target.childPhoto.files[0])
+                  formData.append("childPhoto", e.target.childPhoto.files[0]);
+
+                // Append studentData fields
+                Object.keys(studentData).forEach((key) => {
+                  if (key === "languages") {
+                    studentData.languages.forEach((lang) =>
+                      formData.append("languages[]", lang)
+                    );
+                  } else if (
+                    key === "permanentAddress" ||
+                    key === "currentAddress"
+                  ) {
+                    Object.keys(studentData[key]).forEach((sub) => {
+                      formData.append(`${key}[${sub}]`, studentData[key][sub]);
+                    });
+                  } else {
+                    formData.append(key, studentData[key]);
+                  }
                 });
-              } else {
-                formData.append(key, studentData[key]);
-              }
-            });
 
-            try {
-              await axios.post("http://localhost:5000/api/students", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-              });
-              alert("Student and Photos saved successfully!");
-              navigate("/StudentList", { replace: true });
-            } catch (err) {
-              console.error("Error saving student with photos:", err);
-              alert("Failed to save student");
-            }
-          }}
-          className="grid grid-cols-1 gap-4"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <label>
-              Affix Photo of Father
-              <input type="file" name="fatherPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full" />
-            </label>
-            <label>
-              Affix Photo of Mother
-              <input type="file" name="motherPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full"/>
-            </label>
-            <label>
-              Affix Photo of Child
-              <input type="file" name="childPhoto" accept="image/*" required className="border bg-gray-100 p-1 rounded w-full" />
-            </label>
-          </div>
-
-          <div className="flex justify-between mt-4">
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              className="px-4 py-1 bg-blue-700 text-white rounded hover:bg-blue-800"
+                try {
+                  if (isEditMode) {
+                    await axios.put(
+                      `http://localhost:5000/api/students/${studentData._id}`,
+                      formData,
+                      { headers: { "Content-Type": "multipart/form-data" } }
+                    );
+                    alert("Student updated successfully!");
+                  } else {
+                    await axios.post("http://localhost:5000/api/students", formData, {
+                      headers: { "Content-Type": "multipart/form-data" },
+                    });
+                    alert("Student and Photos saved successfully!");
+                  }
+                  navigate("/StudentList", { replace: true });
+                } catch (err) {
+                  console.error("Error saving student with photos:", err);
+                  alert("Failed to save student");
+                }
+              }}
+              className="grid grid-cols-1 gap-4"
             >
-              Back
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-1 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Submit
-            </button>
-          </div>
-        </form>
-      )}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <label>
+                  Affix Photo of Father
+                  <input
+                    type="file"
+                    name="fatherPhoto"
+                    accept="image/*"
+                    className="border bg-gray-100 p-1 rounded w-full"
+                    required={!isEditMode}
+                  />
+                </label>
+                <label>
+                  Affix Photo of Mother
+                  <input
+                    type="file"
+                    name="motherPhoto"
+                    accept="image/*"
+                    className="border bg-gray-100 p-1 rounded w-full"
+                    required={!isEditMode}
+                  />
+                </label>
+                <label>
+                  Affix Photo of Child
+                  <input
+                    type="file"
+                    name="childPhoto"
+                    accept="image/*"
+                    className="border bg-gray-100 p-1 rounded w-full"
+                    required={!isEditMode}
+                  />
+                </label>
+              </div>
 
-
+              <div className="flex justify-between mt-4">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="px-4 py-1 bg-blue-700 text-white rounded hover:bg-blue-800"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className={`px-6 py-1 rounded text-white font-semibold ${
+                    isEditMode
+                      ? "bg-yellow-500 hover:bg-yellow-600"
+                      : "bg-green-600 hover:bg-green-700"
+                  }`}
+                >
+                  {isEditMode ? "Update" : "Submit"}
+                </button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

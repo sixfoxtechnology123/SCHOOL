@@ -7,33 +7,15 @@ import {
   updateStudent,
   deleteStudent,
   getNextRollNo,
-  getFullStudentInfo  // NEW: import full info method
+  getFullStudentInfo
 } from "../controller/studentController.js";
+import StudentMaster from "../models/Student.js";
 
 const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-router.get("/", getAllStudents);
-router.get("/latest", getLatestStudentId);
-router.get("/next-roll/:className/:section", getNextRollNo);
-
-//  NEW API Route
-router.get("/:id/fullinfo", getFullStudentInfo);
-
-router.post(
-  "/",
-  upload.fields([
-    { name: "fatherPhoto" },
-    { name: "motherPhoto" },
-    { name: "childPhoto" },
-  ]),
-  createStudent
-);
-
-router.put("/:id", updateStudent);
-router.delete("/:id", deleteStudent);
-
+// Serve student photos
 router.get("/students/:id/photo/:type", async (req, res) => {
   try {
     const student = await StudentMaster.findById(req.params.id);
@@ -47,5 +29,30 @@ router.get("/students/:id/photo/:type", async (req, res) => {
     res.status(500).send(err.message);
   }
 });
+
+// Get full student info
+router.get("/:id/fullinfo", getFullStudentInfo);
+
+// Standard CRUD routes
+router.get("/", getAllStudents);
+router.get("/latest", getLatestStudentId);
+router.get("/next-roll/:className/:section", getNextRollNo);
+
+router.post(
+  "/",
+  upload.fields([
+    { name: "fatherPhoto" },
+    { name: "motherPhoto" },
+    { name: "childPhoto" },
+  ]),
+  createStudent
+);
+
+router.put("/:id", upload.fields([
+  { name: "fatherPhoto" },
+  { name: "motherPhoto" },
+  { name: "childPhoto" },
+]), updateStudent); // now updates properly
+router.delete("/:id", deleteStudent);
 
 export default router;
