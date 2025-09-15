@@ -10,7 +10,7 @@ const paymentSchema = new mongoose.Schema(
   {
     paymentId: { type: String, required: true, unique: true },
     student: { type: String, required: true },
-    className: String,
+    admitClass: String,
     section: String,
     rollNo: String,
     feeDetails: [feeDetailSchema],

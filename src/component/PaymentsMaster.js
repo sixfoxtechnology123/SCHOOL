@@ -9,7 +9,7 @@ const PaymentsMaster = () => {
     paymentId: "",
     date: new Date().toISOString().split("T")[0],
     student: "",
-    className: "",
+    admitClass: "",
     section: "",
     rollNo: "",
     feeDetails: [],
@@ -22,9 +22,7 @@ const PaymentsMaster = () => {
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
-
   const [students, setStudents] = useState([]);
-  const [classes, setClasses] = useState([]);
   const [sections, setSections] = useState([]);
   const [feeHeads, setFeeHeads] = useState([]);
   const [routes, setRoutes] = useState([]);
@@ -40,55 +38,60 @@ const PaymentsMaster = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Fetch Students, Classes & FeeHeads
-  const fetchDropdownData = async () => {
-    try {
-      const [stuRes, classRes, sectionRes, fhRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/payments/students"),
-        axios.get("http://localhost:5000/api/payments/classes"),
-        axios.get("http://localhost:5000/api/payments/sections"),
-        axios.get("http://localhost:5000/api/feeheads"),
-      ]);
+ // ===== Fetch dropdown data =====
+const fetchDropdownData = async () => {
+  try {
+    const [stuRes, classRes, sectionRes, fhRes] = await Promise.all([
+      axios.get("http://localhost:5000/api/payments/students"),
+      axios.get("http://localhost:5000/api/payments/classes"),
+      axios.get("http://localhost:5000/api/payments/sections"),
+      axios.get("http://localhost:5000/api/feeheads"),
+    ]);
 
-      const studentsData = stuRes.data || [];
-      setStudents(studentsData);
-      console.log(" All Students Data:", studentsData);
-     const stuOpts = studentsData.map((s) => {
-      const fullName = [s.firstName, s.lastName].filter(Boolean).join(" "); // join if both exist
+    const studentsData = stuRes.data || [];
+    setStudents(studentsData);
+
+    // Build student options
+    const stuOpts = studentsData.map((s) => {
+      const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
       return {
         value: s._id,
-        label: `${fullName || s.studentName || s.name || "Unnamed"} - ${s.studentId || ""}`,
+        label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""}`,
+        admitClass: s.admitClass,
+        section: s.section,
+        rollNo: s.rollNo,
       };
     });
+    setStudentOptions(stuOpts);
+    setInitialStudentOptions(stuOpts);
 
-      setStudentOptions(stuOpts);
-      setInitialStudentOptions(stuOpts);
+    // Classes
+    const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
+    const classOpts = classData.map((c) => ({ value: c, label: c }));
+    setClassOptions(classOpts);
 
-      // Sort classes alphabetically and remove duplicates
-      const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
-      setClasses(classData);
-      setClassOptions(classData.map((c) => ({ value: c, label: c })));
+    // Sections
+    const sectionsData = sectionRes.data || [];
+    setSections(sectionsData);
+    const secOpts = sectionsData.map((s) => ({
+      value: s.section,
+      label: s.section,
+      className: s.className, // important for filtering by class
+    }));
+    setSectionOptions(secOpts);
+    setInitialSectionOptions(secOpts);
 
-      const sectionsData = sectionRes.data || [];
-      setSections(sectionsData);
+    // Fee Heads
+    setFeeHeads(fhRes.data || []);
 
-      const uniqueSectionNames = Array.from(
-        new Set(sectionsData.map((s) => s.sectionName).filter(Boolean))
-      );
-      const secOpts = uniqueSectionNames.map((n) => ({ value: n, label: n }));
-      setSectionOptions(secOpts);
-      setInitialSectionOptions(secOpts);
+    return { studentsData, classData, sectionsData };
+  } catch (err) {
+    console.error("Error fetching dropdown data:", err);
+    return { studentsData: [], classData: [], sectionsData: [] };
+  }
+};
 
-      setFeeHeads(fhRes.data || []);
 
-      return { studentsData, classData, sectionsData };
-    } catch (err) {
-      console.error("Error fetching dropdown data:", err);
-      return { studentsData: [], classData: [], sectionsData: [] };
-    }
-  };
-
-  // Fetch Routes for Transport
   const fetchRoutes = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
@@ -98,7 +101,6 @@ const PaymentsMaster = () => {
         vanCharge: r.vanCharge || 0,
         label: r.distance.toString().includes("KM") ? r.distance : `${r.distance} KM`,
       }));
-
       setRoutes(routeList);
       setShowRouteDropdown(routeList.length > 0);
       return routeList;
@@ -122,7 +124,7 @@ const PaymentsMaster = () => {
 
   useEffect(() => {
     const init = async () => {
-      const { studentsData, classData, sectionsData } = await fetchDropdownData();
+      const { studentsData, sectionsData } = await fetchDropdownData();
 
       if (location.state?.paymentItem) {
         const p = location.state.paymentItem;
@@ -133,148 +135,97 @@ const PaymentsMaster = () => {
           user: p.user || localStorage.getItem("userId") || "admin",
         });
 
-        if (p.className) {
-          const secForClass = (sectionsData || [])
-            .filter((s) => s.className === p.className)
-            .map((s) => s.sectionName);
-          const dedupSec = Array.from(new Set(secForClass));
-          setSectionOptions(dedupSec.map((n) => ({ value: n, label: n })));
+        if (p.admitClass) {
+          const filteredSections = sectionsData
+            .filter((s) => s.className === p.admitClass)
+            .map((s) => ({ value: s.section, label: s.section, className: s.className }));
+          setSectionOptions(filteredSections);
         }
 
-        if (p.className && p.section) {
-          const stuFor = (studentsData || []).filter(
-            (s) => s.className === p.className && s.section === p.section
-          );
-          const stuOpts = stuFor.map((s) => ({
-            value: s._id,
-            label: `${s.studentName || s.name} - ${s.studentId || ""}`,
-          }));
-          setStudentOptions(stuOpts);
+        if (p.admitClass && p.section) {
+          const filteredStudents = studentsData
+            .filter((s) => s.admitClass === p.admitClass && s.section === p.section)
+            .map((s) => {
+              const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
+              return {
+                value: s._id,
+                label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""}`,
+                admitClass: s.admitClass,
+                section: s.section,
+                rollNo: s.rollNo,
+              };
+            });
+          setStudentOptions(filteredStudents);
         }
       } else {
         await fetchNextPaymentId();
         setIsEditMode(false);
       }
     };
-
     init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state]);
 
-  // Rest of the code remains unchanged...
-  const handleClassChange = (selected) => {
-    if (!selected) {
-      setPaymentData((prev) => ({
-        ...prev,
-        className: "",
-        section: "",
-        student: "",
-        rollNo: "",
-      }));
-      setSectionOptions(initialSectionOptions);
-      setStudentOptions(initialStudentOptions);
-      return;
-    }
+  // ===== Handlers =====
+ const handleClassChange = (selected) => {
+  if (!selected) {
+    setPaymentData((prev) => ({ ...prev, admitClass: "", section: "", student: "", rollNo: "" }));
+    setSectionOptions(initialSectionOptions);
+    setStudentOptions(initialStudentOptions);
+    return;
+  }
 
-    const selectedClass = selected.value;
+  const selectedClass = selected.value;
+  setPaymentData((prev) => ({ ...prev, admitClass: selectedClass, section: "", student: "", rollNo: "" }));
+
+  // Filter sections by class
+  const filteredSections = initialSectionOptions.filter(s => s.className === selectedClass);
+  setSectionOptions(filteredSections);
+
+  // Filter students by class
+  const filteredStudents = initialStudentOptions.filter(s => s.admitClass === selectedClass);
+  setStudentOptions(filteredStudents);
+};
+
+ const handleSectionChange = (selected) => {
+  if (!selected) {
+    setPaymentData((prev) => ({ ...prev, section: "", student: "", rollNo: "" }));
+    const filteredStudents = initialStudentOptions.filter(s => s.admitClass === paymentData.admitClass);
+    setStudentOptions(filteredStudents);
+    return;
+  }
+
+  const selectedSection = selected.value;
+  setPaymentData((prev) => ({ ...prev, section: selectedSection, student: "", rollNo: "" }));
+
+  const filteredStudents = initialStudentOptions.filter(
+    s => s.admitClass === paymentData.admitClass && s.section === selectedSection
+  );
+  setStudentOptions(filteredStudents);
+};
+
+ const handleStudentChange = (selected) => {
+  if (!selected) {
+    setPaymentData((prev) => ({ ...prev, student: "", rollNo: "" }));
+    return;
+  }
+
+  const stu = initialStudentOptions.find(s => s.value === selected.value);
+  if (stu) {
     setPaymentData((prev) => ({
       ...prev,
-      className: selectedClass,
-      section: "",
-      student: "",
-      rollNo: "",
+      student: stu.value,
+      rollNo: stu.rollNo,
+      admitClass: stu.admitClass,
+      section: stu.section,
     }));
+  }
+};
 
-    const secForClass = sections
-      .filter((s) => s.className === selectedClass)
-      .map((s) => s.sectionName);
-    const dedupSec = Array.from(new Set(secForClass));
-    const secOpts = dedupSec.map((n) => ({ value: n, label: n }));
-    setSectionOptions(secOpts);
-
-    const stuForClass = students.filter((s) => s.className === selectedClass);
-    const stuOpts = stuForClass.map((s) => ({
-      value: s._id,
-      label: `${s.studentName || s.name} - ${s.studentId || ""}`,
-    }));
-    setStudentOptions(stuOpts);
-  };
-
-  const handleSectionChange = (selected) => {
-    if (!selected) {
-      setPaymentData((prev) => ({
-        ...prev,
-        section: "",
-        student: "",
-        rollNo: "",
-      }));
-      if (paymentData.className) {
-        const stuForClass = students.filter((s) => s.className === paymentData.className);
-        setStudentOptions(
-          stuForClass.map((s) => ({
-            value: s._id,
-            label: `${s.studentName || s.name} - ${s.studentId || ""}`,
-          }))
-        );
-      } else {
-        setStudentOptions(initialStudentOptions);
-      }
-      return;
-    }
-
-    const selectedSection = selected.value;
-    setPaymentData((prev) => ({
-      ...prev,
-      section: selectedSection,
-      student: "",
-      rollNo: "",
-    }));
-
-    let filteredStudents = [];
-    if (paymentData.className) {
-      filteredStudents = students.filter(
-        (s) => s.className === paymentData.className && s.section === selectedSection
-      );
-    } else {
-      filteredStudents = students.filter((s) => s.section === selectedSection);
-    }
-    setStudentOptions(
-      filteredStudents.map((s) => ({
-        value: s._id,
-        label: `${s.studentName || s.name} - ${s.studentId || ""}`,
-      }))
-    );
-  };
-
-  const handleStudentChange = (selected) => {
-    if (!selected) {
-      setPaymentData((prev) => ({ ...prev, student: "", rollNo: "", className: "", section: "" }));
-      return;
-    }
-
-    const stu = students.find((s) => s._id === selected.value);
-
-    if (stu) {
-      const fullName = [stu?.firstName, stu?.lastName].filter(Boolean).join(" ");
-      const studentDisplay = `${fullName || stu?.studentName || stu?.name || ""} - ${stu?.studentId || ""}`;
-
-
-      setPaymentData((prev) => ({
-        ...prev,
-        student: studentDisplay,
-        rollNo: stu?.rollNo || "",
-        className: stu?.className || "",
-        section: stu?.section || "",
-      }));
-    }
-  };
-
-
-  const fetchAmount = async (className, feeHeadName, routeId) => {
-    if (!className || !feeHeadName) return 0;
+  const fetchAmount = async (admitClass, feeHeadName, routeId) => {
+    if (!admitClass || !feeHeadName) return 0;
     try {
       const res = await axios.get("http://localhost:5000/api/payments/fee-amount", {
-        params: { className, feeHeadName, routeId: routeId || undefined },
+        params: { admitClass, feeHeadName, routeId: routeId || undefined },
       });
       return res.data?.amount || 0;
     } catch (err) {
@@ -308,7 +259,7 @@ const PaymentsMaster = () => {
           if (existing) {
             return existing;
           }
-          const amount = await fetchAmount(paymentData.className, fh.value);
+          const amount = await fetchAmount(paymentData.admitClass, fh.value);
           return { feeHead: fh.value, amount };
         }
       })
@@ -323,7 +274,7 @@ const PaymentsMaster = () => {
   const updatedFeeDetails = await Promise.all(
     paymentData.feeDetails.map(async (f) => {
       if (f.feeHead.toLowerCase() === "transport") {
-        const amount = await fetchAmount(paymentData.className, f.feeHead, routeId);
+        const amount = await fetchAmount(paymentData.admitClass, f.feeHead, routeId);
         return {
           ...f,
           amount,
@@ -373,7 +324,7 @@ const PaymentsMaster = () => {
         "http://localhost:5000/api/payments/check-duplicate",
         {
           params: {
-            className: paymentData.className,
+            admitClass: paymentData.admitClass,
             section: paymentData.section,
             rollNo: paymentData.rollNo,
           },
@@ -382,7 +333,7 @@ const PaymentsMaster = () => {
 
       if (duplicateCheck.data.exists) {
         alert(
-          `Receipt already exists for Class: ${paymentData.className}, Section: ${paymentData.section}, Roll No: ${paymentData.rollNo}`
+          `Receipt already exists for Class: ${paymentData.admitClass}, Section: ${paymentData.section}, Roll No: ${paymentData.rollNo}`
         );
         return;
       }
@@ -402,7 +353,7 @@ const PaymentsMaster = () => {
           paymentId: "",
           date: new Date().toISOString().split("T")[0],
           student: "",
-          className: "",
+          admitClass: "",
           section: "",
           rollNo: "",
           feeDetails: [],
@@ -459,15 +410,13 @@ const PaymentsMaster = () => {
             />
           </label>
 
-          {/* Class */}
+      {/* Class */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Class
             <Select
               options={classOptions}
               onChange={handleClassChange}
-              value={
-                classOptions.find((c) => c.value === paymentData.className) || null
-              }
+              value={classOptions.find((c) => c.value === paymentData.admitClass) || null}
               placeholder="Select Class..."
               isClearable
             />
@@ -479,9 +428,7 @@ const PaymentsMaster = () => {
             <Select
               options={sectionOptions}
               onChange={handleSectionChange}
-              value={
-                sectionOptions.find((s) => s.value === paymentData.section) || null
-              }
+              value={sectionOptions.find((s) => s.value === paymentData.section) || null}
               placeholder="Select Section..."
               isClearable
             />
@@ -493,16 +440,13 @@ const PaymentsMaster = () => {
             <Select
               options={studentOptions}
               onChange={handleStudentChange}
-              value={
-                studentOptions.find((opt) => opt.label === paymentData.student) ||
-                null
-              }
+              value={studentOptions.find((opt) => opt.value === paymentData.student) || null}
               placeholder="Search Student..."
               isSearchable
               isClearable
             />
           </label>
-
+       
           {/* Roll No */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Roll No

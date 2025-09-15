@@ -19,22 +19,17 @@ async function generateNextPaymentId() {
 // ================== Student Routes ==================
 const getAllStudents = async (req, res) => {
   try {
-    const students = await Student.find().lean(); // fetch everything
+    const students = await Student.find().lean();
     res.json(students);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch students" });
   }
 };
 
-
 const getAllClasses = async (_req, res) => {
   try {
     const classDocs = await ClassMaster.find().select("className").lean();
-    if (classDocs && classDocs.length) {
-      const classes = Array.from(new Set(classDocs.map((c) => c.className)));
-      return res.json(classes);
-    }
-    const classes = await Student.distinct("className");
+    const classes = Array.from(new Set(classDocs.map((c) => c.className)));
     res.json(classes);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch classes" });
@@ -45,14 +40,17 @@ const getSectionsByClass = async (req, res) => {
   try {
     const { className } = req.query;
     if (className) {
-      const sections = await Student.distinct("section", { className });
-      return res.json(sections);
+      // Only sections for the given class
+      const sections = await Student.distinct("section", { admitClass: className });
+      return res.json(sections.map((s) => ({ className, section: s })));
+    } else {
+      // All class-section pairs
+      const pairs = await Student.aggregate([
+        { $group: { _id: { className: "$admitClass", section: "$section" } } },
+        { $project: { _id: 0, className: "$_id.className", section: "$_id.section" } },
+      ]);
+      res.json(pairs);
     }
-    const pairs = await Student.aggregate([
-      { $group: { _id: { className: "$className", section: "$section" } } },
-      { $project: { _id: 0, className: "$_id.className", sectionName: "$_id.section" } },
-    ]);
-    res.json(pairs);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch sections" });
   }
@@ -63,9 +61,11 @@ const getStudentsByClassAndSection = async (req, res) => {
     const { className, section } = req.query;
     if (!className || !section)
       return res.status(400).json({ error: "className and section required" });
-    const students = await Student.find({ className, section })
-      .select("_id studentName name rollNo studentId className section")
+
+    const students = await Student.find({ admitClass: className, section })
+      .select("_id firstName lastName studentName rollNo studentId admitClass section")
       .lean();
+
     res.json(students);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch students" });
@@ -157,7 +157,7 @@ async function populateFeeAmounts(paymentBody) {
         ...f,
         feeHeadId,
         amount,
-        distance: typeof f.distance !== "undefined" ? f.distance : "", // <-- stores exact frontend value
+        distance: typeof f.distance !== "undefined" ? f.distance : "",
       };
     })
   );
