@@ -116,28 +116,24 @@ export const createStudent = async (req, res) => {
   }
 };
 
-// ✅ FIXED updateStudent function
 export const updateStudent = async (req, res) => {
   try {
     const { id } = req.params;
     const payload = { ...req.body };
-    delete payload.studentId; // prevent manual ID changes
+    delete payload.studentId;
 
     const student = await StudentMaster.findById(id);
     if (!student) return res.status(404).json({ error: "Student not found" });
 
-    // Assign all fields from payload EXCEPT photos
     Object.keys(payload).forEach((key) => {
       if (key !== "fatherPhoto" && key !== "motherPhoto" && key !== "childPhoto") {
         student[key] = payload[key];
       }
     });
 
-    // Ensure languages array is updated
     student.languages = payload.languages || student.languages || [];
     student.markModified("languages");
 
-    // Update photos ONLY if new files uploaded
     if (req.files?.fatherPhoto?.length) {
       student.fatherPhoto = {
         data: req.files.fatherPhoto[0].buffer,
@@ -158,7 +154,7 @@ export const updateStudent = async (req, res) => {
     }
 
     await student.save();
-    res.json(student); // Return updated student for frontend
+    res.json(student);
   } catch (err) {
     console.error("Error updating student:", err);
     res.status(500).json({ error: err.message || "Failed to update student" });
@@ -176,17 +172,41 @@ export const deleteStudent = async (req, res) => {
   }
 };
 
+//  New function to fetch ID Card + UDISE for frontend PDF or other calls
+export const getIdCardAndUdise = async (studentId) => {
+  try {
+    const idCardInfo = await IdCardInfo.findOne({ studentId }).lean();
+    const udiseInfo = await UdiseInfo.findOne({ studentId }).lean();
+    return { idCardInfo: idCardInfo || {}, udiseInfo: udiseInfo || {} };
+  } catch (err) {
+    console.error("Error fetching ID Card & UDISE:", err);
+    return { idCardInfo: {}, udiseInfo: {} };
+  }
+};
+
+
+
+// Get full student info with ID Card and UDISE
 export const getFullStudentInfo = async (req, res) => {
   try {
     const { id } = req.params;
-    const student = await StudentMaster.findById(id).lean();
-    if (!student) return res.status(404).json({ error: "Student not found" });
 
+    // fetch student basic data
+    const student = await StudentMaster.findById(id).lean();
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    // fetch idCard & udise info linked by studentId
     const idCardInfo = await IdCardInfo.findOne({ studentId: student.studentId }).lean();
     const udiseInfo = await UdiseInfo.findOne({ studentId: student.studentId }).lean();
 
+    // return all combined
     res.json({
-      childInfo: { ...student, languages: student.languages || [] },
+      childInfo: {
+        ...student,
+        languages: student.languages || []
+      },
       familyInfo: {
         fatherName: student.fatherName,
         fatherOccupation: student.fatherOccupation,
@@ -204,8 +224,8 @@ export const getFullStudentInfo = async (req, res) => {
         bplNo: student.bplNo,
         familyIncome: student.familyIncome
       },
-      idCardInfo: idCardInfo || {},
-      udiseInfo: udiseInfo || {}
+      idCardInfo: idCardInfo || {},   //  Whatsapp number & ID card fields will be here
+      udiseInfo: udiseInfo || {}      // UDISE form fields here
     });
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch full student info" });

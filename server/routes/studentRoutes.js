@@ -7,7 +7,9 @@ import {
   updateStudent,
   deleteStudent,
   getNextRollNo,
-  getFullStudentInfo
+  getFullStudentInfo,
+  getIdCardAndUdise,
+  
 } from "../controller/studentController.js";
 import StudentMaster from "../models/Student.js";
 
@@ -20,7 +22,6 @@ router.get("/students/:id/photo/:type", async (req, res) => {
   try {
     const student = await StudentMaster.findById(req.params.id);
     const type = req.params.type;
-
     if (!student || !student[type]) return res.status(404).send("Image not found");
 
     res.contentType(student[type].contentType);
@@ -30,8 +31,18 @@ router.get("/students/:id/photo/:type", async (req, res) => {
   }
 });
 
-// Get full student info
-router.get("/:id/fullinfo", getFullStudentInfo);
+//  New endpoint for frontend to fetch ID Card + UDISE
+router.get("/:studentId/idcard-udise", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const data = await getIdCardAndUdise(studentId);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Failed to fetch ID Card & UDISE" });
+  }
+});
+
+router.get("/:id/full", getFullStudentInfo);
 
 // Standard CRUD routes
 router.get("/", getAllStudents);
@@ -52,7 +63,8 @@ router.put("/:id", upload.fields([
   { name: "fatherPhoto" },
   { name: "motherPhoto" },
   { name: "childPhoto" },
-]), updateStudent); // now updates properly
+]), updateStudent);
+
 router.delete("/:id", deleteStudent);
 
 export default router;
