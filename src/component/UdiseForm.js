@@ -9,7 +9,7 @@ const UdiseForm = ({ studentId }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const studentData = location.state?.studentData || {};
-console.log(studentData)
+
   const [formData, setFormData] = useState({
     studentName: "",
     gender: "",
@@ -42,7 +42,6 @@ console.log(studentData)
       ps: "",
       dist: "",
     },
-     panchayat: "",
   });
 
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -63,8 +62,11 @@ console.log(studentData)
           setFormData((prev) => ({
             ...prev,
             ...data,
+            socialCaste: data.socialCaste || prev.socialCaste,
+            ews: data.ews || prev.ews,
             dob: data.dob ? data.dob.split("T")[0] : "",
             photo: null,
+            currentAddress: data.currentAddress || prev.currentAddress,
           }));
 
           if (data.photo && data.photo.data) {
@@ -166,101 +168,74 @@ console.log(studentData)
     }
   };
 
+  const fieldClass = (alwaysReadOnly = false) =>
+    `${
+      alwaysReadOnly || (isAlreadyFilled && !isEditMode)
+        ? "cursor-not-allowed bg-gray-100"
+        : "bg-white"
+    } border p-0 rounded w-full`;
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar />
       <div className="flex-1 overflow-y-auto p-3">
         <Header />
         <div className="p-2 bg-white shadow-md rounded-md">
-          <h2 className="text-xl font-bold text-center mb-2 text-white bg-gray-800 py-0 rounded">
+          <h2 className="text-xl font-bold text-center mb-1 text-white bg-gray-800 py-0 rounded">
             UDISE Form
           </h2>
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-1">
-            {/* Fixed: Correct field names */}
+          {isAlreadyFilled && !isEditMode && (
+            <p className="text-red-600 font-semibold text-center mb-3">
+              ⚠️ UDISE already filled
+            </p>
+          )}
+
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-2">
+            {/* Student Name */}
             <label>
               Student Name
-              <input
-                type="text"
-                name="studentName"
-                value={formData.studentName}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="studentName" value={formData.studentName} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* Gender */}
             <label>
               Gender
-              <select
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                disabled
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              >
+              <select name="gender" value={formData.gender} disabled className={fieldClass(true)}>
                 <option value="">--Select--</option>
                 <option value="MALE">Male</option>
                 <option value="FEMALE">Female</option>
               </select>
             </label>
 
+            {/* Height */}
             <label>
               Height
-              <input
-                type="text"
-                name="height"
-                value={formData.height}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="height" value={formData.height} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* Weight */}
             <label>
               Weight
-              <input
-                type="text"
-                name="weight"
-                value={formData.weight}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="weight" value={formData.weight} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* DOB */}
             <label>
               Date of Birth
-              <input
-                type="date"
-                name="dob"
-                value={formData.dob}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="date" name="dob" value={formData.dob} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* Class */}
             <label>
               Class
-              <input
-                type="text"
-                name="admitClass"
-                value={formData.admitClass}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="admitClass" value={formData.admitClass} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* Mother Tongue */}
             <label>
               Mother Tongue
-              <select
-                name="motherTongue"
-                value={formData.motherTongue}
-                onChange={handleChange}
-                className="border bg-gray-100 p-1 rounded w-full"
-              >
+              <select name="motherTongue" value={formData.motherTongue} onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={fieldClass()}>
                 <option value="">--Select--</option>
                 <option value="BENGALI">BENGALI</option>
                 <option value="HINDI">HINDI</option>
@@ -268,62 +243,34 @@ console.log(studentData)
               </select>
             </label>
 
+            {/* socialCaste */}
             <label>
-              Social Category
-              <input
-                type="text"
-                name="socialCaste"
-                value={formData.socialCaste}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              social Caste
+              <input type="text" name="socialCaste" value={formData.socialCaste} onChange={handleChange} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* Father Name */}
             <label>
               Father Name
-              <input
-                type="text"
-                name="fatherName"
-                value={formData.fatherName}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="fatherName" value={formData.fatherName} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* Mother Name */}
             <label>
               Mother Name
-              <input
-                type="text"
-                name="motherName"
-                value={formData.motherName}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="motherName" value={formData.motherName} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* Guardian Name */}
             <label>
               Guardian Name
-              <input
-                type="text"
-                name="guardianName"
-                value={formData.fatherName}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="guardianName" value={formData.fatherName} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* Religion */}
             <label>
               Religion
-              <select
-                name="religion"
-                value={formData.religion}
-                onChange={handleChange}
-                className="border bg-gray-100 p-1 rounded w-full"
-              >
+              <select name="religion" value={formData.religion} onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={fieldClass()}>
                 <option value="">--Select--</option>
                 <option value="HINDU">HINDU</option>
                 <option value="MUSLIM">MUSLIM</option>
@@ -331,26 +278,16 @@ console.log(studentData)
               </select>
             </label>
 
+            {/* Nationality */}
             <label>
               Nationality
-              <input
-                type="text"
-                name="nationality"
-                value={formData.nationality}
-                readOnly
-                className="border p-1 rounded w-full bg-gray-200"
-              />
+              <input type="text" name="nationality" value={formData.nationality} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* BPL */}
             <label>
               BPL Beneficiary
-              <select
-                name="bpl"
-                value={formData.bpl}
-                onChange={handleChange}
-                disabled
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              >
+              <select name="bpl" value={formData.bpl} disabled className={fieldClass(true)}>
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
               </select>
@@ -359,184 +296,104 @@ console.log(studentData)
             {formData.bpl === "Yes" && (
               <label>
                 BPL No
-                <input
-                  type="text"
-                  name="bplNo"
-                  value={formData.bplNo}
-                  onChange={handleChange}
-                  readOnly
-                  className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-                />
+                <input type="text" name="bplNo" value={formData.bplNo} readOnly className={fieldClass(true)} />
               </label>
             )}
 
+            {/* Guardian Qualification */}
             <label>
               Guardian Qualification
-              <input
-                type="text"
-                name="fatherQualification"
-                value={formData.fatherQualification}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="fatherQualification" value={formData.fatherQualification} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* EWS */}
             <label>
               EWS/Disadvantaged Group
-              <input
-                type="text"
-                name="ews"
-                value={formData.ews}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
-              />
+              <input type="text" name="ews" value={formData.ews} onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={fieldClass()} />
             </label>
 
+            {/* Income */}
             <label>
-              Anual Income
-              <input
-                type="text"
-                name="familyIncome"
-                value={formData.familyIncome}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              Annual Income
+              <input type="text" name="familyIncome" value={formData.familyIncome} readOnly className={fieldClass(true)} />
             </label>
 
+            {/* Contact */}
             <label>
               Contact No
-              <input
-                type="text"
-                name="contactNo"
-                value={formData.contactNo}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
-              />
+              <input type="text" name="contactNo" value={formData.contactNo} onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={fieldClass()} />
             </label>
 
+            {/* CWSN */}
             <label>
               CWSN
-              <input
-                type="text"
-                name="cwsn"
-                value={formData.cwsn}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
-              />
+              <input type="text" name="cwsn" value={formData.cwsn} onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={fieldClass()} />
             </label>
 
             {/* Current Address */}
             <label>
               Village
-              <input
-                type="text"
-                name="currentAddress.vill"
-                value={formData.currentAddress.vill}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="currentAddress.vill" value={formData.currentAddress.vill} readOnly className={fieldClass(true)} />
             </label>
 
             <label>
               PO
-              <input
-                type="text"
-                name="currentAddress.po"
-                value={formData.currentAddress.po}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="currentAddress.po" value={formData.currentAddress.po} readOnly className={fieldClass(true)} />
             </label>
 
             <label>
               Block
-              <input
-                type="text"
-                name="currentAddress.block"
-                value={formData.currentAddress.block}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="currentAddress.block" value={formData.currentAddress.block} readOnly className={fieldClass(true)} />
             </label>
 
             <label>
               PIN
-              <input
-                type="text"
-                name="currentAddress.pin"
-                value={formData.currentAddress.pin}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="currentAddress.pin" value={formData.currentAddress.pin} readOnly className={fieldClass(true)} />
             </label>
 
             <label>
               PS
-              <input
-                type="text"
-                name="currentAddress.ps"
-                value={formData.currentAddress.ps}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="currentAddress.ps" value={formData.currentAddress.ps} readOnly className={fieldClass(true)} />
             </label>
 
             <label>
               District
-              <input
-                type="text"
-                name="currentAddress.dist"
-                value={formData.currentAddress.dist}
-                onChange={handleChange}
-                readOnly
-                className="border bg-gray-100 p-0 rounded w-full"
-              />
+              <input type="text" name="currentAddress.dist" value={formData.currentAddress.dist} readOnly className={fieldClass(true)} />
             </label>
 
             <label>
               Panchayat
-              <input
-                type="text"
-                name="panchayat"
-                value={formData.panchayat}
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
-              />
+              <input type="text" name="panchayat" value={formData.panchayat} onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={fieldClass()} />
             </label>
 
+            {/* Photo */}
             <label>
               <span className="font-bold">Upload Child Photo</span>
-              <input
-                type="file"
-                name="photo"
-                onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
-              />
+              <input type="file" name="photo" onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={fieldClass()} />
             </label>
 
             {photoPreview && (
-              <img
-                src={photoPreview}
-                alt="Preview"
-                className="col-span-full max-w-xs mt-2 rounded"
-              />
+              <img src={photoPreview} alt="Preview" className="col-span-full max-w-xs mt-2 rounded" />
             )}
 
+            {/* Buttons */}
             <div className="col-span-full flex justify-between mt-3">
               <BackButton />
-              <button
-                type="submit"
-                className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded"
-              >
-                Save
-              </button>
+              {!isAlreadyFilled && (
+                <button type="submit" className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded">
+                  Save
+                </button>
+              )}
+              {isAlreadyFilled && !isEditMode && (
+                <button type="button" onClick={() => setIsEditMode(true)} className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded">
+                  Edit
+                </button>
+              )}
+              {isAlreadyFilled && isEditMode && (
+                <button type="submit" className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded">
+                  Update
+                </button>
+              )}
             </div>
           </form>
         </div>

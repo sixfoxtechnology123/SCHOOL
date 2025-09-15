@@ -175,7 +175,7 @@ const IdCardForm = ({ studentId }) => {
 
           {isAlreadyFilled && !isEditMode && (
             <p className="text-red-600 font-bold mb-2 text-center">
-              ID Card already filled for this student
+              ⚠️ ID Card already filled for this student
             </p>
           )}
 

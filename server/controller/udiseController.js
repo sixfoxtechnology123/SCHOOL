@@ -10,7 +10,7 @@ exports.getUdiseByStudentId = async (req, res) => {
     let udise = await Udise.findOne({ studentId });
 
     if (!udise) {
-      // Fetch student master as fallback
+      // fallback from StudentMaster
       const student = await StudentMaster.findOne({ studentId });
       if (!student) return res.status(404).json({ error: "Student not found" });
 
@@ -24,16 +24,16 @@ exports.getUdiseByStudentId = async (req, res) => {
         admitClass: student.admitClass || "",
         fatherName: student.fatherName || "",
         motherName: student.motherName || "",
-        guardianName: student.guardianName || "",
-        guardianQualification: student.guardianQualification || "",
+        guardianName: student.fatherName || "",
+        guardianQualification: student.fatherQualification || "",
         fatherQualification: student.fatherQualification || "",
         motherTongue: "",
-        socialCaste: "",
+        socialCaste: "",  
         religion: student.religion || "",
         nationality: "INDIAN",
         bpl: student.bpl || "No",
         bplNo: "",
-        ews: "",
+        ews: "",            
         familyIncome: student.familyIncome || "",
         contactNo: student.contactNo || "",
         cwsn: "",
@@ -45,7 +45,7 @@ exports.getUdiseByStudentId = async (req, res) => {
           ps: "",
           dist: "",
         },
-         panchayat: "",
+        panchayat: "",
         photo: null,
       };
     }
@@ -57,6 +57,7 @@ exports.getUdiseByStudentId = async (req, res) => {
   }
 };
 
+// Save UDISE
 exports.saveUdise = async (req, res) => {
   try {
     const studentId = req.params.studentId || req.body.studentId;
@@ -84,7 +85,7 @@ exports.saveUdise = async (req, res) => {
       className: req.body.className || "",
       admitClass: req.body.admitClass || "",
       motherTongue: req.body.motherTongue || "",
-      socialCategory: req.body.socialCaste || "", //  match schema
+      socialCaste: req.body.socialCaste || "",
       fatherName: req.body.fatherName || "",
       motherName: req.body.motherName || "",
       guardianName: req.body.fatherName || "",
@@ -94,7 +95,7 @@ exports.saveUdise = async (req, res) => {
       nationality: req.body.nationality || "INDIAN",
       bpl: req.body.bpl || "No",
       bplNo: req.body.bplNo || "",
-      ews: req.body.ews || "",
+      ews: req.body.ews || "",  
       familyIncome: req.body.familyIncome || "",
       contactNo: req.body.contactNo || "",
       cwsn: req.body.cwsn || "",

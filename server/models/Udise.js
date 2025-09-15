@@ -23,7 +23,7 @@ const udiseSchema = new mongoose.Schema(
     dob: { type: String, default: "" },
     admitClass: { type: String, default: "" },
     motherTongue: { type: String, default: "" },
-    socialCategory: { type: String, default: "" },
+    socialCaste: { type: String, default: "" },
 
     // Family Details
     fatherName: { type: String, default: "" },
