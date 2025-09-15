@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-// Nested address schema like ID Card
+// Address Schema
 const addressSchema = new mongoose.Schema({
   vill: { type: String, default: "" },
   po: { type: String, default: "" },
@@ -10,29 +10,42 @@ const addressSchema = new mongoose.Schema({
   dist: { type: String, default: "" },
 });
 
+// Main UDISE Schema
 const udiseSchema = new mongoose.Schema(
   {
     studentId: { type: String, required: true, unique: true },
+
+    // Personal Details
     studentName: { type: String, default: "" },
     gender: { type: String, default: "" },
     height: { type: String, default: "" },
     weight: { type: String, default: "" },
     dob: { type: String, default: "" },
-    className: { type: String, default: "" },
+    admitClass: { type: String, default: "" },
+    motherTongue: { type: String, default: "" },
     socialCategory: { type: String, default: "" },
 
+    // Family Details
     fatherName: { type: String, default: "" },
     motherName: { type: String, default: "" },
     guardianName: { type: String, default: "" },
+    guardianQualification: { type: String, default: "" },
+    fatherQualification: { type: String, default: "" },
+
+    // Other Details
     religion: { type: String, default: "" },
     nationality: { type: String, default: "INDIAN" },
-    bplBeneficiary: { type: String, default: "" },
-    guardianQualification: { type: String, default: "" },
-    annualIncome: { type: String, default: "" },
+    bpl: { type: String, default: "No" },
+    bplNo: { type: String, default: "" },
+    ews: { type: String, default: "" },
+    familyIncome: { type: String, default: "" },
     contactNo: { type: String, default: "" },
+    cwsn: { type: String, default: "" },
 
-    permanentAddress: { type: addressSchema, default: () => ({}) },
-
+    // Address
+    currentAddress: { type: addressSchema, default: () => ({}) },
+    panchayat: { type: String, default: "" },
+    // Photo
     photo: {
       data: Buffer,
       contentType: String,

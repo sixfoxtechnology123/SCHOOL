@@ -1,18 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const upload = multer();
+const { saveUdise, getUdiseByStudentId } = require("../controller/udiseController");
 
-const {
-  getUdiseByStudentId,
-  saveUdise,
-} = require("../controller/udiseController");
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 
-// GET UDISE (prefilled if not exists)
+// Get UDISE by studentId
 router.get("/:studentId", getUdiseByStudentId);
 
-// Create or Update
+// Save new UDISE (with studentId param for consistency)
 router.post("/:studentId", upload.single("photo"), saveUdise);
+
+// Update existing UDISE
 router.put("/:studentId", upload.single("photo"), saveUdise);
 
 module.exports = router;

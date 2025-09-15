@@ -8,17 +8,17 @@ import { useLocation, useNavigate } from "react-router-dom";
 const UdiseForm = ({ studentId }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const studentData = location.state?.studentData;
-
+  const studentData = location.state?.studentData || {};
+console.log(studentData)
   const [formData, setFormData] = useState({
     studentName: "",
     gender: "",
     height: "",
     weight: "",
     dob: "",
-    className: "",
+    admitClass: "",
     motherTongue: "",
-    socialCategory: "",
+    socialCaste: "",
     fatherName: "",
     motherName: "",
     guardianName: "",
@@ -26,31 +26,23 @@ const UdiseForm = ({ studentId }) => {
     nationality: "INDIAN",
     bpl: "No",
     bplNo: "",
-    guardianQualification: "",
+    fatherQualification: "",
     ews: "",
-    familyIncomeIncome: "",
+    familyIncome: "",
     contactNo: "",
     cwsn: "",
-    locality: "",
-    dist: "",
-    block: "",
     panchayat: "",
-    vill: "",
-    po: "",
-    ps: "",
-    pin: "",
     photo: null,
-
-    // Add these defaults:
-    languages: [], // <-- prevent .join() error
+    languages: [],
     currentAddress: {
       vill: "",
       po: "",
       block: "",
       pin: "",
       ps: "",
-      panchayat: "",
+      dist: "",
     },
+     panchayat: "",
   });
 
   const [photoPreview, setPhotoPreview] = useState(null);
@@ -61,14 +53,10 @@ const UdiseForm = ({ studentId }) => {
   useEffect(() => {
     const fetchUdise = async () => {
       try {
-        let res = null;
-        if (studentData?.studentId) {
-          res = await axios.get(
-            `http://localhost:5000/api/udise/${studentData.studentId}`
-          );
-        } else if (studentId) {
-          res = await axios.get(`http://localhost:5000/api/udise/${studentId}`);
-        }
+        const id = studentData?.studentId || studentId;
+        if (!id) return;
+
+        const res = await axios.get(`http://localhost:5000/api/udise/${id}`);
 
         if (res?.data && res.data._id) {
           const data = res.data;
@@ -88,7 +76,7 @@ const UdiseForm = ({ studentId }) => {
 
           setUdiseId(data._id);
           setIsAlreadyFilled(true);
-        } else if (studentData) {
+        } else {
           const fullName = [studentData.firstName, studentData.lastName]
             .filter(Boolean)
             .join(" ");
@@ -101,17 +89,15 @@ const UdiseForm = ({ studentId }) => {
         }
       } catch (err) {
         console.log("No existing UDISE record found", err);
-        if (studentData) {
-          const fullName = [studentData.firstName, studentData.lastName]
-            .filter(Boolean)
-            .join(" ");
-          setFormData((prev) => ({
-            ...prev,
-            ...studentData,
-            studentName: studentData.studentName || fullName,
-            dob: studentData.dob ? studentData.dob.split("T")[0] : "",
-          }));
-        }
+        const fullName = [studentData.firstName, studentData.lastName]
+          .filter(Boolean)
+          .join(" ");
+        setFormData((prev) => ({
+          ...prev,
+          ...studentData,
+          studentName: studentData.studentName || fullName,
+          dob: studentData.dob ? studentData.dob.split("T")[0] : "",
+        }));
       }
     };
 
@@ -120,17 +106,18 @@ const UdiseForm = ({ studentId }) => {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-
-    // Fields to convert automatically to uppercase
     const upperCaseFields = ["motherTongue", "religion", "ews", "cwsn", "panchayat"];
-
     let newValue = value;
-    if (upperCaseFields.includes(name)) {
-      newValue = value.toUpperCase();
-    }
+    if (upperCaseFields.includes(name)) newValue = value.toUpperCase();
 
-    if (files) {
-      setFormData((prev) => ({ ...prev, [name]: files[0] }));
+    if (name.startsWith("currentAddress.")) {
+      const field = name.split(".")[1];
+      setFormData((prev) => ({
+        ...prev,
+        currentAddress: { ...prev.currentAddress, [field]: newValue },
+      }));
+    } else if (files && files.length > 0) {
+      setFormData((prev) => ({ ...prev, photo: files[0] }));
       setPhotoPreview(URL.createObjectURL(files[0]));
     } else {
       setFormData((prev) => ({ ...prev, [name]: newValue }));
@@ -139,45 +126,47 @@ const UdiseForm = ({ studentId }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const data = new FormData();
     Object.keys(formData).forEach((key) => {
       if (key === "photo" && formData.photo) {
         data.append("photo", formData.photo);
+      } else if (key === "currentAddress") {
+        data.append("currentAddress", JSON.stringify(formData.currentAddress));
       } else {
-        data.append(key, formData[key]);
+        data.append(key, formData[key] || "");
       }
     });
 
-    if (studentData?.studentId) data.append("studentId", studentData.studentId);
-    else if (studentId) data.append("studentId", studentId);
+    const id = studentData?.studentId || studentId;
+    if (!id) {
+      alert("Student ID is missing!");
+      return;
+    }
+    data.append("studentId", id);
 
     try {
       if (isAlreadyFilled && isEditMode) {
-        await axios.put(
-          `http://localhost:5000/api/udise/${studentData?.studentId || studentId}`,
-          data,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
+        await axios.put(`http://localhost:5000/api/udise/${id}`, data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         alert("UDISE record updated!");
       } else {
-        await axios.post(
-          `http://localhost:5000/api/udise/`,
-          data,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
+        await axios.post(`http://localhost:5000/api/udise/${id}`, data, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
         alert("UDISE record saved!");
       }
       navigate("/StudentList");
     } catch (err) {
+      console.error("Save UDISE error:", err.response || err.message);
       alert(
         "Failed to save UDISE record: " +
-          (err.response?.data?.message || err.message)
+          (err.response?.data?.error || err.message)
       );
     }
   };
 
- return (
+  return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar />
       <div className="flex-1 overflow-y-auto p-3">
@@ -188,18 +177,18 @@ const UdiseForm = ({ studentId }) => {
           </h2>
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-4 gap-1">
+            {/* Fixed: Correct field names */}
             <label>
-             Student Name
+              Student Name
               <input
                 type="text"
-                name="firstName"
+                name="studentName"
                 value={formData.studentName}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
-
 
             <label>
               Gender
@@ -207,7 +196,7 @@ const UdiseForm = ({ studentId }) => {
                 name="gender"
                 value={formData.gender}
                 onChange={handleChange}
-               disabled
+                disabled
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               >
                 <option value="">--Select--</option>
@@ -216,14 +205,14 @@ const UdiseForm = ({ studentId }) => {
               </select>
             </label>
 
-             <label>
+            <label>
               Height
               <input
                 type="text"
                 name="height"
                 value={formData.height}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
@@ -235,7 +224,7 @@ const UdiseForm = ({ studentId }) => {
                 name="weight"
                 value={formData.weight}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
@@ -247,7 +236,7 @@ const UdiseForm = ({ studentId }) => {
                 name="dob"
                 value={formData.dob}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
@@ -259,12 +248,12 @@ const UdiseForm = ({ studentId }) => {
                 name="admitClass"
                 value={formData.admitClass}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
 
-             <label>
+            <label>
               Mother Tongue
               <select
                 name="motherTongue"
@@ -278,15 +267,15 @@ const UdiseForm = ({ studentId }) => {
                 <option value="ENGLISH">ENGLISH</option>
               </select>
             </label>
-              
+
             <label>
               Social Category
               <input
                 type="text"
-                name="socialCategory"
+                name="socialCaste"
                 value={formData.socialCaste}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
@@ -298,7 +287,7 @@ const UdiseForm = ({ studentId }) => {
                 name="fatherName"
                 value={formData.fatherName}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
@@ -310,11 +299,10 @@ const UdiseForm = ({ studentId }) => {
                 name="motherName"
                 value={formData.motherName}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
-           
 
             <label>
               Guardian Name
@@ -323,12 +311,12 @@ const UdiseForm = ({ studentId }) => {
                 name="guardianName"
                 value={formData.fatherName}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
 
-           <label>
+            <label>
               Religion
               <select
                 name="religion"
@@ -343,7 +331,7 @@ const UdiseForm = ({ studentId }) => {
               </select>
             </label>
 
-              <label>
+            <label>
               Nationality
               <input
                 type="text"
@@ -360,7 +348,7 @@ const UdiseForm = ({ studentId }) => {
                 name="bpl"
                 value={formData.bpl}
                 onChange={handleChange}
-               disabled
+                disabled
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               >
                 <option value="No">No</option>
@@ -376,25 +364,25 @@ const UdiseForm = ({ studentId }) => {
                   name="bplNo"
                   value={formData.bplNo}
                   onChange={handleChange}
-              readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                  readOnly
+                  className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
                 />
               </label>
             )}
 
             <label>
-             Guardian Qualification
+              Guardian Qualification
               <input
                 type="text"
                 name="fatherQualification"
                 value={formData.fatherQualification}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
 
-              <label>
+            <label>
               EWS/Disadvantaged Group
               <input
                 type="text"
@@ -405,30 +393,30 @@ const UdiseForm = ({ studentId }) => {
               />
             </label>
 
-              <label>
+            <label>
               Anual Income
               <input
                 type="text"
                 name="familyIncome"
                 value={formData.familyIncome}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
-
 
             <label>
               Contact No
               <input
                 type="text"
                 name="contactNo"
+                value={formData.contactNo}
                 onChange={handleChange}
                 className="border bg-gray-100 p-0 rounded w-full"
               />
             </label>
 
-              <label>
+            <label>
               CWSN
               <input
                 type="text"
@@ -439,7 +427,6 @@ const UdiseForm = ({ studentId }) => {
               />
             </label>
 
-
             {/* Current Address */}
             <label>
               Village
@@ -448,7 +435,7 @@ const UdiseForm = ({ studentId }) => {
                 name="currentAddress.vill"
                 value={formData.currentAddress.vill}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
@@ -460,7 +447,7 @@ const UdiseForm = ({ studentId }) => {
                 name="currentAddress.po"
                 value={formData.currentAddress.po}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
@@ -472,7 +459,7 @@ const UdiseForm = ({ studentId }) => {
                 name="currentAddress.block"
                 value={formData.currentAddress.block}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
@@ -484,7 +471,7 @@ const UdiseForm = ({ studentId }) => {
                 name="currentAddress.pin"
                 value={formData.currentAddress.pin}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
@@ -496,11 +483,12 @@ const UdiseForm = ({ studentId }) => {
                 name="currentAddress.ps"
                 value={formData.currentAddress.ps}
                 onChange={handleChange}
-               readOnly
+                readOnly
                 className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
               />
             </label>
-              <label>
+
+            <label>
               District
               <input
                 type="text"
@@ -512,7 +500,7 @@ const UdiseForm = ({ studentId }) => {
               />
             </label>
 
-           <label>
+            <label>
               Panchayat
               <input
                 type="text"
@@ -522,15 +510,14 @@ const UdiseForm = ({ studentId }) => {
                 className="border bg-gray-100 p-0 rounded w-full"
               />
             </label>
-            
+
             <label>
               <span className="font-bold">Upload Child Photo</span>
               <input
                 type="file"
-                name="childPhoto"
+                name="photo"
                 onChange={handleChange}
-               readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                className="border bg-gray-100 p-0 rounded w-full"
               />
             </label>
 
