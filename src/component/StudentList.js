@@ -259,6 +259,7 @@ const StudentsList = () => {
         document.body.removeChild(admissionContainer);
 
         // --- ID Card Page ---
+         if (idCardInfo && Object.keys(idCardInfo).length > 0) {
         const idCardContainer = document.createElement("div");
         idCardContainer.style.width = "800px";
         idCardContainer.style.padding = "20px";
@@ -298,9 +299,10 @@ const StudentsList = () => {
         doc.addPage();
         doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
         document.body.removeChild(idCardContainer);
-
+         }
 
       // --- UDISE Form Page ---
+       if (udiseInfo && Object.keys(udiseInfo).length > 0) {
       const udiseContainer = document.createElement("div");
       udiseContainer.style.width = "800px";
       udiseContainer.style.padding = "20px";
@@ -347,7 +349,7 @@ const StudentsList = () => {
       doc.addPage();
       doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
       document.body.removeChild(udiseContainer);
-
+       }
 
         // --- Save PDF ---
         doc.save(`${student.studentId || "student"}.pdf`);
