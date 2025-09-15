@@ -590,7 +590,7 @@ const StudentMaster = () => {
             <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                 <label>
-                  Father Name
+                  Father's Name
                   <input
                     name="fatherName"
                     value={studentData.fatherName}
@@ -599,7 +599,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Father Occupation
+                  Father's Occupation
                   <input
                     name="fatherOccupation"
                     value={studentData.fatherOccupation}
@@ -608,7 +608,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Father Phone
+                  Father's Phone
                   <input
                     name="fatherPhone"
                     value={studentData.fatherPhone}
@@ -617,7 +617,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Father Email
+                  Father's Email
                   <input
                     name="fatherEmail"
                     value={studentData.fatherEmail}
@@ -626,7 +626,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Father Nationality
+                  Father's Nationality
                   <input
                     name="fatherNationality"
                     value={studentData.fatherNationality}
@@ -635,7 +635,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Father Qualification
+                  Father's Qualification
                   <input
                     name="fatherQualification"
                     value={studentData.fatherQualification}
@@ -644,7 +644,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Mother Name
+                  Mother's Name
                   <input
                     name="motherName"
                     value={studentData.motherName}
@@ -653,7 +653,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Mother Occupation
+                  Mother's Occupation
                   <input
                     name="motherOccupation"
                     value={studentData.motherOccupation}
@@ -662,7 +662,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Mother Phone
+                  Mother's Phone
                   <input
                     name="motherPhone"
                     value={studentData.motherPhone}
@@ -671,7 +671,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Mother Email
+                  Mother's Email
                   <input
                     name="motherEmail"
                     value={studentData.motherEmail}
@@ -680,7 +680,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Mother Nationality
+                  Mother's Nationality
                   <input
                     name="motherNationality"
                     value={studentData.motherNationality}
@@ -689,7 +689,7 @@ const StudentMaster = () => {
                   />
                 </label>
                 <label>
-                  Mother Qualification
+                  Mother's Qualification
                   <input
                     name="motherQualification"
                     value={studentData.motherQualification}

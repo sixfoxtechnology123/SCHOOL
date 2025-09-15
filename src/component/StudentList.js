@@ -123,11 +123,11 @@ const StudentsList = () => {
         const twoColRow = (label1, value1, label2, value2) => `
           <div style="display:flex; padding:2px 0;">
             <div style="flex:1; display:flex;">
-              <div style="min-width:120px;"><strong>${label1}</strong></div>
+              <div style="min-width:160px;"><strong>${label1}</strong></div>
               <div>: ${value1 || ""}</div>
             </div>
             ${label2 ? `<div style="flex:1; display:flex;">
-              <div style="min-width:120px;"><strong>${label2}</strong></div>
+              <div style="min-width:150px;"><strong>${label2}</strong></div>
               <div>: ${value2 || ""}</div>
             </div>` : ""}
           </div>
@@ -137,7 +137,7 @@ const StudentsList = () => {
         const formatAddressBlock = (title, addr) => {
           if (!addr) return "";
           return `
-            <div style="font-weight:bold; color:#0ea5e9; text-align:center; margin:0 0 6px 0; font-size:11pt; padding:4px;">
+            <div style="font-weight:bold; color:#0ea5e9; text-align:left; margin:0 0 6px 0; font-size:9pt; padding:4px;">
               ${title}
             </div>
             <div style="padding:0 10px 5px 10px; border:1px solid #000;">
@@ -206,7 +206,7 @@ const StudentsList = () => {
         <!-- Child Information -->
         <div class="pdf-section-header"
           style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
-          Child Information
+          A. Child Information
         </div>
         <div style="padding:0 10px 5px 10px; border:1px solid #000;">
           ${twoColRow("Student ID", student.studentId, "Name", getName(student))}
@@ -215,7 +215,7 @@ const StudentsList = () => {
           ${twoColRow("Social Cast", student.socialCaste, "DOB", formatDOB(student.dob))}
           ${twoColRow("Height", student.height, "Weight", student.weight)}
           ${twoColRow("Blood Group", student.bloodGroup, "Nationality", student.nationality)}
-          ${twoColRow("Languages", (student.languages || []).join(", "), "Transport Required", student.transportRequired)}
+          ${twoColRow("Languages Known", (student.languages || []).join(", "), "Transport Required", student.transportRequired)}
           ${twoColRow("Distance from School(KM)", student.distanceFromSchool, "Emergency Person", student.emergencyPerson)}
           ${twoColRow("Emergency Contact", student.emergencyContact, "", "")}
         </div>
@@ -229,16 +229,21 @@ const StudentsList = () => {
         <!-- Family Information -->
         <div class="pdf-section-header"
           style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
-          Family Information
+          B. Family Information
         </div>
         <div style="padding:0 10px 5px 10px; border:1px solid #000;">
           ${twoColRow("Father", student.fatherName, "Occupation", student.fatherOccupation)}
-          ${twoColRow("Father Phone", student.fatherPhone, "Father Email", student.fatherEmail)}
-          ${twoColRow("Father Nationality", student.fatherNationality, "Father Qualification", student.fatherQualification)}
+          ${twoColRow("Father's Phone", student.fatherPhone, "Father's Email", student.fatherEmail)}
+          ${twoColRow("Father's Nationality", student.fatherNationality, "Father's Qualification", student.fatherQualification)}
+
+          <div style="margin-bottom:8px;"></div>
+          
 
           ${twoColRow("Mother", student.motherName, "Occupation", student.motherOccupation)}
-          ${twoColRow("Mother Phone", student.motherPhone, "Mother Email", student.motherEmail)}
-          ${twoColRow("Mother Nationality", student.motherNationality, "Mother Qualification", student.motherQualification)}
+          ${twoColRow("Mother's Phone", student.motherPhone, "Mother's Email", student.motherEmail)}
+          ${twoColRow("Mother's Nationality", student.motherNationality, "Mother's Qualification", student.motherQualification)}
+          <div style="margin-bottom:8px;"></div>
+          ${twoColRow("No Of Brothers", student.brothers, "No Of Brothers", student.sisters)}
 
           ${twoColRow("BPL", student.bpl, "BPL No", student.bplNo)}
           ${twoColRow("Family Income", student.familyIncome, "", "")}
