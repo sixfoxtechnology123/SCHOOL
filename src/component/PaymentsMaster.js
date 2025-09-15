@@ -52,11 +52,15 @@ const PaymentsMaster = () => {
 
       const studentsData = stuRes.data || [];
       setStudents(studentsData);
-
-      const stuOpts = studentsData.map((s) => ({
+      console.log(" All Students Data:", studentsData);
+     const stuOpts = studentsData.map((s) => {
+      const fullName = [s.firstName, s.lastName].filter(Boolean).join(" "); // join if both exist
+      return {
         value: s._id,
-        label: `${s.studentName || s.name} - ${s.studentId || ""}`,
-      }));
+        label: `${fullName || s.studentName || s.name || "Unnamed"} - ${s.studentId || ""}`,
+      };
+    });
+
       setStudentOptions(stuOpts);
       setInitialStudentOptions(stuOpts);
 
@@ -251,7 +255,9 @@ const PaymentsMaster = () => {
     const stu = students.find((s) => s._id === selected.value);
 
     if (stu) {
-      const studentDisplay = `${stu?.studentName || stu?.name || ""} - ${stu?.studentId || ""}`;
+      const fullName = [stu?.firstName, stu?.lastName].filter(Boolean).join(" ");
+      const studentDisplay = `${fullName || stu?.studentName || stu?.name || ""} - ${stu?.studentId || ""}`;
+
 
       setPaymentData((prev) => ({
         ...prev,

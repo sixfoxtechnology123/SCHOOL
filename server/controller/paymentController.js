@@ -19,14 +19,13 @@ async function generateNextPaymentId() {
 // ================== Student Routes ==================
 const getAllStudents = async (req, res) => {
   try {
-    const students = await Student.find()
-      .select("_id studentName name rollNo studentId className section")
-      .lean();
+    const students = await Student.find().lean(); // fetch everything
     res.json(students);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch students" });
   }
 };
+
 
 const getAllClasses = async (_req, res) => {
   try {
