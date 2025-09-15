@@ -4,6 +4,8 @@ import BackButton from "../component/BackButton";
 import Sidebar from "../component/Sidebar";
 import Header from "./Header";
 import { useLocation, useNavigate } from "react-router-dom";
+import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 
 const UdiseForm = ({ studentId }) => {
   const location = useLocation();
@@ -174,6 +176,93 @@ const UdiseForm = ({ studentId }) => {
         ? "cursor-not-allowed bg-gray-100"
         : "bg-white"
     } border p-0 rounded w-full`;
+
+
+    // --- FIXED: PDF VIEW WITH PERFECT ALIGNMENT ---
+const handleView = async () => {
+  const container = document.createElement("div");
+  container.style.padding = "25px";
+  container.style.background = "#fff";
+  container.style.fontFamily = "Arial, sans-serif";
+  container.style.fontSize = "14px";
+  container.style.color = "#000";
+
+  
+  // Helper to render two-column row with aligned labels
+      const twoColRow = (label1, value1, label2, value2) => `
+          <div style="display:flex; padding:2px 0; font-size:14pt;">
+            <div style="flex:1; display:flex;">
+              <div style="min-width:150px;"><strong>${label1}</strong></div>
+              <div>: ${value1 || ""}</div>
+            </div>
+            ${label2 ? `<div style="flex:1; display:flex;">
+              <div style="min-width:210px;"><strong>${label2}</strong></div>
+              <div>: ${value2 || ""}</div>
+            </div>` : ""}
+          </div>
+        `;
+
+          // Header HTML
+  const headerHTML = `
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <img src="/logo1.jpg" style="height:80px;" />
+      <div style="text-align:center; flex:1; margin:0 20px;">
+        <h2 style="margin:0; font-size:22pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
+        <p style="margin:4px 0; font-size:16pt; color:#004080;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
+       <h3 style="margin:0; font-size:18pt; font-weight:bold; color:#1d4ed8;">UDISE</h3>
+      </div>
+      <img src="/logo1.jpg" style="height:80px;" />
+    </div>
+    <hr style="border:2px solid #004080; margin-bottom:12px;" />
+  `;
+
+
+    // UDISE  HTML
+  const udiseHTML = `
+    <div style="border:1px solid #000; padding:12px; display:flex; justify-content:space-between;">
+      <div style="flex:1; padding-right:12px;">
+        <!-- Child Details -->
+            ${twoColRow("Student ID", formData.studentId || "", "Name", formData.studentName || "")}
+            ${twoColRow("Gender", formData.gender || "", "Height", formData.height || "")}
+            ${twoColRow("Weight", formData.weight || "", "DOB", formData.dob || "")}
+            ${twoColRow("Admit Class", formData.admitClass || "", "Mother Tongue", formData.motherTongue || "")}
+            ${twoColRow("Father", formData.fatherName || "", "Mother", formData.motherName || "")}
+            ${twoColRow("Guardian Name", formData.guardianName || "", "Guardian Qualification", formData.guardianQualification || "")}
+            ${twoColRow("Religion", formData.religion || "", "Nationality", formData.nationality || "")}
+            ${twoColRow("BPL", formData.bpl || "", "BPL No", formData.bplNo || "")}
+            ${twoColRow("EWS", formData.ews || "", "Annual Income", formData.familyIncome || "")}
+            ${twoColRow("Contact No", formData.contactNo || "", "CWSN", formData.cwsn || "")}
+            ${twoColRow("Social Caste", formData.socialCaste || "", "Panchayat", formData.panchayat || "")}
+
+        <hr style="margin:8px 0; border:1px solid #000;" />
+         <h3 style="margin:6px 0; color:#1e40af; font-size:14pt;">ADDRESS</h3>
+        <!-- Address as two-column rows -->
+        ${twoColRow("VILL", formData.currentAddress?.vill, "PO", formData.currentAddress?.po)}
+        ${twoColRow("PS", formData.currentAddress?.ps, "BLOCK", formData.currentAddress?.block)}
+        ${twoColRow("DIST", formData.currentAddress?.dist, "PIN", formData.currentAddress?.pin)}
+      </div>
+
+      <div style="width:150px;"> <!-- Photo -->
+        ${photoPreview ? `<img src="${photoPreview}" style="width:100%; border:1px solid #000;" />` : ""}
+      </div>
+    </div>
+  `;
+   container.innerHTML = headerHTML + udiseHTML;
+  document.body.appendChild(container);
+
+  // Convert to PDF
+  const canvas = await html2canvas(container, { scale: 2 });
+  const imgData = canvas.toDataURL("image/png");
+  const pdf = new jsPDF("p", "pt", "a4");
+  const imgProps = pdf.getImageProperties(imgData);
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+  pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+  pdf.save(`${formData.studentName || "ID_Card"}.pdf`);
+
+  document.body.removeChild(container);
+};
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -377,20 +466,42 @@ const UdiseForm = ({ studentId }) => {
             )}
 
             {/* Buttons */}
-            <div className="col-span-full flex justify-between mt-3">
+            <div className="col-span-full flex justify-between items-center gap-2">
               <BackButton />
+              {isAlreadyFilled && !isEditMode && (
+                <button
+                  type="button"
+                  className="px-4 py-0  bg-blue-600 hover:bg-blue-700 text-white rounded"
+                  onClick={handleView}
+                >
+                  View
+                </button>
+              )}
+
               {!isAlreadyFilled && (
-                <button type="submit" className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded">
+                <button
+                  type="submit"
+                  className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded"
+                >
                   Save
                 </button>
               )}
+
               {isAlreadyFilled && !isEditMode && (
-                <button type="button" onClick={() => setIsEditMode(true)} className="px-4 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded">
+                <button
+                  type="button"
+                  className="px-4 py-0 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                  onClick={() => setIsEditMode(true)}
+                >
                   Edit
                 </button>
               )}
+
               {isAlreadyFilled && isEditMode && (
-                <button type="submit" className="px-4 py-1 bg-green-600 hover:bg-green-700 text-white rounded">
+                <button
+                  type="submit"
+                  className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded"
+                >
                   Update
                 </button>
               )}

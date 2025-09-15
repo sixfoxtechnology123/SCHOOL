@@ -169,7 +169,7 @@ const IdCardForm = ({ studentId }) => {
 // --- FIXED: PDF VIEW WITH PERFECT ALIGNMENT ---
 const handleView = async () => {
   const container = document.createElement("div");
-  container.style.padding = "20px";
+  container.style.padding = "25px";
   container.style.background = "#fff";
   container.style.fontFamily = "Arial, sans-serif";
   container.style.fontSize = "14px";
@@ -179,11 +179,11 @@ const handleView = async () => {
       const twoColRow = (label1, value1, label2, value2) => `
           <div style="display:flex; padding:2px 0; font-size:14pt;">
             <div style="flex:1; display:flex;">
-              <div style="min-width:120px;"><strong>${label1}</strong></div>
+              <div style="min-width:150px;"><strong>${label1}</strong></div>
               <div>: ${value1 || ""}</div>
             </div>
             ${label2 ? `<div style="flex:1; display:flex;">
-              <div style="min-width:120px;"><strong>${label2}</strong></div>
+              <div style="min-width:150px;"><strong>${label2}</strong></div>
               <div>: ${value2 || ""}</div>
             </div>` : ""}
           </div>
@@ -197,7 +197,7 @@ const handleView = async () => {
       <div style="text-align:center; flex:1; margin:0 20px;">
         <h2 style="margin:0; font-size:22pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
         <p style="margin:4px 0; font-size:16pt; color:#004080;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
-        <h3 style="margin:0; font-size:18pt; color:#1e40af;">ID CARD</h3>
+        <h3 style="margin:0; font-size:18pt; font-weight:bold; color:#1d4ed8;">ID CARD</h3>
       </div>
       <img src="/logo1.jpg" style="height:80px;" />
     </div>
@@ -214,8 +214,8 @@ const handleView = async () => {
         ${twoColRow("Father", formData.fatherName, "Mother", formData.motherName)}
         ${twoColRow("Contact No", formData.fatherPhone || "", "Whatsapp No", formData.whatsappNo || "")}
 
-        <hr style="margin:8px 0; border:1px solid #000;" />
-         <h3 style="margin:6px 0; color:#1e40af; font-size:14pt;">ADDRESS</h3>
+        <hr style="margin:10px 0; border:1px solid #000;" />
+         <h3 style="margin:4px 0; color:#1e40af;  font-size:14pt;">ADDRESS</h3>
         <!-- Address as two-column rows -->
         ${twoColRow("VILL", formData.permanentAddress?.vill, "PO", formData.permanentAddress?.po)}
         ${twoColRow("PS", formData.permanentAddress?.ps, "BLOCK", formData.permanentAddress?.block)}
