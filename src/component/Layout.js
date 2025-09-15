@@ -66,9 +66,10 @@ const Layout = () => {
 
           <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
             <FaUserGraduate size={30} className="text-green-800 mb-2" />
+            <button onClick={() => navigate("/StudentList")}>
             <h2 className="text-lg font-semibold text-green-800">
               Total Students
-            </h2>
+            </h2></button>
             <p className="text-2xl font-bold text-green-800">
               {totalStudents}
             </p>
