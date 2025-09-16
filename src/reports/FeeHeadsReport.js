@@ -68,7 +68,7 @@ const FeeHeadsReport = () => {
 
     // Extract unique classes
     const classes = Array.from(
-      new Set(allStudents.map((s) => s?.class || s?.className).filter(Boolean))
+      new Set(allStudents.map((s) => s?.class || s?.admitClass).filter(Boolean))
     ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 
     setAvailableClasses(classes);
@@ -83,7 +83,7 @@ const FeeHeadsReport = () => {
       setFilteredStudents(selectedStudents);
     } else {
       setFilteredStudents(
-        selectedStudents.filter((s) => (s?.class || s?.className) === cls)
+        selectedStudents.filter((s) => (s?.class || s?.admitClass) === cls)
       );
     }
   };
@@ -225,8 +225,9 @@ const FeeHeadsReport = () => {
                       <tr key={i} className="text-center hover:bg-gray-50">
                         <td className="border border-green-500 px-2 py-1">{i + 1}</td>
                         <td className="border border-green-500 px-2 py-1">{s?.name || "-"}</td>
-                        <td className="border border-green-500 px-2 py-1">{s?.class || s?.className || "-"}</td>
+                        <td className="border border-green-500 px-2 py-1">{s?.class || "-"}</td>
                         <td className="border border-green-500 px-2 py-1">{s?.section || "-"}</td>
+
                       </tr>
                     ))}
                   </tbody>

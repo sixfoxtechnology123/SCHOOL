@@ -9,7 +9,7 @@ import { FaThLarge, FaEye } from "react-icons/fa";
 const DailyCollection = () => {
   const [data, setData] = useState([]);
   const [filterDate, setFilterDate] = useState("");
-  const [selectedReport, setSelectedReport] = useState(null); // ✅ holds clicked row data
+  const [selectedReport, setSelectedReport] = useState(null); // holds clicked row data
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -48,7 +48,7 @@ const DailyCollection = () => {
       });
   }, []);
 
-  // ✅ Filtered data by date
+  //  Filtered data by date
   const filteredData = filterDate
     ? data.filter(
         (row) =>
@@ -86,7 +86,7 @@ const DailyCollection = () => {
             </div>
           </div>
 
-          {/* ✅ Date Filter */}
+          {/*  Date Filter */}
           <div className="mb-4 flex items-center gap-2">
             <label className="text-sm font-medium text-gray-700">
               Filter by Date:
@@ -159,7 +159,7 @@ const DailyCollection = () => {
           </table>
         </div>
 
-        {/* ✅ Report Modal */}
+        {/*  Report Modal */}
         {selectedReport && (
           <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
             <div className="bg-white rounded-lg shadow-lg p-5 w-3/4 max-w-2xl">
@@ -206,7 +206,7 @@ const DailyCollection = () => {
               <div className="flex justify-end">
                 <button
                   onClick={() => setSelectedReport(null)}
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                  className="px-4 py-0 bg-red-500 text-white rounded hover:bg-red-600"
                 >
                   Close
                 </button>

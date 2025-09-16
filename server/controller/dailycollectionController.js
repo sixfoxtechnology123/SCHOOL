@@ -1,6 +1,5 @@
 const Payment = require("../models/Payment");
 
-//  Get daily collection summary with student details
 exports.getDailyCollections = async (req, res) => {
   try {
     const records = await Payment.aggregate([
@@ -9,8 +8,8 @@ exports.getDailyCollections = async (req, res) => {
           _id: "$date",
           students: {
             $push: {
-              name: "$student",
-              class: "$className",
+              name: "$studentName",       // use stored studentName
+              class: "$admitClass",       // use stored class
               section: "$section",
             },
           },
@@ -32,8 +31,6 @@ exports.getDailyCollections = async (req, res) => {
     res.json(records);
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ message: "Error fetching daily collection", error });
+    res.status(500).json({ message: "Error fetching daily collection", error });
   }
 };

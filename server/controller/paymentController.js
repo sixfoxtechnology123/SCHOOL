@@ -135,6 +135,11 @@ async function populateFeeAmounts(paymentBody) {
     const studentDoc = await Student.findById(paymentBody.student).lean();
     if (studentDoc && studentDoc.studentId) {
       paymentBody.student = studentDoc.studentId; // store ST0001 or G0104
+
+      //  Add studentName directly
+      paymentBody.studentName = `${studentDoc.firstName || ""} ${studentDoc.lastName || ""}`.trim();
+      paymentBody.admitClass = studentDoc.admitClass; // optional, store class
+      paymentBody.section = studentDoc.section;       // optional, store section
     }
   }
 
@@ -152,7 +157,6 @@ async function populateFeeAmounts(paymentBody) {
   for (let f of paymentBody.feeDetails) {
     const feeHeadData = globalHeads.find(h => h.feeHeadName === f.feeHead);
 
-    // Default amount from request if provided
     let amount = f.amount ? Number(f.amount) : 0;
 
     if (feeHeadData) {
@@ -186,6 +190,7 @@ async function populateFeeAmounts(paymentBody) {
       ? paymentBody.totalAmount - paymentBody.amountPaid
       : 0;
 }
+
 
 
 // ================== Create Payment ==================

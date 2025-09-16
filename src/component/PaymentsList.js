@@ -311,6 +311,7 @@ const getStudentName = (studentId) => {
                 <th className="border border-green-600 px-2 py-1">Class</th>
                 <th className="border border-green-600 px-2 py-1">Sec</th>
                 <th className="border border-green-600 px-2 py-1">Roll</th>
+                <th className="border border-green-600 px-2 py-1">Fee Heads</th>
                 <th className="border border-green-600 px-2 py-1">Total Amount</th>
                 <th className="border border-green-600 px-2 py-1">Paid Amount</th>
                 <th className="border border-green-600 px-2 py-1">Pending Amount</th>
@@ -332,7 +333,11 @@ const getStudentName = (studentId) => {
                     <td className="border border-green-600 px-2 py-1">{p.admitClass}</td>
                     <td className="border border-green-600 px-2 py-1">{p.section}</td>
                     <td className="border border-green-600 px-2 py-1">{p.rollNo}</td>
-                  
+                   <td className="border border-green-600 px-2 py-1 text-left">
+                      {p.feeDetails && p.feeDetails.length > 0
+                        ? p.feeDetails.map(f => `${f.feeHead}: ₹${f.amount}`).join(", ")
+                        : "-"}
+                    </td>
                     <td className="border border-green-600 px-2 py-1">
                       ₹{Number(p.totalAmount).toFixed(2)}
                     </td>

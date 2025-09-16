@@ -1,46 +1,39 @@
-// ===== server/controllers/transportReportController.js =====
 const Payment = require("../models/Payment");
-const Student = require("../models/Student");
 
-// Transport Fees Report
-const getTransportReport = async (req, res) => {
+exports.getTransportReport = async (req, res) => {
   try {
-    // Find payments that include Transport fee
-    const payments = await Payment.find({
-      "feeDetails.feeHead": "Transport",
-    }).lean();
+    // Fetch all payments with feeDetails
+    const payments = await Payment.find({ feeDetails: { $exists: true, $ne: [] } }).lean();
 
-    const report = await Promise.all(
-      payments.map(async (p) => {
-        // Extract studentId if stored as "Name - ST001"
-        const studentId = p.student?.split(" - ")[1];
-        let studentDoc = null;
+    const reportMap = {};
 
-        if (studentId) {
-          studentDoc = await Student.findOne({ studentId }).lean();
-        }
+    payments.forEach((p) => {
+      // Find Transport fee
+      const transportFee = p.feeDetails.find(f => f.feeHead === "Transport");
+      if (!transportFee) return;
 
-        // Pick transport fee detail
-        const transportDetail = p.feeDetails.find(
-          (f) => f.feeHead === "Transport"
-        );
+      const distance = transportFee.distance || "Unknown";
 
-        return {
-          studentName: studentDoc?.studentName || p.student || "-",
-          distance: transportDetail?.distance || "-",
-          amountPaid: transportDetail?.amount || 0,
-          pendingAmount: 0, // TODO: calculate if needed
+      if (!reportMap[distance]) {
+        reportMap[distance] = {
+          distance,
+          studentCount: 0,
+          totalAmount: 0,
         };
-      })
-    );
+      }
 
+      // Increment student count
+      reportMap[distance].studentCount += 1;
+
+      // Ensure amount is numeric
+      const amount = Number(transportFee.amount) || 0;
+      reportMap[distance].totalAmount += amount;
+    });
+
+    const report = Object.values(reportMap);
     res.json(report);
   } catch (err) {
-    console.error("Error fetching transport report:", err);
+    console.error("Error in getTransportReport:", err);
     res.status(500).json({ error: "Failed to fetch transport report" });
   }
-};
-
-module.exports = {
-  getTransportReport,
 };

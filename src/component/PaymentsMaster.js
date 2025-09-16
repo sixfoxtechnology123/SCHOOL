@@ -126,52 +126,134 @@ const PaymentsMaster = () => {
     }
   };
 
-  useEffect(() => {
-    const init = async () => {
-      const { studentsData, sectionsData } = await fetchDropdownData();
+useEffect(() => {
+  const init = async () => {
+    try {
+      // --- Fetch all dropdown data ---
+      const [stuRes, classRes, sectionRes, fhRes, routeRes] = await Promise.all([
+        axios.get("http://localhost:5000/api/payments/students"),
+        axios.get("http://localhost:5000/api/payments/classes"),
+        axios.get("http://localhost:5000/api/payments/sections"),
+        axios.get("http://localhost:5000/api/feeheads"),
+        axios.get("http://localhost:5000/api/fees/transport/routes"),
+      ]);
 
+      const studentsData = stuRes.data || [];
+      const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
+      const sectionsData = sectionRes.data || [];
+      const feeHeadsData = fhRes.data || [];
+      const routeList = routeRes.data || [];
+
+      // --- Prepare options ---
+      const stuOpts = studentsData.map((s) => {
+        const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
+        return {
+          value: s._id,
+          label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""}`,
+          admitClass: s.admitClass,
+          section: s.section,
+          rollNo: s.rollNo,
+          transportRequired: s.transportRequired,
+          distanceFromSchool: s.distanceFromSchool,
+        };
+      });
+
+      const classOpts = classData.map((c) => ({ value: c, label: c }));
+      const secOpts = sectionsData.map((s) => ({
+        value: s.section,
+        label: s.section,
+        className: s.className,
+      }));
+
+      const routeOpts = routeList.map((r) => ({
+        routeId: r.routeId,
+        distance: r.distance || 0,
+        vanCharge: r.vanCharge || 0,
+        label: r.distance.toString().includes("KM") ? r.distance : `${r.distance} KM`,
+      }));
+
+      // --- Set states ---
+      setStudents(studentsData);
+      setStudentOptions(stuOpts);
+      setInitialStudentOptions(stuOpts);
+
+      setClassOptions(classOpts);
+      setSections(sectionsData);
+      setSectionOptions(secOpts);
+      setInitialSectionOptions(secOpts);
+
+      setFeeHeads(feeHeadsData);
+      setRoutes(routeOpts);
+      setShowRouteDropdown(routeOpts.length > 0);
+
+      // --- Edit mode prefill ---
       if (location.state?.paymentItem) {
         const p = location.state.paymentItem;
         setIsEditMode(true);
-        setPaymentData({
+
+        // Prefill basic fields
+        setPaymentData((prev) => ({
+          ...prev,
           ...p,
           date: p.date?.slice(0, 10),
           user: p.user || localStorage.getItem("userId") || "admin",
-        });
+        }));
 
         setPaymentStatus(p.paymentStatus || "Full Payment");
         setAmountPaid(p.amountPaid || p.totalAmount || 0);
         setPendingAmount(p.pendingAmount || 0);
 
-        if (p.admitClass) {
-          const filteredSections = sectionsData
-            .filter((s) => s.className === p.admitClass)
-            .map((s) => ({ value: s.section, label: s.section, className: s.className }));
-          setSectionOptions(filteredSections);
+        // Filter sections for class
+        const filteredSections = secOpts.filter((s) => s.className === p.admitClass);
+        setSectionOptions(filteredSections);
+
+        // Filter students for class & section
+        const filteredStudents = stuOpts.filter(
+          (s) => s.admitClass === p.admitClass && s.section === p.section
+        );
+        setStudentOptions(filteredStudents);
+
+        // Prefill student with ID only
+        const selectedStudent = filteredStudents.find((s) => s.value === p.student);
+        if (selectedStudent) {
+          setPaymentData((prev) => ({
+            ...prev,
+            student: selectedStudent.value, // <-- ID only
+            admitClass: selectedStudent.admitClass,
+            section: selectedStudent.section,
+            rollNo: selectedStudent.rollNo,
+          }));
         }
 
-        if (p.admitClass && p.section) {
-          const filteredStudents = studentsData
-            .filter((s) => s.admitClass === p.admitClass && s.section === p.section)
-            .map((s) => {
-              const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
-              return {
-                value: s._id,
-                label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""}`,
-                admitClass: s.admitClass,
-                section: s.section,
-                rollNo: s.rollNo,
-              };
-            });
-          setStudentOptions(filteredStudents);
+        // Prefill transport route if exists
+        const transportFee = p.feeDetails?.find(
+          (f) => f.feeHead.toLowerCase() === "transport"
+        );
+        if (transportFee) {
+          setSelectedRoute(transportFee.routeId || "");
+          setShowRouteDropdown(true);
         }
       } else {
-        await fetchNextPaymentId();
+        // --- New Payment ---
+        const res = await axios.get("http://localhost:5000/api/payments/latest");
+        const nextId = res.data?.paymentId || "RECEIPT001";
+        setPaymentData((prev) => ({ ...prev, paymentId: nextId }));
         setIsEditMode(false);
+        setShowRouteDropdown(false);
+        setSelectedRoute("");
       }
-    };
-    init();
-  }, [location.state]);
+    } catch (err) {
+      console.error("Error initializing form:", err);
+    }
+  };
+
+  init();
+}, [location.state]);
+
+
+
+
+
 
   // ===== Handlers (Class, Section, Student) =====
   const handleClassChange = (selected) => {
@@ -519,14 +601,17 @@ const handleSubmit = async (e) => {
           {/* Student */}
           <label className="flex flex-col text-sm font-semibold text-black col-span-2">
             Student
-            <Select
-              options={studentOptions}
-              onChange={handleStudentChange}
-              value={studentOptions.find((opt) => opt.value === paymentData.student) || null}
-              placeholder="Search Student..."
-              isSearchable
-              isClearable
-            />
+       <Select
+        options={studentOptions} // now filtered to single student in edit mode
+        onChange={handleStudentChange}
+        value={studentOptions.find((s) => s.value === paymentData.student) || null}
+        placeholder="Search Student..."
+        isSearchable
+        isClearable
+      />
+
+
+
           </label>
        
           {/* Roll No */}

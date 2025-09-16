@@ -14,8 +14,8 @@ exports.getFeeHeadSummary = async (req, res) => {
           _id: "$feeDetails.feeHead",
           students: {
             $addToSet: {
-              name: "$student",
-              class: "$className",
+              name: "$studentName",
+              class: "$admitClass",
               section: "$section",
             },
           },
