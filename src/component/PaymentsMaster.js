@@ -197,6 +197,7 @@ useEffect(() => {
           ...p,
           date: p.date?.slice(0, 10),
           user: p.user || localStorage.getItem("userId") || "admin",
+          
         }));
 
         setPaymentStatus(p.paymentStatus || "Full Payment");
@@ -861,3 +862,4 @@ const handleSubmit = async (e) => {
 };
 
 export default PaymentsMaster;
+

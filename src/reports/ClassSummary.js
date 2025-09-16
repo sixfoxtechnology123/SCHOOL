@@ -8,10 +8,11 @@ import { FaThLarge } from "react-icons/fa";
 
 const ClassSummary = () => {
   const [data, setData] = useState([]);
-  const [filterClass, setFilterClass] = useState(""); // class filter
-  const [filterSection, setFilterSection] = useState(""); // section filter
+  const [filterClass, setFilterClass] = useState("");
+  const [filterSection, setFilterSection] = useState("");
   const navigate = useNavigate();
 
+  // Sections and classes (used if you want all predefined classes)
   const allSections = ["A", "B", "C"];
   const predefinedClasses = [
     "Class - I", "Class - II", "Class - III", "Class - IV",
@@ -29,10 +30,8 @@ const ClassSummary = () => {
 
   const sortClasses = (classArray) => {
     return classArray.sort((a, b) => {
-      const classA = String(a || "").trim();
-      const classB = String(b || "").trim();
-      const romanA = classA.split("-")[1]?.trim();
-      const romanB = classB.split("-")[1]?.trim();
+      const romanA = a.split("-")[1]?.trim();
+      const romanB = b.split("-")[1]?.trim();
       return romanToNumber(romanA) - romanToNumber(romanB);
     });
   };
@@ -41,14 +40,8 @@ const ClassSummary = () => {
     axios
       .get("http://localhost:5000/api/reports/class-summary")
       .then((res) => {
-        const normalized = res.data.map((row) => ({
-          className: row.className?.trim() || "",
-          section: row.section?.trim().toUpperCase() || "",
-          students: row.students || 0,
-          totalAmount: row.totalAmount || 0,
-          pendingAmount: row.pendingAmount || 0,
-        }));
-        setData(normalized);
+        // Data already has studentsPaid and totalAmount from backend
+        setData(res.data);
       })
       .catch((err) => {
         console.log(err);
@@ -59,6 +52,7 @@ const ClassSummary = () => {
   const classes = sortClasses(predefinedClasses);
   const sections = allSections;
 
+  // Build table data: ensure every class-section is shown
   const tableData = [];
   classes.forEach((cls) => {
     sections.forEach((sec) => {
@@ -71,9 +65,8 @@ const ClassSummary = () => {
         row || {
           className: cls,
           section: sec,
-          students: 0,
+          studentsPaid: 0,
           totalAmount: 0,
-          pendingAmount: 0,
         }
       );
     });
@@ -157,7 +150,6 @@ const ClassSummary = () => {
                   <th className="border border-green-500 px-2 py-1">Section</th>
                   <th className="border border-green-500 px-2 py-1">Students Paid</th>
                   <th className="border border-green-500 px-2 py-1">Amount Collected</th>
-                  <th className="border border-green-500 px-2 py-1">Pending Amount</th>
                 </tr>
               </thead>
               <tbody className="text-sm text-center">
@@ -166,14 +158,13 @@ const ClassSummary = () => {
                     <tr key={index} className="hover:bg-gray-100 transition">
                       <td className="border border-green-500 px-2 py-1">{row.className || "-"}</td>
                       <td className="border border-green-500 px-2 py-1">{row.section || "-"}</td>
-                      <td className="border border-green-500 px-2 py-1">{row.students}</td>
+                      <td className="border border-green-500 px-2 py-1">{row.studentsPaid}</td>
                       <td className="border border-green-500 px-2 py-1">₹{row.totalAmount}</td>
-                      <td className="border border-green-500 px-2 py-1">₹{row.pendingAmount}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="text-center py-4 text-gray-500 border border-green-500">
+                    <td colSpan="4" className="text-center py-4 text-gray-500 border border-green-500">
                       No records found
                     </td>
                   </tr>

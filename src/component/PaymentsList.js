@@ -18,7 +18,7 @@ const formatDDMMYYYY = (iso) => {
 
 const PaymentsList = () => {
   const [payments, setPayments] = useState([]);
-  const [students, setStudents] = useState([]);   // ✅ added for student names
+  const [students, setStudents] = useState([]);   //  added for student names
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const location = useLocation();

@@ -30,6 +30,7 @@ import classSummaryRoutes from "./routes/classSummaryRoutes.js";
 import transportReportRoutes from "./routes/transportReportRoutes.js";
 import feeHeadreportRoutes from "./routes/feeheadsreportRoutes.js";
 import studentPaymentHistoryRoutes from "./routes/studentpaymenthistoryRoutes.js";
+import outstandingRoutes from "./routes/outstandingFeesRoutes.js";
 
 app.use("/api/classes", classRoutes);
 app.use("/api/feeheads", feeHeadRoutes);
@@ -47,6 +48,8 @@ app.use("/api/reports", dailyCollectionRoutes);
 app.use("/api/reports", classSummaryRoutes);
 app.use("/api/reports", feeHeadreportRoutes);
 app.use("/api/reports", studentPaymentHistoryRoutes);
+app.use("/api/reports", outstandingRoutes);
+
 
 // Start server
 const PORT = process.env.PORT || 5001;

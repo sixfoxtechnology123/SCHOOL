@@ -8,32 +8,77 @@ import {
   FaUserGraduate,
   FaMoneyBill,
   FaFileInvoice,
-  FaChartBar,
 } from "react-icons/fa";
 
 const Layout = () => {
   const navigate = useNavigate();
 
-  // State for dashboard
+  // Dashboard states
   const [totalStudents, setTotalStudents] = useState(0);
+  const [outstandingAmount, setOutstandingAmount] = useState(0);
+  const [todaysCollection, setTodaysCollection] = useState(0);
 
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
   };
 
-  // Fetch total students from backend
+  // Fetch total students
   const fetchTotalStudents = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/students"); // Replace with your backend endpoint
+      const res = await axios.get("http://localhost:5000/api/students");
       setTotalStudents(res.data.length || 0);
     } catch (err) {
       console.error("Error fetching total students:", err);
     }
   };
 
+  // Fetch outstanding dues
+  const fetchOutstandingDues = async () => {
+    try {
+      const res = await axios.get(
+        "http://localhost:5000/api/reports/outstanding-fees"
+      );
+      const data = res.data || [];
+      const total = data.reduce(
+        (sum, item) => sum + (Number(item.pendingAmount) || 0),
+        0
+      );
+      setOutstandingAmount(total);
+    } catch (err) {
+      console.error("Error fetching outstanding dues:", err);
+    }
+  };
+
+  // Fetch today's collection
+  const fetchTodaysCollection = async () => {
+    try {
+      const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+      const res = await axios.get("http://localhost:5000/api/payments");
+      const allPayments = res.data || [];
+
+      // Filter only today's payments
+      const todayPayments = allPayments.filter((p) => {
+        const paymentDate = new Date(p.date).toISOString().split("T")[0];
+        return paymentDate === today;
+      });
+
+      // Sum all amounts for today
+      const total = todayPayments.reduce(
+        (sum, item) => sum + (Number(item.amountPaid) || 0),
+        0
+      );
+      setTodaysCollection(total);
+    } catch (err) {
+      console.error("Error fetching today's collection:", err);
+      setTodaysCollection(0);
+    }
+  };
+
   useEffect(() => {
     fetchTotalStudents();
+    fetchOutstandingDues();
+    fetchTodaysCollection();
   }, []);
 
   return (
@@ -47,45 +92,47 @@ const Layout = () => {
         <Header onLogout={handleLogout} />
 
         {/* Dashboard Content */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          {/* Today's Collection */}
           <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
             <FaMoneyBill size={30} className="text-green-800 mb-2" />
             <h2 className="text-lg font-semibold text-green-800">
               Today's Collection
             </h2>
-            <p className="text-2xl font-bold text-green-800">₹ 0.00</p>
+            <p className="text-2xl font-bold text-green-800">
+              ₹ {todaysCollection.toLocaleString("en-IN")}
+            </p>
           </div>
 
-          <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
-            <FaChartBar size={30} className="text-green-800 mb-2" />
-            <h2 className="text-lg font-semibold text-green-800">
-              This Month
-            </h2>
-            <p className="text-2xl font-bold text-green-800">₹ 0.00</p>
-          </div>
-
+          {/* Total Students */}
           <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
             <FaUserGraduate size={30} className="text-green-800 mb-2" />
             <button onClick={() => navigate("/StudentList")}>
-            <h2 className="text-lg font-semibold text-green-800">
-              Total Students
-            </h2></button>
+              <h2 className="text-lg font-semibold text-green-800">
+                Total Students
+              </h2>
+            </button>
             <p className="text-2xl font-bold text-green-800">
               {totalStudents}
             </p>
           </div>
 
+          {/* Outstanding Dues */}
           <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
             <FaFileInvoice size={30} className="text-green-800 mb-2" />
-            <h2 className="text-lg font-semibold text-green-800">
-              Outstanding Dues
-            </h2>
-            <p className="text-2xl font-bold text-green-800">₹ 0.00</p>
+            <button onClick={() => navigate("/OutstandingFees")}>
+              <h2 className="text-lg font-semibold text-green-800">
+                Outstanding Dues
+              </h2>
+            </button>
+            <p className="text-2xl font-bold text-green-800">
+              ₹ {outstandingAmount.toLocaleString("en-IN")}
+            </p>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           <button
             onClick={() => navigate("/PaymentsList")}
             className="bg-green-50 font-semibold text-green-800 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition"
@@ -94,7 +141,7 @@ const Layout = () => {
           </button>
 
           <button
-            onClick={() => navigate("/reports/outstanding")}
+            onClick={() => navigate("/OutstandingFees")}
             className="bg-green-50 font-semibold text-green-800 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition"
           >
             ⚠️ Outstanding Dues

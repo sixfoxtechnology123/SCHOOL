@@ -7,7 +7,7 @@ import Header from "../component/Header";
 // Updated report icons
 const reports = [
       { name: "Daily Collection (All Students)", route: "/DailyCollection", icon: "🗓️" },
-  { name: "Daily Collection (User-wise)", route: "/DailyCollectionUser", icon: "👤🗓️" },
+  // { name: "Daily Collection (User-wise)", route: "/DailyCollectionUser", icon: "👤🗓️" },
   { name: "Class Summary", route: "/ClassSummary", icon: "📊" },
   { name: "Student History", route: "/StudentPaymentHistory", icon: "📚" },
   { name: "Outstanding Fees", route: "/OutstandingFees", icon: "💰" },
@@ -32,7 +32,7 @@ const ReportsDashboard = () => {
             Reports Dashboard
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
             {reports.map((report, index) => (
               <div
                 key={index}
