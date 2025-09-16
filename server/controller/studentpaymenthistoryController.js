@@ -8,7 +8,7 @@ exports.getStudentPaymentHistory = async (req, res) => {
       { $unwind: "$feeDetails" },
       {
         $project: {
-          studentName: "$student",
+          studentName: "$studentName",
           date: 1,
           feeType: "$feeDetails.feeHead",
           amountPaid: "$feeDetails.amount",

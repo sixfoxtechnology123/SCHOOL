@@ -1,34 +1,35 @@
+// controller/classSummaryController.js
 const Payment = require("../models/Payment");
 const ClassSection = require("../models/Class");
 
 exports.getClassSummary = async (req, res) => {
   try {
-    // Step 1: Get all classes and sections from ClassSection collection
+    // Step 1: Get all classes and sections
     const classes = await ClassSection.find({}, { className: 1, section: 1, _id: 0 });
 
     // Step 2: Aggregate payments grouped by className and section
     const payments = await Payment.aggregate([
+      // Only include payments with some amount paid
+      { $match: { amountPaid: { $gt: 0 } } },
       {
         $group: {
-          _id: { 
-            className: { $trim: { input: "$className" } }, 
-            section: { $toUpper: { $trim: { input: "$section" } } } 
+          _id: {
+            className: { $trim: { input: "$admitClass" } },
+            section: { $toUpper: { $trim: { input: "$section" } } },
           },
-          students: { $addToSet: "$student" },
-          totalAmount: { $sum: "$totalAmount" },
-          pendingAmount: { $sum: "$pendingAmount" },
+          studentsSet: { $addToSet: "$student" }, // unique students
+          totalAmountCollected: { $sum: "$amountPaid" },
         },
       },
     ]);
 
-    // Step 3: Create a lookup map for quick access
+    // Step 3: Create a map for quick lookup
     const paymentMap = {};
     payments.forEach((p) => {
       const key = `${p._id.className}_${p._id.section}`;
       paymentMap[key] = {
-        students: p.students.length,
-        totalAmount: p.totalAmount,
-        pendingAmount: p.pendingAmount,
+        studentsPaid: p.studentsSet.length,
+        totalAmountCollected: p.totalAmountCollected,
       };
     });
 
@@ -37,15 +38,13 @@ exports.getClassSummary = async (req, res) => {
       const className = cls.className?.trim();
       const section = cls.section?.trim().toUpperCase();
       const key = `${className}_${section}`;
-
-      const paymentData = paymentMap[key] || { students: 0, totalAmount: 0, pendingAmount: 0 };
+      const paymentData = paymentMap[key] || { studentsPaid: 0, totalAmountCollected: 0 };
 
       return {
         className,
         section,
-        students: paymentData.students,
-        totalAmount: paymentData.totalAmount,
-        pendingAmount: paymentData.pendingAmount,
+        studentsPaid: paymentData.studentsPaid,
+        totalAmount: paymentData.totalAmountCollected,
       };
     });
 
@@ -61,7 +60,6 @@ exports.getClassSummary = async (req, res) => {
     });
 
     res.json(result);
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching class/section summary", error });
