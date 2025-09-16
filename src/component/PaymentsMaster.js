@@ -21,6 +21,7 @@ const PaymentsMaster = () => {
     user: localStorage.getItem("userId") || "admin",
   });
 
+  const [classes, setClasses] = useState([]); 
   const [isEditMode, setIsEditMode] = useState(false);
   const [students, setStudents] = useState([]);
   const [sections, setSections] = useState([]);
@@ -53,16 +54,19 @@ const fetchDropdownData = async () => {
     console.log("student data",studentsData)
 
     // Build student options
-    const stuOpts = studentsData.map((s) => {
-      const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
-      return {
-        value: s._id,
-        label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""}`,
-        admitClass: s.admitClass,
-        section: s.section,
-        rollNo: s.rollNo,
-      };
-    });
+   const stuOpts = studentsData.map((s) => {
+    const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
+    return {
+      value: s._id,
+      label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""}`,
+      admitClass: s.admitClass,
+      section: s.section,
+      rollNo: s.rollNo,
+      transport: s.transport,     //  add transport
+      distance: s.distance || 0,  //  add distance
+    };
+  });
+
     setStudentOptions(stuOpts);
     setInitialStudentOptions(stuOpts);
 
@@ -235,40 +239,110 @@ const fetchDropdownData = async () => {
     }
   };
 
-  const handleFeeHeadChange = async (selected) => {
-    const newHeads = selected || [];
-    const hasTransport = newHeads.some((fh) => fh.value.toLowerCase() === "transport");
+// ===== Dropdown option builders =====
+const classOpts = classes.map((c) => ({ value: c, label: c }));
+const sectionOpts = sections.map((s) => ({ value: s, label: s }));
 
-    if (hasTransport) {
-      await fetchRoutes();
-    } else {
-      setShowRouteDropdown(false);
-      setRoutes([]);
+// ✅ Fix: define stuOpts properly with correct fields
+const stuOpts = students.map((s) => ({
+  value: s._id, // or s.studentId if that's your field
+  label: `${s.firstName || ""} ${s.lastName || ""} (${s.rollNo})`,
+  transportRequired: s.transportRequired,      // "Yes" or "No"
+  distanceFromSchool: s.distanceFromSchool,    // number in km
+}));
+
+// ===== handleFeeHeadChange =====
+const handleFeeHeadChange = async (selected) => {
+  const newHeads = selected || [];
+  const hasTransport = newHeads.some(
+    (fh) => fh.value.toLowerCase() === "transport"
+  );
+
+  if (hasTransport) {
+    const routeList = await fetchRoutes();
+
+    // ✅ get student from stuOpts
+    const student = stuOpts.find((s) => s.value === paymentData.student);
+
+    if (student?.transportRequired === "Yes" && student.distanceFromSchool) {
+      const km = Number(student.distanceFromSchool);
+
+      // ✅ match student distance with route range
+      const autoRoute = routeList.find((r) => {
+        const [min, max] = r.label
+          .replace("KM", "")
+          .split("-")
+          .map((n) => parseInt(n.trim()));
+        return km >= min && km <= max;
+      });
+
+      if (autoRoute) {
+        // ✅ fetch fee for auto route
+        const amount = await fetchAmount(
+          paymentData.admitClass,
+          "Transport",
+          autoRoute.routeId
+        );
+
+        const transportDetail = {
+          feeHead: "Transport",
+          amount,
+          routeId: autoRoute.routeId,
+          distance: autoRoute.label,
+        };
+
+        const newFeeDetails = [
+          ...paymentData.feeDetails.filter((f) => f.feeHead !== "Transport"),
+          transportDetail,
+        ];
+
+        const total = newFeeDetails.reduce(
+          (sum, f) => sum + Number(f.amount || 0),
+          0
+        );
+
+        setPaymentData((prev) => ({
+          ...prev,
+          feeDetails: newFeeDetails,
+          totalAmount: total,
+        }));
+
+        setShowRouteDropdown(false); // ✅ hide manual dropdown
+        return;
+      }
     }
 
-    const newFeeDetails = await Promise.all(
-      newHeads.map(async (fh) => {
-        if (fh.value.toLowerCase() === "transport") {
-          const existingTransport = paymentData.feeDetails.find(
-            (f) => f.feeHead.toLowerCase() === "transport"
-          );
-          return existingTransport
-            ? existingTransport
-            : { feeHead: fh.value, amount: 0, routeId: "" };
-        } else {
-          const existing = paymentData.feeDetails.find((f) => f.feeHead === fh.value);
-          if (existing) {
-            return existing;
-          }
-          const amount = await fetchAmount(paymentData.admitClass, fh.value);
-          return { feeHead: fh.value, amount };
-        }
-      })
-    );
+    // fallback → no student distance found
+    setShowRouteDropdown(true);
+  } else {
+    setShowRouteDropdown(false);
+    setRoutes([]);
+  }
 
-    const total = newFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-    setPaymentData((prev) => ({ ...prev, feeDetails: newFeeDetails, totalAmount: total }));
-  };
+  // normal flow for other fee heads
+  const newFeeDetails = await Promise.all(
+    newHeads.map(async (fh) => {
+      if (fh.value.toLowerCase() === "transport") {
+        return { feeHead: fh.value, amount: 0, routeId: "" };
+      } else {
+        const amount = await fetchAmount(paymentData.admitClass, fh.value);
+        return { feeHead: fh.value, amount };
+      }
+    })
+  );
+
+  const total = newFeeDetails.reduce(
+    (sum, f) => sum + Number(f.amount || 0),
+    0
+  );
+
+  setPaymentData((prev) => ({
+    ...prev,
+    feeDetails: newFeeDetails,
+    totalAmount: total,
+  }));
+};
+
 
  const handleRouteChange = async (routeId) => {
   const selectedRoute = routes.find((r) => r.routeId === routeId);

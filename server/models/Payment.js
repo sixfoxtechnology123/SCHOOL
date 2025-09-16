@@ -4,6 +4,7 @@ const feeDetailSchema = new mongoose.Schema({
   feeHead: { type: String, required: true },
   amount: { type: Number, required: true },
   distance: { type: String, default: "" }, // Store frontend distance
+  routeId: { type: String, default: "" }, 
 });
 
 const paymentSchema = new mongoose.Schema(
