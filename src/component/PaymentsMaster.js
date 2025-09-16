@@ -50,6 +50,7 @@ const fetchDropdownData = async () => {
 
     const studentsData = stuRes.data || [];
     setStudents(studentsData);
+    console.log("student data",studentsData)
 
     // Build student options
     const stuOpts = studentsData.map((s) => {

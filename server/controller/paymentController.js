@@ -1,4 +1,5 @@
 // ======= server/controllers/paymentController.js =======
+
 const Payment = require("../models/Payment");
 const Student = require("../models/Student");
 const FeeStructure = require("../models/FeeStructure");
@@ -8,7 +9,7 @@ const ClassMaster = require("../models/Class");
 const PREFIX = "RECEIPT";
 const PAD = 3; // RECEIPT001, RECEIPT002...
 
-// Generate next PaymentId
+// ================== Helper: Generate next PaymentId ==================
 async function generateNextPaymentId() {
   const last = await Payment.findOne().sort({ paymentId: -1 }).lean();
   const lastNum = last ? parseInt(last.paymentId.replace(PREFIX, ""), 10) : 0;
@@ -40,11 +41,9 @@ const getSectionsByClass = async (req, res) => {
   try {
     const { className } = req.query;
     if (className) {
-      // Only sections for the given class
       const sections = await Student.distinct("section", { admitClass: className });
       return res.json(sections.map((s) => ({ className, section: s })));
     } else {
-      // All class-section pairs
       const pairs = await Student.aggregate([
         { $group: { _id: { className: "$admitClass", section: "$section" } } },
         { $project: { _id: 0, className: "$_id.className", section: "$_id.section" } },
@@ -93,11 +92,14 @@ const getLatestPaymentId = async (_req, res) => {
 
 const getFeeAmount = async (req, res) => {
   try {
-    const { className, feeHeadName, routeId } = req.query;
-    if (!className || !feeHeadName)
-      return res.status(400).json({ message: "className and feeHeadName required" });
+    const { className, admitClass, feeHeadName, routeId } = req.query;
+    const classToUse = admitClass || className;
 
-    const classData = await ClassMaster.findOne({ className }).lean();
+    if (!classToUse || !feeHeadName) {
+      return res.status(400).json({ message: "className/admitClass and feeHeadName required" });
+    }
+
+    const classData = await ClassMaster.findOne({ className: classToUse }).lean();
     if (!classData) return res.json({ amount: 0 });
 
     const feeHeadData = await FeeHead.findOne({ feeHeadName }).lean();
@@ -225,6 +227,20 @@ const updatePayment = async (req, res) => {
   }
 };
 
+// ================== Duplicate Payment Check ==================
+const checkDuplicatePayment = async (req, res) => {
+  try {
+    const { studentId, month, year } = req.query;
+    const existingPayment = await Payment.findOne({ studentId, month, year });
+    if (existingPayment) {
+      return res.status(200).json({ duplicate: true });
+    }
+    res.status(200).json({ duplicate: false });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // ================== Delete Payment ==================
 const deletePayment = async (req, res) => {
   try {
@@ -248,4 +264,5 @@ module.exports = {
   getSectionsByClass,
   getStudentsByClassAndSection,
   getAllClasses,
+  checkDuplicatePayment,
 };
