@@ -30,7 +30,6 @@ const PaymentsMaster = () => {
   const [showRouteDropdown, setShowRouteDropdown] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState("");
 
-
   const [classOptions, setClassOptions] = useState([]);
   const [sectionOptions, setSectionOptions] = useState([]);
   const [studentOptions, setStudentOptions] = useState([]);
@@ -38,66 +37,64 @@ const PaymentsMaster = () => {
   const [initialSectionOptions, setInitialSectionOptions] = useState([]);
   const [initialStudentOptions, setInitialStudentOptions] = useState([]);
 
+  // ===== NEW STATE FOR PAYMENT STATUS FEATURE =====
+  const [paymentStatus, setPaymentStatus] = useState("Full Payment"); // default
+  const [amountPaid, setAmountPaid] = useState("");
+  const [pendingAmount, setPendingAmount] = useState(0);
+
   const location = useLocation();
   const navigate = useNavigate();
 
- // ===== Fetch dropdown data =====
-const fetchDropdownData = async () => {
-  try {
-    const [stuRes, classRes, sectionRes, fhRes] = await Promise.all([
-      axios.get("http://localhost:5000/api/payments/students"),
-      axios.get("http://localhost:5000/api/payments/classes"),
-      axios.get("http://localhost:5000/api/payments/sections"),
-      axios.get("http://localhost:5000/api/feeheads"),
-    ]);
+  // ===== Fetch dropdown data =====
+  const fetchDropdownData = async () => {
+    try {
+      const [stuRes, classRes, sectionRes, fhRes] = await Promise.all([
+        axios.get("http://localhost:5000/api/payments/students"),
+        axios.get("http://localhost:5000/api/payments/classes"),
+        axios.get("http://localhost:5000/api/payments/sections"),
+        axios.get("http://localhost:5000/api/feeheads"),
+      ]);
 
-    const studentsData = stuRes.data || [];
-    setStudents(studentsData);
-    console.log("student data",studentsData)
+      const studentsData = stuRes.data || [];
+      setStudents(studentsData);
 
-    // Build student options
-   const stuOpts = studentsData.map((s) => {
-    const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
-    return {
-      value: s._id,
-      label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""}`,
-      admitClass: s.admitClass,
-      section: s.section,
-      rollNo: s.rollNo,
-      transport: s.transport,     //  add transport
-      distance: s.distance || 0,  //  add distance
-    };
-  });
+      const stuOpts = studentsData.map((s) => {
+        const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
+        return {
+          value: s._id,
+          label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""}`,
+          admitClass: s.admitClass,
+          section: s.section,
+          rollNo: s.rollNo,
+          transport: s.transport,
+          distance: s.distance || 0,
+        };
+      });
 
-    setStudentOptions(stuOpts);
-    setInitialStudentOptions(stuOpts);
+      setStudentOptions(stuOpts);
+      setInitialStudentOptions(stuOpts);
 
-    // Classes
-    const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
-    const classOpts = classData.map((c) => ({ value: c, label: c }));
-    setClassOptions(classOpts);
+      const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
+      const classOpts = classData.map((c) => ({ value: c, label: c }));
+      setClassOptions(classOpts);
 
-    // Sections
-    const sectionsData = sectionRes.data || [];
-    setSections(sectionsData);
-    const secOpts = sectionsData.map((s) => ({
-      value: s.section,
-      label: s.section,
-      className: s.className, // important for filtering by class
-    }));
-    setSectionOptions(secOpts);
-    setInitialSectionOptions(secOpts);
+      const sectionsData = sectionRes.data || [];
+      setSections(sectionsData);
+      const secOpts = sectionsData.map((s) => ({
+        value: s.section,
+        label: s.section,
+        className: s.className,
+      }));
+      setSectionOptions(secOpts);
+      setInitialSectionOptions(secOpts);
 
-    // Fee Heads
-    setFeeHeads(fhRes.data || []);
-
-    return { studentsData, classData, sectionsData };
-  } catch (err) {
-    console.error("Error fetching dropdown data:", err);
-    return { studentsData: [], classData: [], sectionsData: [] };
-  }
-};
-
+      setFeeHeads(fhRes.data || []);
+      return { studentsData, classData, sectionsData };
+    } catch (err) {
+      console.error("Error fetching dropdown data:", err);
+      return { studentsData: [], classData: [], sectionsData: [] };
+    }
+  };
 
   const fetchRoutes = async () => {
     try {
@@ -142,6 +139,10 @@ const fetchDropdownData = async () => {
           user: p.user || localStorage.getItem("userId") || "admin",
         });
 
+        setPaymentStatus(p.paymentStatus || "Full Payment");
+        setAmountPaid(p.amountPaid || p.totalAmount || 0);
+        setPendingAmount(p.pendingAmount || 0);
+
         if (p.admitClass) {
           const filteredSections = sectionsData
             .filter((s) => s.className === p.admitClass)
@@ -172,61 +173,59 @@ const fetchDropdownData = async () => {
     init();
   }, [location.state]);
 
-  // ===== Handlers =====
- const handleClassChange = (selected) => {
-  if (!selected) {
-    setPaymentData((prev) => ({ ...prev, admitClass: "", section: "", student: "", rollNo: "" }));
-    setSectionOptions(initialSectionOptions);
-    setStudentOptions(initialStudentOptions);
-    return;
-  }
+  // ===== Handlers (Class, Section, Student) =====
+  const handleClassChange = (selected) => {
+    if (!selected) {
+      setPaymentData((prev) => ({ ...prev, admitClass: "", section: "", student: "", rollNo: "" }));
+      setSectionOptions(initialSectionOptions);
+      setStudentOptions(initialStudentOptions);
+      return;
+    }
 
-  const selectedClass = selected.value;
-  setPaymentData((prev) => ({ ...prev, admitClass: selectedClass, section: "", student: "", rollNo: "" }));
+    const selectedClass = selected.value;
+    setPaymentData((prev) => ({ ...prev, admitClass: selectedClass, section: "", student: "", rollNo: "" }));
 
-  // Filter sections by class
-  const filteredSections = initialSectionOptions.filter(s => s.className === selectedClass);
-  setSectionOptions(filteredSections);
+    const filteredSections = initialSectionOptions.filter(s => s.className === selectedClass);
+    setSectionOptions(filteredSections);
 
-  // Filter students by class
-  const filteredStudents = initialStudentOptions.filter(s => s.admitClass === selectedClass);
-  setStudentOptions(filteredStudents);
-};
-
- const handleSectionChange = (selected) => {
-  if (!selected) {
-    setPaymentData((prev) => ({ ...prev, section: "", student: "", rollNo: "" }));
-    const filteredStudents = initialStudentOptions.filter(s => s.admitClass === paymentData.admitClass);
+    const filteredStudents = initialStudentOptions.filter(s => s.admitClass === selectedClass);
     setStudentOptions(filteredStudents);
-    return;
-  }
+  };
 
-  const selectedSection = selected.value;
-  setPaymentData((prev) => ({ ...prev, section: selectedSection, student: "", rollNo: "" }));
+  const handleSectionChange = (selected) => {
+    if (!selected) {
+      setPaymentData((prev) => ({ ...prev, section: "", student: "", rollNo: "" }));
+      const filteredStudents = initialStudentOptions.filter(s => s.admitClass === paymentData.admitClass);
+      setStudentOptions(filteredStudents);
+      return;
+    }
 
-  const filteredStudents = initialStudentOptions.filter(
-    s => s.admitClass === paymentData.admitClass && s.section === selectedSection
-  );
-  setStudentOptions(filteredStudents);
-};
+    const selectedSection = selected.value;
+    setPaymentData((prev) => ({ ...prev, section: selectedSection, student: "", rollNo: "" }));
 
- const handleStudentChange = (selected) => {
-  if (!selected) {
-    setPaymentData((prev) => ({ ...prev, student: "", rollNo: "" }));
-    return;
-  }
+    const filteredStudents = initialStudentOptions.filter(
+      s => s.admitClass === paymentData.admitClass && s.section === selectedSection
+    );
+    setStudentOptions(filteredStudents);
+  };
 
-  const stu = initialStudentOptions.find(s => s.value === selected.value);
-  if (stu) {
-    setPaymentData((prev) => ({
-      ...prev,
-      student: stu.value,
-      rollNo: stu.rollNo,
-      admitClass: stu.admitClass,
-      section: stu.section,
-    }));
-  }
-};
+  const handleStudentChange = (selected) => {
+    if (!selected) {
+      setPaymentData((prev) => ({ ...prev, student: "", rollNo: "" }));
+      return;
+    }
+
+    const stu = initialStudentOptions.find(s => s.value === selected.value);
+    if (stu) {
+      setPaymentData((prev) => ({
+        ...prev,
+        student: stu.value,
+        rollNo: stu.rollNo,
+        admitClass: stu.admitClass,
+        section: stu.section,
+      }));
+    }
+  };
 
   const fetchAmount = async (admitClass, feeHeadName, routeId) => {
     if (!admitClass || !feeHeadName) return 0;
@@ -241,114 +240,99 @@ const fetchDropdownData = async () => {
     }
   };
 
-// ===== Dropdown option builders =====
-const classOpts = classes.map((c) => ({ value: c, label: c }));
-const sectionOpts = sections.map((s) => ({ value: s, label: s }));
+  // ===== handleFeeHeadChange =====
+  const handleFeeHeadChange = async (selected) => {
+    const newHeads = selected || [];
+    const hasTransport = newHeads.some(
+      (fh) => fh.value.toLowerCase() === "transport"
+    );
 
-//  Fix: define stuOpts properly with correct fields
-const stuOpts = students.map((s) => ({
-  value: s._id, // or s.studentId if that's your field
-  label: `${s.firstName || ""} ${s.lastName || ""} (${s.rollNo})`,
-  transportRequired: s.transportRequired,      // "Yes" or "No"
-  distanceFromSchool: s.distanceFromSchool,    // number in km
-}));
+    const otherFeeHeads = paymentData.feeDetails.filter(
+      (f) => f.feeHead.toLowerCase() !== "transport"
+    );
 
-// ===== handleFeeHeadChange =====
-const handleFeeHeadChange = async (selected) => {
-  const newHeads = selected || [];
-  const hasTransport = newHeads.some(
-    (fh) => fh.value.toLowerCase() === "transport"
-  );
+    let transportDetail = null;
 
-  if (hasTransport) {
-    const routeList = await fetchRoutes();
+    if (hasTransport) {
+      const routeList = await fetchRoutes();
+      const stuOpts = students.map((s) => ({
+        value: s._id,
+        transportRequired: s.transportRequired,
+        distanceFromSchool: s.distanceFromSchool,
+      }));
+      const student = stuOpts.find((s) => s.value === paymentData.student);
 
-    //  get student from stuOpts
-    const student = stuOpts.find((s) => s.value === paymentData.student);
+      if (student?.transportRequired === "Yes" && student.distanceFromSchool) {
+        const km = Number(student.distanceFromSchool);
 
-    if (student?.transportRequired === "Yes" && student.distanceFromSchool) {
-      const km = Number(student.distanceFromSchool);
+        const autoRoute = routeList.find((r) => {
+          const [min, max] = r.label
+            .replace("KM", "")
+            .split("-")
+            .map((n) => parseInt(n.trim()));
+          return km >= min && km <= max;
+        });
 
-      //  match student distance with route range
-      const autoRoute = routeList.find((r) => {
-        const [min, max] = r.label
-          .replace("KM", "")
-          .split("-")
-          .map((n) => parseInt(n.trim()));
-        return km >= min && km <= max;
-      });
+        if (autoRoute) {
+          const amount = await fetchAmount(
+            paymentData.admitClass,
+            "Transport",
+            autoRoute.routeId
+          );
 
-      if (autoRoute) {
-        //  fetch fee for auto route
-        const amount = await fetchAmount(
-          paymentData.admitClass,
-          "Transport",
-          autoRoute.routeId
-        );
+          transportDetail = {
+            feeHead: "Transport",
+            amount,
+            routeId: autoRoute.routeId,
+            distance: autoRoute.label,
+          };
 
-        const transportDetail = {
-          feeHead: "Transport",
-          amount,
-          routeId: autoRoute.routeId,
-          distance: autoRoute.label,
-        };
-
-        const newFeeDetails = [
-          ...paymentData.feeDetails.filter((f) => f.feeHead !== "Transport"),
-          transportDetail,
-        ];
-
-        const total = newFeeDetails.reduce(
-          (sum, f) => sum + Number(f.amount || 0),
-          0
-        );
-
-        setPaymentData((prev) => ({
-          ...prev,
-          feeDetails: newFeeDetails,
-          totalAmount: total,
-        }));
-
-          setShowRouteDropdown(true); //  keep dropdown visible
-          setSelectedRoute(autoRoute.routeId); //  auto-select the matched route
-          return;
-
+          setSelectedRoute(autoRoute.routeId);
+          setShowRouteDropdown(true);
+        } else {
+          setShowRouteDropdown(true);
+        }
+      } else {
+        setShowRouteDropdown(true);
       }
+    } else {
+      setShowRouteDropdown(false);
+      setRoutes([]);
+      setSelectedRoute("");
     }
 
-    // fallback → no student distance found
-    setShowRouteDropdown(true);
-  } else {
-    setShowRouteDropdown(false);
-    setRoutes([]);
-  }
+    const finalFeeDetails = await Promise.all(
+      newHeads.map(async (fh) => {
+        if (fh.value.toLowerCase() === "transport") {
+          return transportDetail || { feeHead: "Transport", amount: 0, routeId: "" };
+        } else {
+          const existing = otherFeeHeads.find((f) => f.feeHead === fh.value);
+          if (existing) return existing;
 
-  // normal flow for other fee heads
-  const newFeeDetails = await Promise.all(
-    newHeads.map(async (fh) => {
-      if (fh.value.toLowerCase() === "transport") {
-        return { feeHead: fh.value, amount: 0, routeId: "" };
-      } else {
-        const amount = await fetchAmount(paymentData.admitClass, fh.value);
-        return { feeHead: fh.value, amount };
-      }
-    })
-  );
+          const amount = await fetchAmount(paymentData.admitClass, fh.value);
+          return { feeHead: fh.value, amount };
+        }
+      })
+    );
 
-  const total = newFeeDetails.reduce(
-    (sum, f) => sum + Number(f.amount || 0),
-    0
-  );
+    const total = finalFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
 
-  setPaymentData((prev) => ({
-    ...prev,
-    feeDetails: newFeeDetails,
-    totalAmount: total,
-  }));
-};
+    setPaymentData((prev) => ({
+      ...prev,
+      feeDetails: finalFeeDetails,
+      totalAmount: total,
+    }));
 
-
- const handleRouteChange = async (routeId) => {
+    // ===== UPDATE PENDING AMOUNT IF PAYMENT STATUS IS PENDING =====
+    if (paymentStatus === "Pending") {
+      const remaining = total - Number(amountPaid || 0);
+      setPendingAmount(remaining > 0 ? remaining : 0);
+    } else {
+      setPendingAmount(0);
+      setAmountPaid(total);
+    }
+  };
+   const handleRouteChange = async (routeId) => {
   const selectedRoute = routes.find((r) => r.routeId === routeId);
   const updatedFeeDetails = await Promise.all(
     paymentData.feeDetails.map(async (f) => {
@@ -368,13 +352,21 @@ const handleFeeHeadChange = async (selected) => {
   setPaymentData((prev) => ({ ...prev, feeDetails: updatedFeeDetails, totalAmount: total }));
 };
 
-
   const handleAmountChange = (feeHead, value) => {
     const updatedFeeDetails = paymentData.feeDetails.map((f) =>
       f.feeHead === feeHead ? { ...f, amount: Number(value) } : f
     );
     const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
     setPaymentData((prev) => ({ ...prev, feeDetails: updatedFeeDetails, totalAmount: total }));
+
+    // Update pending amount
+    if (paymentStatus === "Pending") {
+      const remaining = total - Number(amountPaid || 0);
+      setPendingAmount(remaining > 0 ? remaining : 0);
+    } else {
+      setAmountPaid(total);
+      setPendingAmount(0);
+    }
   };
 
   const handleChange = (e) => {
@@ -382,76 +374,91 @@ const handleFeeHeadChange = async (selected) => {
     setPaymentData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // ===== HANDLE SUBMIT WITH PAYMENT STATUS =====
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (
-      ["UPI", "NetBanking"].includes(paymentData.paymentMode) &&
-      !paymentData.transactionId
-    ) {
-      alert("Transaction ID required for this payment mode!");
-      return;
-    }
+  if (
+    ["UPI", "NetBanking"].includes(paymentData.paymentMode) &&
+    !paymentData.transactionId
+  ) {
+    alert("Transaction ID required for this payment mode!");
+    return;
+  }
 
-    if (paymentData.paymentMode === "Card" && !paymentData.cardNumber) {
-      alert("Card Number required for Card payment!");
-      return;
-    }
+  if (paymentData.paymentMode === "Card" && !paymentData.cardNumber) {
+    alert("Card Number required for Card payment!");
+    return;
+  }
 
-    try {
-      const duplicateCheck = await axios.get(
-        "http://localhost:5000/api/payments/check-duplicate",
-        {
-          params: {
-            admitClass: paymentData.admitClass,
-            section: paymentData.section,
-            rollNo: paymentData.rollNo,
-          },
-        }
+  try {
+    // ✅ Correct duplicate check URL & response
+    const duplicateCheck = await axios.get(
+      "http://localhost:5000/api/payments/payments/check-duplicate",
+      {
+        params: {
+          studentId: paymentData.studentId,
+          month: paymentData.month,
+          year: paymentData.year,
+        },
+      }
+    );
+
+    if (duplicateCheck.data.duplicate) {
+      alert(
+        `Receipt already exists for Class: ${paymentData.admitClass}, Section: ${paymentData.section}, Roll No: ${paymentData.rollNo}`
       );
-
-      if (duplicateCheck.data.exists) {
-        alert(
-          `Receipt already exists for Class: ${paymentData.admitClass}, Section: ${paymentData.section}, Roll No: ${paymentData.rollNo}`
-        );
-        return;
-      }
-
-      if (isEditMode) {
-        await axios.put(
-          `http://localhost:5000/api/payments/${paymentData._id}`,
-          paymentData
-        );
-        alert("Receipt updated successfully!");
-        navigate("/PaymentsList", { replace: true });
-      } else {
-        await axios.post("http://localhost:5000/api/payments", paymentData);
-        alert("Receipt saved successfully!");
-        await fetchNextPaymentId();
-        setPaymentData({
-          paymentId: "",
-          date: new Date().toISOString().split("T")[0],
-          student: "",
-          admitClass: "",
-          section: "",
-          rollNo: "",
-          feeDetails: [],
-          totalAmount: 0,
-          paymentMode: "",
-          transactionId: "",
-          cardNumber: "",
-          remarks: "",
-          user: localStorage.getItem("userId") || "admin",
-        });
-        setSectionOptions(initialSectionOptions);
-        setStudentOptions(initialStudentOptions);
-        navigate("/PaymentsList", { replace: true });
-      }
-    } catch (err) {
-      console.error("Save failed:", err.response?.data || err.message);
-      alert(err.response?.data?.error || "Error saving receipt");
+      return;
     }
-  };
+
+    // Include payment status fields
+    const submissionData = {
+      ...paymentData,
+      paymentStatus,
+      amountPaid:
+        paymentStatus === "Pending" ? amountPaid : paymentData.totalAmount,
+      pendingAmount: paymentStatus === "Pending" ? pendingAmount : 0,
+    };
+
+    if (isEditMode) {
+      await axios.put(
+        `http://localhost:5000/api/payments/${paymentData._id}`,
+        submissionData
+      );
+      alert("Receipt updated successfully!");
+      navigate("/PaymentsList", { replace: true });
+    } else {
+      await axios.post("http://localhost:5000/api/payments", submissionData);
+      alert("Receipt saved successfully!");
+      await fetchNextPaymentId();
+      setPaymentData({
+        paymentId: "",
+        date: new Date().toISOString().split("T")[0],
+        student: "",
+        admitClass: "",
+        section: "",
+        rollNo: "",
+        feeDetails: [],
+        totalAmount: 0,
+        paymentMode: "",
+        transactionId: "",
+        cardNumber: "",
+        remarks: "",
+        user: localStorage.getItem("userId") || "admin",
+      });
+      setSectionOptions(initialSectionOptions);
+      setStudentOptions(initialStudentOptions);
+      setPaymentStatus("Full Payment");
+      setAmountPaid(0);
+      setPendingAmount(0);
+      navigate("/PaymentsList", { replace: true });
+    }
+  } catch (err) {
+    console.error("Save failed:", err);
+    alert("Error saving receipt. Check console.");
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-zinc-300 flex items-center justify-center">
@@ -598,6 +605,84 @@ const handleFeeHeadChange = async (selected) => {
             </label>
           ))}
 
+           {/* Total Amount */}
+          <label className="flex flex-col text-sm font-bold text-black">
+            Total Amount
+            <input
+              type="number"
+              name="totalAmount"
+              value={paymentData.totalAmount}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
+            />
+          </label>
+
+
+
+          {/* ===== PAYMENT STATUS DROPDOWN ===== */}
+        <label className="flex flex-col text-sm font-semibold text-black">
+          Payment Status
+          <select
+            name="paymentStatus"
+            value={paymentStatus}
+            onChange={(e) => {
+              const val = e.target.value;
+              setPaymentStatus(val);
+
+              if (val === "Full Payment") {
+                setAmountPaid("");
+                setPendingAmount(0);
+              } else {
+                setAmountPaid("");
+                setPendingAmount(paymentData.totalAmount);
+              }
+            }}
+            className="border border-gray-400 p-1 rounded"
+          >
+            <option value="Full Payment">Full Payment</option>
+            <option value="Pending">Pending</option>
+          </select>
+        </label>
+
+        {/* Amount Paid & Pending Amount (only if Pending) */}
+        {paymentStatus === "Pending" && (
+          <>
+            <label className="flex flex-col text-sm font-semibold text-black">
+              Amount Paid
+             <input
+                type="text" // change from number to text
+                value={amountPaid}
+                onChange={(e) => {
+                  const val = e.target.value;
+
+                  // Allow only numbers or empty
+                  if (/^\d*$/.test(val)) {
+                    setAmountPaid(val); // keep as string
+                    const paid = val === "" ? 0 : Number(val);
+
+                    const pending = (paymentData.totalAmount || 0) - paid;
+                    setPendingAmount(pending > 0 ? pending : 0);
+                  }
+                }}
+                className="border border-gray-400 p-1 rounded"
+                placeholder="Enter paid amount"
+              />
+
+            </label>
+
+            <label className="flex flex-col text-sm font-semibold text-black">
+              Pending Amount
+              <input
+                type="number"
+                value={pendingAmount}
+                readOnly
+                className="border border-gray-400 p-1 rounded cursor-not-allowed"
+              />
+            </label>
+          </>
+        )}
+
+
           {/* Payment Mode */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Payment Mode
@@ -647,17 +732,7 @@ const handleFeeHeadChange = async (selected) => {
             </label>
           )}
 
-          {/* Total Amount */}
-          <label className="flex flex-col text-sm font-semibold text-black">
-            Total Amount
-            <input
-              type="number"
-              name="totalAmount"
-              value={paymentData.totalAmount}
-              readOnly
-              className="border border-gray-400 p-1 rounded bg-gray-100"
-            />
-          </label>
+         
 
           {/* Remarks */}
           <label className="flex flex-col text-sm font-semibold text-black col-span-2 lg:col-span-2">

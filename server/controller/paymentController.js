@@ -1,5 +1,4 @@
 // ======= server/controllers/paymentController.js =======
-
 const Payment = require("../models/Payment");
 const Student = require("../models/Student");
 const FeeStructure = require("../models/FeeStructure");
@@ -125,10 +124,19 @@ const getFeeAmount = async (req, res) => {
   }
 };
 
-// ================== Helper: populate fee amounts ==================
+// ================== Helper: populate fee amounts and studentId ==================
 async function populateFeeAmounts(paymentBody) {
   if (!paymentBody.feeDetails || !Array.isArray(paymentBody.feeDetails)) return;
 
+  // Convert student ObjectId to custom studentId string
+  if (paymentBody.student) {
+    const studentDoc = await Student.findById(paymentBody.student).lean();
+    if (studentDoc && studentDoc.studentId) {
+      paymentBody.student = studentDoc.studentId; // store ST0001 or G0104
+    }
+  }
+
+  // Get classId
   let classId = paymentBody.classId;
   if (!classId && paymentBody.className) {
     const classData = await ClassMaster.findOne({ className: paymentBody.className }).lean();
@@ -138,52 +146,53 @@ async function populateFeeAmounts(paymentBody) {
   const classStructures = await FeeStructure.find({ classId }).lean();
   const globalHeads = await FeeHead.find().lean();
 
-  paymentBody.feeDetails = await Promise.all(
-    paymentBody.feeDetails.map(async (f) => {
-      let feeHeadId = f.feeHeadId;
-      if (!feeHeadId && f.feeHead) {
-        const headData = await FeeHead.findOne({ feeHeadName: f.feeHead }).lean();
-        if (headData) feeHeadId = headData.feeHeadId;
-      }
+  // Populate amounts
+  for (let f of paymentBody.feeDetails) {
+    const feeHeadData = globalHeads.find(h => h.feeHeadName === f.feeHead);
 
-      let amount = 0;
-      if (f.feeHead && f.feeHead.toLowerCase() === "transport" && f.routeId) {
-        const routeData = await FeeStructure.findOne({ classId, feeHeadId, routeId: f.routeId }).lean();
-        amount = routeData ? routeData.amount : 0;
+    // Default amount from request if provided
+    let amount = f.amount ? Number(f.amount) : 0;
+
+    if (feeHeadData) {
+      if (f.feeHead.toLowerCase() === "transport" && f.routeId) {
+        const routeFee = classStructures.find(
+          cs => cs.feeHeadId === feeHeadData.feeHeadId && cs.routeId === f.routeId
+        );
+        amount = routeFee ? Number(routeFee.amount) : amount;
       } else {
-        const headData = classStructures.find((h) => h.feeHeadId === feeHeadId);
-        amount = headData ? headData.amount : (globalHeads.find((h) => h.feeHeadId === feeHeadId)?.amount || 0);
+        const classFee = classStructures.find(cs => cs.feeHeadId === feeHeadData.feeHeadId);
+        amount = classFee ? Number(classFee.amount) : amount;
       }
+    }
 
-      return {
-        ...f,
-        feeHeadId,
-        amount,
-        distance: typeof f.distance !== "undefined" ? f.distance : "",
-      };
-    })
+    f.amount = amount;
+    f.distance = f.distance || "";
+  }
+
+  // Calculate totalAmount
+  paymentBody.totalAmount = paymentBody.feeDetails.reduce(
+    (sum, f) => sum + Number(f.amount || 0),
+    0
   );
 
-  paymentBody.totalAmount = paymentBody.feeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  // AmountPaid & PendingAmount
+  if (!paymentBody.amountPaid) {
+    paymentBody.amountPaid = paymentBody.paymentStatus === "Full Payment" ? paymentBody.totalAmount : 0;
+  }
+  paymentBody.pendingAmount =
+    paymentBody.paymentStatus === "Pending"
+      ? paymentBody.totalAmount - paymentBody.amountPaid
+      : 0;
 }
+
 
 // ================== Create Payment ==================
 const createPayment = async (req, res) => {
   try {
     if (!req.body.paymentId) req.body.paymentId = await generateNextPaymentId();
 
-    const existing = await Payment.findOne({
-      className: req.body.className,
-      section: req.body.section,
-      rollNo: req.body.rollNo,
-    });
-    if (existing) {
-      return res.status(400).json({
-        error: `Receipt already exists for Class: ${req.body.className}, Section: ${req.body.section}, Roll No: ${req.body.rollNo}`,
-      });
-    }
-
     await populateFeeAmounts(req.body);
+
     const payment = new Payment(req.body);
     await payment.save();
     res.status(201).json(payment);
@@ -197,19 +206,6 @@ const createPayment = async (req, res) => {
 const updatePayment = async (req, res) => {
   try {
     const updateBody = { ...req.body };
-
-    const existing = await Payment.findOne({
-      className: updateBody.className,
-      section: updateBody.section,
-      rollNo: updateBody.rollNo,
-      _id: { $ne: req.params.id },
-    });
-    if (existing) {
-      return res.status(400).json({
-        error: `Receipt already exists for Class: ${updateBody.className}, Section: ${updateBody.section}, Roll No: ${updateBody.rollNo}`,
-      });
-    }
-
     await populateFeeAmounts(updateBody);
 
     const paymentDoc = await Payment.findById(req.params.id);
@@ -231,11 +227,8 @@ const updatePayment = async (req, res) => {
 const checkDuplicatePayment = async (req, res) => {
   try {
     const { studentId, month, year } = req.query;
-    const existingPayment = await Payment.findOne({ studentId, month, year });
-    if (existingPayment) {
-      return res.status(200).json({ duplicate: true });
-    }
-    res.status(200).json({ duplicate: false });
+    const existingPayment = await Payment.findOne({ student: studentId, month, year });
+    res.status(200).json({ duplicate: !!existingPayment });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
