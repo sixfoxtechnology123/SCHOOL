@@ -18,22 +18,44 @@ const formatDDMMYYYY = (iso) => {
 
 const PaymentsList = () => {
   const [payments, setPayments] = useState([]);
+  const [students, setStudents] = useState([]);   // ✅ added for student names
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
+  //  Fetch payments
   const fetchPayments = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/payments");
       setPayments(res.data || []);
+      console.log("Payments data:", res.data);
     } catch (e) {
       console.error("Failed to fetch payments:", e);
     }
   };
 
+  //  Fetch students
+  const fetchStudents = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/students");
+      setStudents(res.data || []);
+    } catch (e) {
+      console.error("Failed to fetch students:", e);
+    }
+  };
+
+  //  Run both fetches
   useEffect(() => {
     fetchPayments();
+    fetchStudents();
   }, [location.key]);
+
+ // Helper to map studentId -> Full Name
+const getStudentName = (studentId) => {
+  const stu = students.find((s) => s.studentId === studentId);
+  return stu ? `${stu.firstName || ""} ${stu.lastName || ""}`.trim() : studentId;
+};
+
 
   const deletePayment = async (id) => {
     if (!window.confirm("Are you sure you want to delete this payment?")) return;
@@ -63,10 +85,10 @@ const PaymentsList = () => {
         : `<tr><td colspan="2" style="border:1px solid #333;padding:6px;text-align:center;">No Fee Details</td></tr>`;
 
     const printContent = `
-      <div style="font-family: Arial; padding:20px; max-width:750px; margin:auto; border:1px solid #333;">
+      <div style="font-family: Arial; padding:10px; max-width:750px; margin:auto; border:1px solid #333;">
         
       <!-- ===== School Header Section ===== -->
-          <div style="display:flex; align-items:center; margin-bottom:10px; border:none; padding:0;">
+          <div style="display:flex; align-items:center; margin-bottom:3px; border:none; padding:0;">
             <!-- Logo -->
            <div style="flex-shrink:0; margin-right:15px; border:none; padding:0;">
           <img src="logo.jpg" alt="School Logo" 
@@ -83,7 +105,7 @@ const PaymentsList = () => {
               <p style="margin:2px 0; font-size:13px;">
                 Nilgange, Matarangi, Barrackpore-Barasat Road, Kol-121
               </p>
-              <hr style="margin:10px 0; border-top:2px solid #333;" />
+              <hr style="margin:5px 0; border-top:2px solid #333;" />
             </div>
           </div>
 
@@ -109,7 +131,7 @@ const PaymentsList = () => {
             </tr>
             <tr>
               <td><b>Student</b></td>
-              <td><b>:</b> ${payment.student || "-"}</td>
+              <td><b>:</b> ${getStudentName(payment.student)}-${payment.student}</td>
             </tr>
             <tr>
               <td><b>Date</b></td>
@@ -123,7 +145,7 @@ const PaymentsList = () => {
           <table style="border-collapse: collapse;">
             <tr>
               <td style="padding-right: 10px;"><b>Class</b></td>
-              <td><b>:</b> ${payment.className || "-"}</td>
+              <td><b>:</b> ${payment.admitClass || "-"}</td>
             </tr>
             <tr>
               <td><b>Section</b></td>
@@ -154,11 +176,15 @@ const PaymentsList = () => {
           <td style="border:1px solid #333; padding:6px; text-align:left; font-weight:bold;">Total</td>
           <td style="border:1px solid #333; padding:6px; text-align:right; font-weight:bold;">₹${Number(payment.totalAmount).toFixed(2)}</td>
         </tr>
+         <tr>
+        <td style="border:1px solid #333; padding:6px; text-align:left; font-weight:bold;">Paid Amount</td>
+        <td style="border:1px solid #333; padding:6px; text-align:right;">₹${Number(payment.amountPaid).toFixed(2)}</td>
+      </tr>
       </tbody>
     </table>
 
       <!-- ===== Additional Info ===== -->
-    <table style="width:100%; margin:10px 0; font-size:14px; border-collapse:collapse;">
+    <table style="width:100%; margin:10px 0 5px 0; font-size:14px; border-collapse:collapse;">
       <tr>
         <!-- Left side -->
         <td style="vertical-align: top; padding-right: 30px;">
@@ -191,7 +217,7 @@ const PaymentsList = () => {
     </table>
 
 
-        <!-- ===== Signature Section ===== -->
+        <!-- ===== Signature Section 
         <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:40px;">
           <div style="display:flex; flex-direction: column; align-items:center; line-height:1;">
             <span style="border-top:1px solid black; width:150px; margin:0 0 5px 0;"></span>
@@ -201,7 +227,7 @@ const PaymentsList = () => {
             <span style="border-top:1px solid black; width:150px; margin:0 0 5px 0;"></span>
             <b style="margin:0; padding:0;">Authorized Signatory</b>
           </div>
-        </div>
+        </div>===== -->
 
       </div>
     `;
@@ -285,10 +311,11 @@ const PaymentsList = () => {
                 <th className="border border-green-600 px-2 py-1">Class</th>
                 <th className="border border-green-600 px-2 py-1">Sec</th>
                 <th className="border border-green-600 px-2 py-1">Roll</th>
-                <th className="border border-green-600 px-2 py-1">Fee Details</th>
                 <th className="border border-green-600 px-2 py-1">Total Amount</th>
+                <th className="border border-green-600 px-2 py-1">Paid Amount</th>
+                <th className="border border-green-600 px-2 py-1">Pending Amount</th>
                 <th className="border border-green-600 px-2 py-1">Date</th>
-                <th className="border border-green-600 px-2 py-1">Payment Mode</th>
+                <th className="border border-green-600 px-2 py-1">Pay Mode</th>
                 <th className="border border-green-600 px-2 py-1">Txn ID</th>
                 <th className="border border-green-600 px-2 py-1">Card Number</th>
                 <th className="border border-green-600 px-2 py-1">Remarks</th>
@@ -301,22 +328,19 @@ const PaymentsList = () => {
                 filteredPayments.map((p) => (
                   <tr key={p._id} className="hover:bg-gray-100 transition">
                     <td className="border border-green-600 px-2 py-1">{p.paymentId}</td>
-                    <td className="border border-green-600 px-2 py-1">{p.student || "-"}</td>
-                    <td className="border border-green-600 px-2 py-1">{p.className}</td>
+                    <td className="border border-green-600 px-2 py-1">{getStudentName(p.student)}</td>
+                    <td className="border border-green-600 px-2 py-1">{p.admitClass}</td>
                     <td className="border border-green-600 px-2 py-1">{p.section}</td>
                     <td className="border border-green-600 px-2 py-1">{p.rollNo}</td>
-                    <td className="border border-green-600 px-2 py-1">
-                      {p.feeDetails && p.feeDetails.length > 0
-                        ? p.feeDetails
-                            .map(
-                              (f) =>
-                                `${f.feeHead}: ₹${Number(f.amount).toFixed(2)}`
-                            )
-                            .join(", ")
-                        : "-"}
-                    </td>
+                  
                     <td className="border border-green-600 px-2 py-1">
                       ₹{Number(p.totalAmount).toFixed(2)}
+                    </td>
+                    <td className="border border-green-600 px-2 py-1">
+                      ₹{Number(p.amountPaid).toFixed(2)}
+                    </td>
+                     <td className="border border-green-600 px-2 py-1">
+                      ₹{Number(p.pendingAmount).toFixed(2)}
                     </td>
                     <td className="border border-green-600 px-2 py-1">{formatDDMMYYYY(p.date)}</td>
                     <td className="border border-green-600 px-2 py-1">{p.paymentMode}</td>

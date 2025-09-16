@@ -374,7 +374,6 @@ const PaymentsMaster = () => {
     setPaymentData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // ===== HANDLE SUBMIT WITH PAYMENT STATUS =====
 const handleSubmit = async (e) => {
   e.preventDefault();
 
@@ -392,31 +391,24 @@ const handleSubmit = async (e) => {
   }
 
   try {
-    // ✅ Correct duplicate check URL & response
-    const duplicateCheck = await axios.get(
-      "http://localhost:5000/api/payments/payments/check-duplicate",
-      {
-        params: {
-          studentId: paymentData.studentId,
-          month: paymentData.month,
-          year: paymentData.year,
-        },
-      }
+    //  Don’t overwrite feeDetails amount with 0
+    const updatedFeeDetails = paymentData.feeDetails.map((f) => ({
+      ...f,
+      amount: f.amount || 0, // keep existing amount
+    }));
+
+    //  Calculate total again
+    const total = updatedFeeDetails.reduce(
+      (sum, f) => sum + Number(f.amount || 0),
+      0
     );
 
-    if (duplicateCheck.data.duplicate) {
-      alert(
-        `Receipt already exists for Class: ${paymentData.admitClass}, Section: ${paymentData.section}, Roll No: ${paymentData.rollNo}`
-      );
-      return;
-    }
-
-    // Include payment status fields
     const submissionData = {
       ...paymentData,
+      feeDetails: updatedFeeDetails, //  use corrected details
+      totalAmount: total,
       paymentStatus,
-      amountPaid:
-        paymentStatus === "Pending" ? amountPaid : paymentData.totalAmount,
+      amountPaid: paymentStatus === "Pending" ? amountPaid : total,
       pendingAmount: paymentStatus === "Pending" ? pendingAmount : 0,
     };
 
@@ -431,6 +423,8 @@ const handleSubmit = async (e) => {
       await axios.post("http://localhost:5000/api/payments", submissionData);
       alert("Receipt saved successfully!");
       await fetchNextPaymentId();
+
+      // reset form
       setPaymentData({
         paymentId: "",
         date: new Date().toISOString().split("T")[0],
@@ -458,6 +452,8 @@ const handleSubmit = async (e) => {
     alert("Error saving receipt. Check console.");
   }
 };
+
+
 
 
   return (

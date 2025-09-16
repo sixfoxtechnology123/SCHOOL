@@ -73,7 +73,9 @@ const getStudentsByClassAndSection = async (req, res) => {
 // ================== Payment Routes ==================
 const getAllPayments = async (_req, res) => {
   try {
-    const payments = await Payment.find().lean();
+    const payments = await Payment.find()
+      .populate("student", "firstName lastName studentId") // populate only needed fields
+      .lean();
     res.json(payments);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch payments" });
@@ -192,7 +194,7 @@ const createPayment = async (req, res) => {
     if (!req.body.paymentId) req.body.paymentId = await generateNextPaymentId();
 
     await populateFeeAmounts(req.body);
-
+console.log("Incoming payment body:", req.body);
     const payment = new Payment(req.body);
     await payment.save();
     res.status(201).json(payment);
