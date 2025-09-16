@@ -28,6 +28,8 @@ const PaymentsMaster = () => {
   const [feeHeads, setFeeHeads] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [showRouteDropdown, setShowRouteDropdown] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState("");
+
 
   const [classOptions, setClassOptions] = useState([]);
   const [sectionOptions, setSectionOptions] = useState([]);
@@ -243,7 +245,7 @@ const fetchDropdownData = async () => {
 const classOpts = classes.map((c) => ({ value: c, label: c }));
 const sectionOpts = sections.map((s) => ({ value: s, label: s }));
 
-// ✅ Fix: define stuOpts properly with correct fields
+//  Fix: define stuOpts properly with correct fields
 const stuOpts = students.map((s) => ({
   value: s._id, // or s.studentId if that's your field
   label: `${s.firstName || ""} ${s.lastName || ""} (${s.rollNo})`,
@@ -261,13 +263,13 @@ const handleFeeHeadChange = async (selected) => {
   if (hasTransport) {
     const routeList = await fetchRoutes();
 
-    // ✅ get student from stuOpts
+    //  get student from stuOpts
     const student = stuOpts.find((s) => s.value === paymentData.student);
 
     if (student?.transportRequired === "Yes" && student.distanceFromSchool) {
       const km = Number(student.distanceFromSchool);
 
-      // ✅ match student distance with route range
+      //  match student distance with route range
       const autoRoute = routeList.find((r) => {
         const [min, max] = r.label
           .replace("KM", "")
@@ -277,7 +279,7 @@ const handleFeeHeadChange = async (selected) => {
       });
 
       if (autoRoute) {
-        // ✅ fetch fee for auto route
+        //  fetch fee for auto route
         const amount = await fetchAmount(
           paymentData.admitClass,
           "Transport",
@@ -307,8 +309,10 @@ const handleFeeHeadChange = async (selected) => {
           totalAmount: total,
         }));
 
-        setShowRouteDropdown(false); // ✅ hide manual dropdown
-        return;
+          setShowRouteDropdown(true); //  keep dropdown visible
+          setSelectedRoute(autoRoute.routeId); //  auto-select the matched route
+          return;
+
       }
     }
 
@@ -556,16 +560,17 @@ const handleFeeHeadChange = async (selected) => {
           {showRouteDropdown && (
             <label className="flex flex-col text-sm font-semibold text-black">
               Distance (KM)
-              <select
+             <select
                 name="routeId"
-                value={
-                  paymentData.feeDetails.find(
-                    (f) => f.feeHead.toLowerCase() === "transport"
-                  )?.routeId || ""
-                }
-                onChange={async (e) => await handleRouteChange(e.target.value)}
-                className="border border-gray-400 p-1 rounded"
+                disabled
+                value={selectedRoute || ""}
+                onChange={async (e) => {
+                  setSelectedRoute(e.target.value); // keep state in sync
+                  await handleRouteChange(e.target.value);
+                }}
+                className="border border-gray-400 p-1 rounded cursor-not-allowed"
               >
+
                 <option value="">--Select Distance--</option>
                 {routes.map((r) => (
                   <option key={r.routeId} value={r.routeId}>
