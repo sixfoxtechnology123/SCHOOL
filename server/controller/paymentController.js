@@ -199,7 +199,7 @@ const createPayment = async (req, res) => {
     if (!req.body.paymentId) req.body.paymentId = await generateNextPaymentId();
 
     await populateFeeAmounts(req.body);
-console.log("Incoming payment body:", req.body);
+// console.log("Incoming payment body:", req.body);
     const payment = new Payment(req.body);
     await payment.save();
     res.status(201).json(payment);

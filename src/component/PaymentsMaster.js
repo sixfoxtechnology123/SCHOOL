@@ -20,6 +20,7 @@ const PaymentsMaster = () => {
     remarks: "",
     user: localStorage.getItem("userId") || "admin",
   });
+const [formData, setFormData] = useState({});
 
   const [classes, setClasses] = useState([]); 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -215,16 +216,22 @@ useEffect(() => {
         setStudentOptions(filteredStudents);
 
         // Prefill student with ID only
-        const selectedStudent = filteredStudents.find((s) => s.value === p.student);
-        if (selectedStudent) {
-          setPaymentData((prev) => ({
-            ...prev,
-            student: selectedStudent.value, // <-- ID only
-            admitClass: selectedStudent.admitClass,
-            section: selectedStudent.section,
-            rollNo: selectedStudent.rollNo,
-          }));
-        }
+     const selectedStudent = filteredStudents.find((s) => s.value === p.student);
+if (selectedStudent) {
+  const stu = students.find((s) => s._id === selectedStudent.value);
+  const fullName = [stu?.firstName, stu?.lastName].filter(Boolean).join(" ");
+  const displayName = `${fullName || stu?.studentName || "Unnamed"} (${stu?.studentId || ""})`;
+
+  setPaymentData((prev) => ({
+    ...prev,
+    student: selectedStudent.value,   // keep ID for backend
+    studentName: displayName,         // <-- add name for display
+    admitClass: selectedStudent.admitClass,
+    section: selectedStudent.section,
+    rollNo: selectedStudent.rollNo,
+  }));
+}
+
 
         // Prefill transport route if exists
         const transportFee = p.feeDetails?.find(
@@ -601,15 +608,25 @@ const handleSubmit = async (e) => {
 
           {/* Student */}
           <label className="flex flex-col text-sm font-semibold text-black col-span-2">
-            Student
-       <Select
-        options={studentOptions} // now filtered to single student in edit mode
-        onChange={handleStudentChange}
-        value={studentOptions.find((s) => s.value === paymentData.student) || null}
-        placeholder="Search Student..."
-        isSearchable
-        isClearable
-      />
+           Student
+          {isEditMode ? (
+            <input
+              type="text"
+              name="student"
+              value={paymentData.studentName || ""}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
+            />
+          ) : (
+            <Select
+              options={studentOptions}
+              onChange={handleStudentChange}
+              value={studentOptions.find((s) => s.value === paymentData.student) || null}
+              placeholder="Search Student..."
+              isSearchable
+              isClearable
+            />
+          )}
 
 
 
