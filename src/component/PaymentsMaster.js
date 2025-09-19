@@ -22,6 +22,11 @@ const PaymentsMaster = () => {
   });
 const [formData, setFormData] = useState({});
 
+const [previousPending, setPreviousPending] = useState(0); // new
+const [currentFee, setCurrentFee] = useState(0);           // new
+const [discount, setDiscount] = useState('');               // new
+const [netPayable, setNetPayable] = useState(0);           // new
+
   const [classes, setClasses] = useState([]); 
   const [isEditMode, setIsEditMode] = useState(false);
   const [students, setStudents] = useState([]);
@@ -298,24 +303,55 @@ if (selectedStudent) {
     );
     setStudentOptions(filteredStudents);
   };
+const handleStudentChange = async (selected) => {
+  if (!selected) {
+    setPaymentData((prev) => ({ ...prev, student: "", rollNo: "" }));
+    setPreviousPending(0);
+    setCurrentFee(0);
+    setNetPayable(0);
+    setAmountPaid("");
+    setPendingAmount(0);
+    return;
+  }
 
-  const handleStudentChange = (selected) => {
-    if (!selected) {
-      setPaymentData((prev) => ({ ...prev, student: "", rollNo: "" }));
-      return;
-    }
+  const stu = initialStudentOptions.find((s) => s.value === selected.value);
+  if (!stu) return;
 
-    const stu = initialStudentOptions.find(s => s.value === selected.value);
-    if (stu) {
-      setPaymentData((prev) => ({
-        ...prev,
-        student: stu.value,
-        rollNo: stu.rollNo,
-        admitClass: stu.admitClass,
-        section: stu.section,
-      }));
-    }
-  };
+  setPaymentData((prev) => ({
+    ...prev,
+    student: stu.value,
+    rollNo: stu.rollNo,
+    admitClass: stu.admitClass,
+    section: stu.section,
+  }));
+
+  try {
+    const res = await axios.get(
+      `http://localhost:5000/api/payments/pending/${stu.value}`
+    );
+
+    console.log("Previous Pending:", res.data.pendingAmount); // <-- Add here
+
+    const pending = Number(res.data?.pendingAmount || 0);
+    setPreviousPending(pending);
+
+    const totalPayable = pending + Number(currentFee);
+    const discountValue = Number(discount || 0);
+    const paid = Number(amountPaid || 0);
+    setNetPayable(totalPayable - discountValue);
+    setPendingAmount(totalPayable - discountValue - paid);
+
+  } catch (err) {
+    console.error("Error fetching previous pending:", err);
+    setPreviousPending(0);
+    const totalPayable = Number(currentFee);
+    setNetPayable(totalPayable - Number(discount || 0));
+    setPendingAmount(totalPayable - Number(discount || 0) - Number(amountPaid || 0));
+  }
+};
+
+
+
 
   const fetchAmount = async (admitClass, feeHeadName, routeId) => {
     if (!admitClass || !feeHeadName) return 0;
@@ -331,97 +367,109 @@ if (selectedStudent) {
   };
 
   // ===== handleFeeHeadChange =====
-  const handleFeeHeadChange = async (selected) => {
-    const newHeads = selected || [];
-    const hasTransport = newHeads.some(
-      (fh) => fh.value.toLowerCase() === "transport"
-    );
+const handleFeeHeadChange = async (selected) => {
+  const newHeads = selected || [];
+  const hasTransport = newHeads.some(
+    (fh) => fh.value.toLowerCase() === "transport"
+  );
 
-    const otherFeeHeads = paymentData.feeDetails.filter(
-      (f) => f.feeHead.toLowerCase() !== "transport"
-    );
+  // Filter out existing transport fee details
+  const otherFeeHeads = paymentData.feeDetails.filter(
+    (f) => f.feeHead.toLowerCase() !== "transport"
+  );
 
-    let transportDetail = null;
+  let transportDetail = null;
 
-    if (hasTransport) {
-      const routeList = await fetchRoutes();
-      const stuOpts = students.map((s) => ({
-        value: s._id,
-        transportRequired: s.transportRequired,
-        distanceFromSchool: s.distanceFromSchool,
-      }));
-      const student = stuOpts.find((s) => s.value === paymentData.student);
+  if (hasTransport) {
+    const routeList = await fetchRoutes();
+    const stuOpts = students.map((s) => ({
+      value: s._id,
+      transportRequired: s.transportRequired,
+      distanceFromSchool: s.distanceFromSchool,
+    }));
 
-      if (student?.transportRequired === "Yes" && student.distanceFromSchool) {
-        const km = Number(student.distanceFromSchool);
+    const student = stuOpts.find((s) => s.value === paymentData.student);
 
-        const autoRoute = routeList.find((r) => {
-          const [min, max] = r.label
-            .replace("KM", "")
-            .split("-")
-            .map((n) => parseInt(n.trim()));
-          return km >= min && km <= max;
-        });
+    if (student?.transportRequired === "Yes" && student.distanceFromSchool) {
+      const km = Number(student.distanceFromSchool);
 
-        if (autoRoute) {
-          const amount = await fetchAmount(
-            paymentData.admitClass,
-            "Transport",
-            autoRoute.routeId
-          );
+      const autoRoute = routeList.find((r) => {
+        const [min, max] = r.label
+          .replace("KM", "")
+          .split("-")
+          .map((n) => parseInt(n.trim()));
+        return km >= min && km <= max;
+      });
 
-          transportDetail = {
-            feeHead: "Transport",
-            amount,
-            routeId: autoRoute.routeId,
-            distance: autoRoute.label,
-          };
+      if (autoRoute) {
+        const amount = await fetchAmount(
+          paymentData.admitClass,
+          "Transport",
+          autoRoute.routeId
+        );
 
-          setSelectedRoute(autoRoute.routeId);
-          setShowRouteDropdown(true);
-        } else {
-          setShowRouteDropdown(true);
-        }
+        transportDetail = {
+          feeHead: "Transport",
+          amount,
+          routeId: autoRoute.routeId,
+          distance: autoRoute.label,
+        };
+
+        setSelectedRoute(autoRoute.routeId);
+        setShowRouteDropdown(true);
       } else {
         setShowRouteDropdown(true);
       }
     } else {
-      setShowRouteDropdown(false);
-      setRoutes([]);
-      setSelectedRoute("");
+      setShowRouteDropdown(true);
     }
+  } else {
+    setShowRouteDropdown(false);
+    setRoutes([]);
+    setSelectedRoute("");
+  }
 
-    const finalFeeDetails = await Promise.all(
-      newHeads.map(async (fh) => {
-        if (fh.value.toLowerCase() === "transport") {
-          return transportDetail || { feeHead: "Transport", amount: 0, routeId: "" };
-        } else {
-          const existing = otherFeeHeads.find((f) => f.feeHead === fh.value);
-          if (existing) return existing;
+  // Prepare final fee details
+  const finalFeeDetails = await Promise.all(
+    newHeads.map(async (fh) => {
+      if (fh.value.toLowerCase() === "transport") {
+        return transportDetail || { feeHead: "Transport", amount: 0, routeId: "" };
+      } else {
+        const existing = otherFeeHeads.find((f) => f.feeHead === fh.value);
+        if (existing) return existing;
 
-          const amount = await fetchAmount(paymentData.admitClass, fh.value);
-          return { feeHead: fh.value, amount };
-        }
-      })
-    );
+        const amount = await fetchAmount(paymentData.admitClass, fh.value);
+        return { feeHead: fh.value, amount };
+      }
+    })
+  );
 
-    const total = finalFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  // --- Calculate total of selected fee heads ---
+  const total = finalFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
 
-    setPaymentData((prev) => ({
-      ...prev,
-      feeDetails: finalFeeDetails,
-      totalAmount: total,
-    }));
+  // --- Update current fee ---
+  setCurrentFee(total);
 
-    // ===== UPDATE PENDING AMOUNT IF PAYMENT STATUS IS PENDING =====
-    if (paymentStatus === "Pending") {
-      const remaining = total - Number(amountPaid || 0);
-      setPendingAmount(remaining > 0 ? remaining : 0);
-    } else {
-      setPendingAmount(0);
-      setAmountPaid(total);
-    }
-  };
+  // --- Recalculate net payable and pending amount ---
+  const totalPayable = Number(previousPending) + total;
+  setNetPayable(totalPayable - Number(discount));
+  setPendingAmount(totalPayable - Number(discount) - Number(amountPaid || 0));
+
+  // --- Update paymentData ---
+  setPaymentData((prev) => ({
+    ...prev,
+    feeDetails: finalFeeDetails,
+    totalAmount: total,
+  }));
+
+  // --- Optional: If payment is fully done, adjust amountPaid/pending ---
+  if (paymentStatus !== "Pending") {
+    setAmountPaid(total);
+    setPendingAmount(0);
+  }
+};
+
+
    const handleRouteChange = async (routeId) => {
   const selectedRoute = routes.find((r) => r.routeId === routeId);
   const updatedFeeDetails = await Promise.all(
@@ -493,14 +541,19 @@ const handleSubmit = async (e) => {
       0
     );
 
-    const submissionData = {
-      ...paymentData,
-      feeDetails: updatedFeeDetails, //  use corrected details
-      totalAmount: total,
-      paymentStatus,
-      amountPaid: paymentStatus === "Pending" ? amountPaid : total,
-      pendingAmount: paymentStatus === "Pending" ? pendingAmount : 0,
-    };
+  const submissionData = {
+  ...paymentData,
+  previousPending,
+  currentFee,
+  totalAmount: previousPending + currentFee,
+  discount,
+  netPayable,
+  amountPaid,
+  pendingAmount,
+  feeDetails: paymentData.feeDetails,
+  paymentStatus,
+};
+
 
     if (isEditMode) {
       await axios.put(
@@ -704,17 +757,78 @@ const handleSubmit = async (e) => {
             </label>
           ))}
 
-           {/* Total Amount */}
-          <label className="flex flex-col text-sm font-bold text-black">
-            Total Amount
-            <input
-              type="number"
-              name="totalAmount"
-              value={paymentData.totalAmount}
-              readOnly
-              className="border border-gray-400 p-1 rounded bg-gray-100"
-            />
-          </label>
+         {/* Previous Pending */}
+      <label className="flex flex-col text-sm font-semibold text-black">
+        Previous Pending
+        <input
+          type="number"
+          value={previousPending}
+          readOnly
+          className="border border-gray-400 p-1 rounded bg-gray-100"
+        />
+      </label>
+
+      {/* Current Fee */}
+      <label className="flex flex-col text-sm font-semibold text-black">
+        Current Fee
+        <input
+          type="number"
+          value={currentFee}
+          onChange={(e) => {
+            const val = Number(e.target.value || 0);
+            setCurrentFee(val);
+
+            // recalc net payable and pending
+            const total = previousPending + val;
+            setNetPayable(total - Number(discount));
+            setPendingAmount(total - Number(discount) - Number(amountPaid));
+          }}
+          className="border border-gray-400 p-1 rounded"
+        />
+      </label>
+
+      {/* Total Amount */}
+      <label className="flex flex-col text-sm font-semibold text-black">
+        Total Fee
+        <input
+          type="number"
+          value={previousPending + currentFee}
+          readOnly
+          className="border border-gray-400 p-1 rounded bg-gray-100"
+        />
+
+      </label>
+
+      {/* Discount */}
+      <label className="flex flex-col text-sm font-semibold text-black">
+        Discount
+        <input
+          type="number"
+          value={discount}
+         onChange={(e) => {
+          const val = Number(e.target.value || '');
+          setDiscount(val);
+
+          const totalPayable = previousPending + currentFee;
+          setNetPayable(totalPayable - val);
+          setPendingAmount(totalPayable - val - Number(amountPaid || ''));
+        }}
+
+          className="border border-gray-400 p-1 rounded"
+        />
+      </label>
+
+      {/* Net Payable */}
+      <label className="flex flex-col text-sm font-semibold text-black">
+        Net Payable
+        <input
+          type="number"
+          value={netPayable}
+          readOnly
+          className="border border-gray-400 p-1 rounded bg-gray-100"
+        />
+      </label>
+
 
 
 
@@ -773,7 +887,7 @@ const handleSubmit = async (e) => {
               Pending Amount
               <input
                 type="number"
-                value={pendingAmount}
+                value={netPayable-amountPaid}
                 readOnly
                 className="border border-gray-400 p-1 rounded cursor-not-allowed"
               />

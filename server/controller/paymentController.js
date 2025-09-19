@@ -73,9 +73,7 @@ const getStudentsByClassAndSection = async (req, res) => {
 // ================== Payment Routes ==================
 const getAllPayments = async (_req, res) => {
   try {
-    const payments = await Payment.find()
-      .populate("student", "firstName lastName studentId") // populate only needed fields
-      .lean();
+    const payments = await Payment.find().lean(); // no populate, student is string now
     res.json(payments);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch payments" });
@@ -126,24 +124,29 @@ const getFeeAmount = async (req, res) => {
   }
 };
 
-// ================== Helper: populate fee amounts and studentId ==================
+// ================== Helper: Populate fee amounts, studentId, and previous pending ==================
 async function populateFeeAmounts(paymentBody) {
   if (!paymentBody.feeDetails || !Array.isArray(paymentBody.feeDetails)) return;
 
-  // Convert student ObjectId to custom studentId string
+  // --- Fetch student ---
+  let studentDoc = null;
   if (paymentBody.student) {
-    const studentDoc = await Student.findById(paymentBody.student).lean();
-    if (studentDoc && studentDoc.studentId) {
-      paymentBody.student = studentDoc.studentId; // store ST0001 or G0104
+    studentDoc = await Student.findOne({ studentId: paymentBody.student }).lean();
+    if (!studentDoc) {
+      // fallback if student passed as ObjectId
+      studentDoc = await Student.findById(paymentBody.student).lean();
+    }
 
-      //  Add studentName directly
+    if (studentDoc) {
+      paymentBody.student = studentDoc.studentId; // <-- store studentId string
       paymentBody.studentName = `${studentDoc.firstName || ""} ${studentDoc.lastName || ""}`.trim();
-      paymentBody.admitClass = studentDoc.admitClass; // optional, store class
-      paymentBody.section = studentDoc.section;       // optional, store section
+      paymentBody.admitClass = studentDoc.admitClass;
+      paymentBody.section = studentDoc.section;
+      paymentBody.rollNo = studentDoc.rollNo;
     }
   }
 
-  // Get classId
+  // --- Fetch classId ---
   let classId = paymentBody.classId;
   if (!classId && paymentBody.className) {
     const classData = await ClassMaster.findOne({ className: paymentBody.className }).lean();
@@ -153,10 +156,10 @@ async function populateFeeAmounts(paymentBody) {
   const classStructures = await FeeStructure.find({ classId }).lean();
   const globalHeads = await FeeHead.find().lean();
 
-  // Populate amounts
+  // --- Populate fee amounts ---
+  let total = 0;
   for (let f of paymentBody.feeDetails) {
     const feeHeadData = globalHeads.find(h => h.feeHeadName === f.feeHead);
-
     let amount = f.amount ? Number(f.amount) : 0;
 
     if (feeHeadData) {
@@ -173,35 +176,41 @@ async function populateFeeAmounts(paymentBody) {
 
     f.amount = amount;
     f.distance = f.distance || "";
+    total += amount;
   }
 
-  // Calculate totalAmount
-  paymentBody.totalAmount = paymentBody.feeDetails.reduce(
-    (sum, f) => sum + Number(f.amount || 0),
-    0
-  );
-
-  // AmountPaid & PendingAmount
+  // --- Amount paid ---
   if (!paymentBody.amountPaid) {
-    paymentBody.amountPaid = paymentBody.paymentStatus === "Full Payment" ? paymentBody.totalAmount : 0;
+    paymentBody.amountPaid = paymentBody.paymentStatus === "Full Payment" ? total : 0;
   }
-  paymentBody.pendingAmount =
-    paymentBody.paymentStatus === "Pending"
-      ? paymentBody.totalAmount - paymentBody.amountPaid
-      : 0;
+
+  // --- Previous pending ---
+  let previousPending = 0;
+  if (studentDoc) {
+    const previousPayments = await Payment.find({ student: studentDoc.studentId }).lean();
+    previousPending = previousPayments.reduce((sum, p) => {
+      const totalAmt = Number(p.totalAmount || 0);
+      const paid = Number(p.amountPaid || 0);
+      return sum + (totalAmt - paid);
+    }, 0);
+  }
+
+  // --- Final Totals ---
+  paymentBody.totalAmount = total;
+  paymentBody.previousPending = previousPending;
+  paymentBody.pendingAmount = Math.max(total + previousPending - (paymentBody.amountPaid || 0), 0);
+  paymentBody.paymentStatus = paymentBody.pendingAmount > 0 ? "Pending" : "Full Payment";
 }
-
-
 
 // ================== Create Payment ==================
 const createPayment = async (req, res) => {
   try {
     if (!req.body.paymentId) req.body.paymentId = await generateNextPaymentId();
-
     await populateFeeAmounts(req.body);
-// console.log("Incoming payment body:", req.body);
+
     const payment = new Payment(req.body);
     await payment.save();
+
     res.status(201).json(payment);
   } catch (err) {
     console.error("Error creating payment:", err);
