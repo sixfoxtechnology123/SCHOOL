@@ -203,7 +203,6 @@ useEffect(() => {
           ...p,
           date: p.date?.slice(0, 10),
           user: p.user || localStorage.getItem("userId") || "admin",
-          
         }));
 
         setPaymentStatus(p.paymentStatus || "Full Payment");
@@ -220,23 +219,43 @@ useEffect(() => {
         );
         setStudentOptions(filteredStudents);
 
-        // Prefill student with ID only
-     const selectedStudent = filteredStudents.find((s) => s.value === p.student);
-if (selectedStudent) {
-  const stu = students.find((s) => s._id === selectedStudent.value);
-  const fullName = [stu?.firstName, stu?.lastName].filter(Boolean).join(" ");
-  const displayName = `${fullName || stu?.studentName || "Unnamed"} (${stu?.studentId || ""})`;
+        // Prefill student with ID & display name
+        const selectedStudent = filteredStudents.find((s) => s.value === p.student);
+        if (selectedStudent) {
+          const stu = studentsData.find((s) => s._id === selectedStudent.value);
+          const fullName = [stu?.firstName, stu?.lastName].filter(Boolean).join(" ");
+          const displayName = `${fullName || stu?.studentName || "Unnamed"} (${stu?.studentId || ""})`;
 
-  setPaymentData((prev) => ({
-    ...prev,
-    student: selectedStudent.value,   // keep ID for backend
-    studentName: displayName,         // <-- add name for display
-    admitClass: selectedStudent.admitClass,
-    section: selectedStudent.section,
-    rollNo: selectedStudent.rollNo,
-  }));
-}
+          setPaymentData((prev) => ({
+            ...prev,
+            student: selectedStudent.value,
+            studentName: displayName,
+            admitClass: selectedStudent.admitClass,
+            section: selectedStudent.section,
+            rollNo: selectedStudent.rollNo,
+          }));
+        }
 
+        // --- Fetch all payments of this student and log ---
+        if (p.student) {
+          try {
+            const allPaymentsRes = await axios.get(
+              `http://localhost:5000/api/payments/student/${p.student}`
+            );
+            const allPayments = allPaymentsRes.data.payments || [];
+            console.log("All payments for this student:", allPayments);
+
+            // Optional: calculate total pending
+            const totalPending = allPayments.reduce(
+              (acc, pay) => acc + (pay.pendingAmount || 0),
+              0
+            );
+            console.log("Total pending for this student:", totalPending);
+            setPreviousPending(totalPending);
+          } catch (err) {
+            console.error("Error fetching student payments:", err);
+          }
+        }
 
         // Prefill transport route if exists
         const transportFee = p.feeDetails?.find(
@@ -262,8 +281,6 @@ if (selectedStudent) {
 
   init();
 }, [location.state]);
-
-
 
 
 
@@ -304,7 +321,6 @@ if (selectedStudent) {
     setStudentOptions(filteredStudents);
   };
 
-
 const handleStudentChange = async (selected) => {
   if (!selected) {
     setPaymentData((prev) => ({ ...prev, student: "", rollNo: "" }));
@@ -332,21 +348,33 @@ const handleStudentChange = async (selected) => {
       `http://localhost:5000/api/payments/pending/${stu.value}`
     );
 
-    const pending = Number(res.data?.pendingAmount || 0);
-    setPreviousPending(pending);
+    const previousPending = Number(res.data?.previousPending || 0);
 
-    const totalPayable = pending + Number(currentFee);
+    console.log("Previous pending from backend:", previousPending);
+
+    setPreviousPending(previousPending);
+
+    //  Corrected calculation (don’t double-count previousPending)
+    const totalFee = Number(currentFee || 0); 
     const discountValue = Number(discount || 0);
     const paid = Number(amountPaid || 0);
-    setNetPayable(totalPayable - discountValue);
-    setPendingAmount(totalPayable - discountValue - paid);
 
+    // latest pending comes from backend
+    const totalPayable = totalFee + previousPending;
+    const net = totalPayable - discountValue;
+    const pendingAmt = net - paid;
+
+    setNetPayable(net);
+    setPendingAmount(pendingAmt > 0 ? pendingAmt : 0);
   } catch (err) {
     console.error("Error fetching previous pending:", err);
+
     setPreviousPending(0);
-    const totalPayable = Number(currentFee);
-    setNetPayable(totalPayable - Number(discount || 0));
-    setPendingAmount(totalPayable - Number(discount || 0) - Number(amountPaid || 0));
+    const totalFee = Number(currentFee || 0);
+    const net = totalFee - Number(discount || 0);
+    const pendingAmt = net - Number(amountPaid || 0);
+    setNetPayable(net);
+    setPendingAmount(pendingAmt > 0 ? pendingAmt : 0);
   }
 };
 
@@ -367,14 +395,14 @@ const handleStudentChange = async (selected) => {
     }
   };
 
-  // ===== handleFeeHeadChange =====
+// ===== handleFeeHeadChange =====
 const handleFeeHeadChange = async (selected) => {
   const newHeads = selected || [];
   const hasTransport = newHeads.some(
     (fh) => fh.value.toLowerCase() === "transport"
   );
 
-  // Filter out existing transport fee details
+  // remove old transport entry
   const otherFeeHeads = paymentData.feeDetails.filter(
     (f) => f.feeHead.toLowerCase() !== "transport"
   );
@@ -383,22 +411,20 @@ const handleFeeHeadChange = async (selected) => {
 
   if (hasTransport) {
     const routeList = await fetchRoutes();
-    const stuOpts = students.map((s) => ({
-      value: s._id,
-      transportRequired: s.transportRequired,
-      distanceFromSchool: s.distanceFromSchool,
-    }));
-
-    const student = stuOpts.find((s) => s.value === paymentData.student);
+    const student = students.find((s) => s._id === paymentData.student);
 
     if (student?.transportRequired === "Yes" && student.distanceFromSchool) {
       const km = Number(student.distanceFromSchool);
 
+      // find matching route
       const autoRoute = routeList.find((r) => {
-        const [min, max] = r.label
-          .replace("KM", "")
-          .split("-")
-          .map((n) => parseInt(n.trim()));
+        let min = 0, max = 0;
+        if (r.label.includes("-")) {
+          [min, max] = r.label.replace("KM", "").split("-").map((n) => parseInt(n.trim()));
+        } else {
+          min = 0;
+          max = parseInt(r.label.replace("KM", "").trim());
+        }
         return km >= min && km <= max;
       });
 
@@ -419,59 +445,49 @@ const handleFeeHeadChange = async (selected) => {
         setSelectedRoute(autoRoute.routeId);
         setShowRouteDropdown(true);
       } else {
+        // student marked transport but no route matches
         setShowRouteDropdown(true);
       }
     } else {
+      // no transport info in student record → allow manual select
       setShowRouteDropdown(true);
     }
   } else {
     setShowRouteDropdown(false);
-    setRoutes([]);
     setSelectedRoute("");
   }
 
-  // Prepare final fee details
+  // prepare updated fee details
   const finalFeeDetails = await Promise.all(
     newHeads.map(async (fh) => {
       if (fh.value.toLowerCase() === "transport") {
         return transportDetail || { feeHead: "Transport", amount: 0, routeId: "" };
       } else {
-        const existing = otherFeeHeads.find((f) => f.feeHead === fh.value);
-        if (existing) return existing;
-
         const amount = await fetchAmount(paymentData.admitClass, fh.value);
         return { feeHead: fh.value, amount };
       }
     })
   );
 
-  // --- Calculate total of selected fee heads ---
+  // recalc totals
   const total = finalFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  const totalPayable = previousPending + total;
+  const net = totalPayable - Number(discount || 0);
+  const pending = net - Number(amountPaid || 0);
 
-  // --- Update current fee ---
   setCurrentFee(total);
+  setNetPayable(net);
+  setPendingAmount(pending);
 
-  // --- Recalculate net payable and pending amount ---
-  const totalPayable = Number(previousPending) + total;
-  setNetPayable(totalPayable - Number(discount));
-  setPendingAmount(totalPayable - Number(discount) - Number(amountPaid || 0));
-
-  // --- Update paymentData ---
   setPaymentData((prev) => ({
     ...prev,
     feeDetails: finalFeeDetails,
     totalAmount: total,
   }));
-
-  // --- Optional: If payment is fully done, adjust amountPaid/pending ---
-  if (paymentStatus !== "Pending") {
-    setAmountPaid(total);
-    setPendingAmount(0);
-  }
 };
 
-
-   const handleRouteChange = async (routeId) => {
+// ===== handleRouteChange =====
+const handleRouteChange = async (routeId) => {
   const selectedRoute = routes.find((r) => r.routeId === routeId);
   const updatedFeeDetails = await Promise.all(
     paymentData.feeDetails.map(async (f) => {
@@ -481,15 +497,17 @@ const handleFeeHeadChange = async (selected) => {
           ...f,
           amount,
           routeId,
-          distance: selectedRoute?.label || "", // <-- ADD THIS
+          distance: selectedRoute?.label || "",
         };
       }
       return f;
     })
   );
+
   const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
   setPaymentData((prev) => ({ ...prev, feeDetails: updatedFeeDetails, totalAmount: total }));
 };
+
 
   const handleAmountChange = (feeHead, value) => {
     const updatedFeeDetails = paymentData.feeDetails.map((f) =>
@@ -554,6 +572,7 @@ const submissionData = {
   feeDetails: paymentData.feeDetails,
   paymentStatus,
 };
+
 
 
 
@@ -718,20 +737,19 @@ const submissionData = {
             />
           </label>
 
-          {showRouteDropdown && (
+        {showRouteDropdown && (
             <label className="flex flex-col text-sm font-semibold text-black">
               Distance (KM)
-             <select
+              <select
                 name="routeId"
                 disabled
                 value={selectedRoute || ""}
                 onChange={async (e) => {
-                  setSelectedRoute(e.target.value); // keep state in sync
+                  setSelectedRoute(e.target.value);
                   await handleRouteChange(e.target.value);
                 }}
                 className="border border-gray-400 p-1 rounded cursor-not-allowed"
               >
-
                 <option value="">--Select Distance--</option>
                 {routes.map((r) => (
                   <option key={r.routeId} value={r.routeId}>
@@ -741,6 +759,7 @@ const submissionData = {
               </select>
             </label>
           )}
+
 
           {/* Amount per head */}
           {paymentData.feeDetails.map((f) => (

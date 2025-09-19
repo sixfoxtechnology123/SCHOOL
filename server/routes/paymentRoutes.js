@@ -17,6 +17,7 @@ router.get("/payments/check-duplicate", controller.checkDuplicatePayment);
 router.get("/sections", controller.getSectionsByClass);
 router.get("/students-by-class-section", controller.getStudentsByClassAndSection);
 router.get("/classes", controller.getAllClasses);
+router.get("/pending/:studentId", controller.getPreviousPending);
 
 
 // CRUD routes
