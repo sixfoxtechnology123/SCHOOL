@@ -303,6 +303,8 @@ if (selectedStudent) {
     );
     setStudentOptions(filteredStudents);
   };
+
+
 const handleStudentChange = async (selected) => {
   if (!selected) {
     setPaymentData((prev) => ({ ...prev, student: "", rollNo: "" }));
@@ -330,8 +332,6 @@ const handleStudentChange = async (selected) => {
       `http://localhost:5000/api/payments/pending/${stu.value}`
     );
 
-    console.log("Previous Pending:", res.data.pendingAmount); // <-- Add here
-
     const pending = Number(res.data?.pendingAmount || 0);
     setPreviousPending(pending);
 
@@ -349,6 +349,7 @@ const handleStudentChange = async (selected) => {
     setPendingAmount(totalPayable - Number(discount || 0) - Number(amountPaid || 0));
   }
 };
+
 
 
 
@@ -541,7 +542,7 @@ const handleSubmit = async (e) => {
       0
     );
 
-  const submissionData = {
+const submissionData = {
   ...paymentData,
   previousPending,
   currentFee,
@@ -553,6 +554,7 @@ const handleSubmit = async (e) => {
   feeDetails: paymentData.feeDetails,
   paymentStatus,
 };
+
 
 
     if (isEditMode) {

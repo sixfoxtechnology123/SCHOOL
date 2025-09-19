@@ -73,7 +73,7 @@ const getStudentsByClassAndSection = async (req, res) => {
 // ================== Payment Routes ==================
 const getAllPayments = async (_req, res) => {
   try {
-    const payments = await Payment.find().lean(); // no populate, student is string now
+    const payments = await Payment.find().lean();
     res.json(payments);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch payments" });
@@ -124,7 +124,7 @@ const getFeeAmount = async (req, res) => {
   }
 };
 
-// ================== Helper: Populate fee amounts, studentId, and previous pending ==================
+// ================== Helper: Populate fee amounts, studentId, previous pending, and new fields ==================
 async function populateFeeAmounts(paymentBody) {
   if (!paymentBody.feeDetails || !Array.isArray(paymentBody.feeDetails)) return;
 
@@ -133,12 +133,11 @@ async function populateFeeAmounts(paymentBody) {
   if (paymentBody.student) {
     studentDoc = await Student.findOne({ studentId: paymentBody.student }).lean();
     if (!studentDoc) {
-      // fallback if student passed as ObjectId
       studentDoc = await Student.findById(paymentBody.student).lean();
     }
 
     if (studentDoc) {
-      paymentBody.student = studentDoc.studentId; // <-- store studentId string
+      paymentBody.student = studentDoc.studentId;
       paymentBody.studentName = `${studentDoc.firstName || ""} ${studentDoc.lastName || ""}`.trim();
       paymentBody.admitClass = studentDoc.admitClass;
       paymentBody.section = studentDoc.section;
@@ -178,6 +177,15 @@ async function populateFeeAmounts(paymentBody) {
     f.distance = f.distance || "";
     total += amount;
   }
+
+  // --- Current fee (before discounts) ---
+  paymentBody.currentFee = total;
+
+  // --- Apply discount if present ---
+  paymentBody.discount = paymentBody.discount ? Number(paymentBody.discount) : 0;
+
+  // --- Net payable amount after discount ---
+  paymentBody.netPayable = Math.max(total - paymentBody.discount, 0);
 
   // --- Amount paid ---
   if (!paymentBody.amountPaid) {
