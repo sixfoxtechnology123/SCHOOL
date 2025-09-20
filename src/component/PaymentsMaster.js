@@ -201,10 +201,14 @@ useEffect(() => {
         setPaymentData((prev) => ({
           ...prev,
           ...p,
-          date: p.date?.slice(0, 10),
+          date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "",
           user: p.user || localStorage.getItem("userId") || "admin",
         }));
-
+        
+        setPreviousPending(p.previousPending || 0);
+        setCurrentFee(p.currentFee || 0);
+        setDiscount(p.discount || 0);
+        setNetPayable(p.netPayable || 0);
         setPaymentStatus(p.paymentStatus || "Full Payment");
         setAmountPaid(p.amountPaid || p.totalAmount || 0);
         setPendingAmount(p.pendingAmount || 0);

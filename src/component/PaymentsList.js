@@ -365,14 +365,14 @@ const getStudentName = (studentId) => {
                         >
                           <FaPrint />
                         </button>
-                        <button
+                       {/*<button
                           onClick={() =>
                             navigate("/PaymentsMaster", { state: { paymentItem: p } })
                           }
                           className="text-blue-600 hover:text-blue-800"
                         >
                           <FaEdit />
-                        </button>
+                        </button>*/}
                         <button
                           onClick={() => deletePayment(p._id)}
                           className="text-red-600 hover:text-red-800"
