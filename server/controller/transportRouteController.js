@@ -41,6 +41,14 @@ exports.createRoute = async (req, res) => {
       return res.status(400).json({ error: "distance and vanCharge are required" });
     }
 
+    //  Check if distance already exists
+    const exists = await TransportRoute.findOne({ distance });
+    if (exists) {
+      return res
+        .status(400)
+        .json({ error: `This distance range already exists with amount ${exists.vanCharge}` });
+    }
+
     const routeId = await generateNextRouteId();
 
     const doc = new TransportRoute({

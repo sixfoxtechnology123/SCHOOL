@@ -68,10 +68,12 @@ const TransportRoutesMaster = () => {
         });
         navigate("/TransportRoutesList", { replace: true });
       }
-    } catch (err) {
+      } catch (err) {
       console.error("Save failed:", err);
-      alert("Error saving route");
+      const message = err.response?.data?.error || "Error saving route";
+      alert(message);
     }
+
   };
 
   return (

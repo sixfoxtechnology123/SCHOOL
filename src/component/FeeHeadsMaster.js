@@ -65,7 +65,8 @@ const FeeHeadsMaster = () => {
       }
     } catch (err) {
       console.error("Save failed:", err);
-      alert("Error saving Fee Head");
+      const message=err.response?.data?.error || "error saving ";
+      alert(message);
     }
   };
 

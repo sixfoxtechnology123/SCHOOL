@@ -42,7 +42,10 @@ exports.createFeeHead = async (req, res) => {
     if (!feeHeadName) {
       return res.status(400).json({ error: "feeHeadName is required" });
     }
-
+    const exists=await FeeHead.findOne({feeHeadName});
+    if(exists){
+      return res.status(400).json({error:`${exists.feeHeadName} already exists`})
+    }
     const feeHeadId = await generateNextFeeHeadId();
 
     const doc = new FeeHead({

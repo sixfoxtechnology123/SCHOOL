@@ -65,7 +65,8 @@ const AcademicSessionMaster = () => {
       navigate("/AcademicSessionList", { replace: true });
     } catch (err) {
       console.error("Save failed:", err);
-      alert("Error saving session");
+      const message=err.response?.data?.error || "error saving route";
+      alert(message);
     }
   };
 

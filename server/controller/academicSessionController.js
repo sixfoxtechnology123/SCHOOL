@@ -42,6 +42,12 @@ exports.createSession = async (req, res) => {
       return res.status(400).json({ error: "All fields are required" });
     }
 
+    const exists=await AcademicSession.findOne({year});
+    if(exists){
+      return res.status(400).json({error:"This session already Exists"});
+    }
+
+
     const sessionId = await generateNextSessionId();
 
     const doc = new AcademicSession({
