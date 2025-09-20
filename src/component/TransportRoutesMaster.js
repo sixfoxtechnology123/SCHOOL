@@ -9,8 +9,9 @@ const TransportRoutesMaster = () => {
     routeId: "",
     distance: "",
     vanCharge: "",
+    academicSession: "",
   });
-
+  const [academicSessions, setAcademicSessions] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -25,9 +26,27 @@ const TransportRoutesMaster = () => {
       console.error("Error getting Route ID:", err);
     }
   };
+  
+  const fetchAcademicSessions = async () => {
+  try {
+    const res = await axios.get("http://localhost:5000/api/fees/academics"); // or /api/academics if you changed route
+    setAcademicSessions(res.data || []);
+  } catch (err) {
+    console.error("Error fetching academic sessions:", err);
+    setAcademicSessions([]);
+  }
+};
 
-  useEffect(() => {
+
+useEffect(() => {
+  const init = async () => {
+    const savedSession = localStorage.getItem("selectedAcademicSession");
+
+    // Always fetch sessions first so dropdown has options
+    await fetchAcademicSessions();
+
     if (location.state?.routeItem) {
+      // Edit mode
       const r = location.state.routeItem;
       setIsEditMode(true);
       setRouteData({
@@ -35,17 +54,32 @@ const TransportRoutesMaster = () => {
         routeId: r.routeId || "",
         distance: r.distance || "",
         vanCharge: r.vanCharge || "",
+        academicSession: r.academicSession || savedSession || "",
       });
     } else {
-      fetchNextRouteId();
+      // New mode
+      await fetchNextRouteId();
       setIsEditMode(false);
-    }
-  }, [location.state]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setRouteData({ ...routeData, [name]: value });
+      if (savedSession) {
+        setRouteData((prev) => ({ ...prev, academicSession: savedSession }));
+      }
+    }
   };
+
+  init();
+}, [location.state]);
+
+
+ const handleChange = (e) => {
+  const { name, value } = e.target;
+  setRouteData((prev) => ({ ...prev, [name]: value }));
+
+  if (name === "academicSession") {
+    localStorage.setItem("selectedAcademicSession", value); // save default
+  }
+};
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,6 +128,25 @@ const TransportRoutesMaster = () => {
               readOnly
               className="w-full border border-gray-300 p-1 rounded bg-gray-100"
             />
+          </div>
+
+          {/* Academic Session */}
+          <div>
+            <label className="block font-medium">Academic Session</label>
+            <select
+              name="academicSession"
+              value={routeData.academicSession}
+              onChange={handleChange}
+              className="w-full border border-gray-300 p-1 rounded"
+              required
+            >
+              <option value="">-- Select Academic Session --</option>
+              {academicSessions.map((session) => (
+                <option key={session._id} value={session.year}>
+                  {session.year}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Distance (Dropdown) */}

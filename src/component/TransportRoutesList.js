@@ -61,6 +61,7 @@ const TransportRoutesList = () => {
         <thead className="bg-green-100 text-sm">
           <tr>
             <th className="border border-green-500 px-2 py-1">Route ID</th>
+            <th className="border border-green-500 px-2 py-1">Session</th>
             <th className="border border-green-500 px-2 py-1">Distance (KM)</th>
             <th className="border border-green-500 px-2 py-1">Van Charge</th>
             <th className="border border-green-500 px-2 py-1">Action</th>
@@ -71,6 +72,7 @@ const TransportRoutesList = () => {
             routes.map((r) => (
               <tr key={r._id} className="hover:bg-gray-100 transition">
                 <td className="border border-green-500 px-2 py-1">{r.routeId}</td>
+                <td className="border border-green-500 px-2 py-1">{r.academicSession}</td>
                 <td className="border border-green-500 px-2 py-1">{r.distance}</td>
                 <td className="border border-green-500 px-2 py-1">{r.vanCharge}</td>
                 <td className="border border-green-500 px-2 py-1 text-center">
