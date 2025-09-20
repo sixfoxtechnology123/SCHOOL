@@ -128,6 +128,7 @@ const FeeStructureList = () => {
             <thead className="bg-green-100 text-sm">
               <tr>
                 <th className="border border-green-500 px-2 py-1">FeeStruct ID</th>
+                <th className="border border-green-500 px-2 py-1">Session</th>
                 <th className="border border-green-500 px-2 py-1">Class</th>
                 <th className="border border-green-500 px-2 py-1">Fee Head</th>
                 <th className="border border-green-500 px-2 py-1">Amount</th>
@@ -140,6 +141,7 @@ const FeeStructureList = () => {
                 filteredFees.map(fee => (
                   <tr key={fee._id} className="hover:bg-gray-100 transition">
                     <td className="border border-green-500 px-2 py-1">{fee.feeStructId}</td>
+                    <td className="border border-green-500 px-2 py-1">{fee.academicSession}</td>
                     <td className="border border-green-500 px-2 py-1">{getClassName(fee.classId)}</td>
                     <td className="border border-green-500 px-2 py-1">{getFeeHeadName(fee.feeHeadId)}</td>
                     <td className="border border-green-500 px-2 py-1">{fee.amount}</td>

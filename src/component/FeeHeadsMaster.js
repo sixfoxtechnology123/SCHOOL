@@ -103,6 +103,7 @@ const FeeHeadsMaster = () => {
               <option value="">--Select--</option>
               {[
                 "Tuition Fee",
+                "Transport",
                 "Admission Fee",
                 "Session Fee",
                 "Laboratory Fee",

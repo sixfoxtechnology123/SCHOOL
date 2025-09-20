@@ -7,6 +7,7 @@ const feeStructureSchema = new mongoose.Schema(
     feeHeadId: { type: String, required: true, ref: "FeeHead" },
     routeId: { type: String, ref: "TransportRoute" },
     amount: { type: Number, required: true },
+    academicSession: { type: String, required: true },
   },
   {
     timestamps: false,

@@ -1,5 +1,6 @@
 const FeeStructure = require("../models/FeeStructure");
 const TransportRoute = require("../models/TransportRoute");
+const AcademicSession = require("../models/AcademicSession");
 
 const PREFIX = "FEES";
 const PAD = 3;
@@ -57,12 +58,12 @@ exports.getFeeAmount = async (req, res) => {
 // Create Fee Structure
 exports.createFeeStructure = async (req, res) => {
   try {
-    const { classId, feeHeadId, routeId, amount } = req.body;
-    if (!classId || !feeHeadId || !amount)
+    const { classId, feeHeadId, routeId, amount,academicSession } = req.body;
+    if (!classId || !feeHeadId || !amount || !academicSession)
       return res.status(400).json({ error: "All fields are required" });
 
     const feeStructId = await generateNextFeeStructId();
-    const doc = new FeeStructure({ feeStructId, classId, feeHeadId, routeId, amount });
+    const doc = new FeeStructure({ feeStructId, classId, feeHeadId, routeId, amount, academicSession });
     await doc.save();
     res.status(201).json(doc);
   } catch (err) {
@@ -120,3 +121,13 @@ exports.getAllTransportRoutes = async (_req, res) => {
   }
 };
 
+// Get all Academic Sessions
+exports.getAllAcademicSessions = async (_req, res) => {
+  try {
+    const sessions = await AcademicSession.find().lean();
+    res.json(sessions);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch academic sessions" });
+  }
+};

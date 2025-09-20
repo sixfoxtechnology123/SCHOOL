@@ -626,7 +626,7 @@ const submissionData = {
 
   return (
     <div className="min-h-screen bg-zinc-300 flex items-center justify-center">
-      <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-6xl">
+      <div className="bg-white shadow-lg rounded-lg p-4 w-full m-5">
         <h2 className="text-2xl font-bold mb-6 text-center text-black">
           {isEditMode ? "Update Receipt" : "New Receipt"}
         </h2>

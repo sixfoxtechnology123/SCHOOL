@@ -11,8 +11,10 @@ const FeeStructureMaster = () => {
     feeHeadId: "",
     routeId: "",
     amount: "",
+    academicSession: "",
   });
 
+  const [academicSessions, setAcademicSessions] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [classes, setClasses] = useState([]);
   const [feeHeads, setFeeHeads] = useState([]);
@@ -42,9 +44,11 @@ const FeeStructureMaster = () => {
   // Fetch classes and fee heads
   const fetchDropdownData = async () => {
     try {
-      const [clsRes, fhRes] = await Promise.all([
+      const [clsRes, fhRes, acadRes] = await Promise.all([
         axios.get("http://localhost:5000/api/classes"),
         axios.get("http://localhost:5000/api/feeheads"),
+        axios.get("http://localhost:5000/api/fees/academics")
+
       ]);
       // Remove duplicate class names (keep only first occurrence)
       const uniqueClassesMap = new Map();
@@ -56,6 +60,7 @@ const FeeStructureMaster = () => {
       const uniqueClasses = Array.from(uniqueClassesMap.values());
       setClasses(sortClasses(uniqueClasses));
       setFeeHeads(fhRes.data || []);
+      setAcademicSessions(acadRes.data || []);
     } catch (err) {
       console.error(err);
     }
@@ -100,45 +105,51 @@ const FeeStructureMaster = () => {
     }
   };
 
-  // Initialize
-  useEffect(() => {
-    const init = async () => {
-      await fetchDropdownData();
+useEffect(() => {
+  const init = async () => {
+    await fetchDropdownData();
 
-      if (feeItem) {
-        setIsEditMode(true);
-        const selectedFeeHead = feeItem.feeHeadId
-          ? (await axios.get("http://localhost:5000/api/feeheads")).data.find(
-              fh => fh.feeHeadId === feeItem.feeHeadId
-            )
-          : null;
+    // Load saved session from localStorage
+    const savedSession = localStorage.getItem("selectedAcademicSession");
+    if (savedSession) {
+      setFeeData(prev => ({ ...prev, academicSession: savedSession }));
+    }
 
-        let routeList = [];
-        if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
-          routeList = await fetchRoutes();
-        }
+    if (feeItem) {
+      setIsEditMode(true);
+      const selectedFeeHead = feeItem.feeHeadId
+        ? (await axios.get("http://localhost:5000/api/feeheads")).data.find(
+            fh => fh.feeHeadId === feeItem.feeHeadId
+          )
+        : null;
 
-        setFeeData({
-          _id: feeItem._id,
-          feeStructId: feeItem.feeStructId,
-          classId: feeItem.classId,
-          feeHeadId: feeItem.feeHeadId,
-          routeId: feeItem.routeId || "",
-          amount:
-            feeItem.amount ||
-            (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport"
-              ? routeList.find(r => r.routeId === feeItem.routeId)?.vanCharge || ''
-              : 0),
-        });
-      } else {
-        fetchNextId();
+      let routeList = [];
+      if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
+        routeList = await fetchRoutes();
       }
 
-      setLoading(false);
-    };
-    init();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      setFeeData({
+        _id: feeItem._id,
+        feeStructId: feeItem.feeStructId,
+        classId: feeItem.classId,
+        feeHeadId: feeItem.feeHeadId,
+        routeId: feeItem.routeId || "",
+        amount:
+          feeItem.amount ||
+          (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport"
+            ? routeList.find(r => r.routeId === feeItem.routeId)?.vanCharge || ''
+            : 0),
+        academicSession: savedSession || feeItem.academicSession || ""
+      });
+    } else {
+      fetchNextId();
+    }
+
+    setLoading(false);
+  };
+  init();
+}, []);
+
 
   // Show/hide transport dropdown
   useEffect(() => {
@@ -166,24 +177,34 @@ const FeeStructureMaster = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feeData.classId, feeData.feeHeadId, feeData.routeId, routes]);
 
+
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFeeData(prev => ({ ...prev, [name]: value }));
-  };
+  const { name, value } = e.target;
+  setFeeData(prev => ({ ...prev, [name]: value }));
+
+  if (name === "academicSession") {
+    localStorage.setItem("selectedAcademicSession", value);
+  }
+};
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    try {
-      // Validation for duplicate class + feeHead + route (range)
+      try {
+      // Fetch all fee structures
       const allFees = (await axios.get("http://localhost:5000/api/fees")).data || [];
+
+      // Validation for duplicate: same class + feeHead + route + academicSession
       const duplicate = allFees.find(f =>
         f.classId === feeData.classId &&
         f.feeHeadId === feeData.feeHeadId &&
         (f.routeId || '') === (feeData.routeId || '') &&
-        (!isEditMode || f._id !== feeData._id)
+        f.academicSession === feeData.academicSession &&
+        (!isEditMode || f._id !== feeData._id) // exclude current record when editing
       );
+
       if (duplicate) {
-        alert("This Class + Fee Head + Distance combination already exists!");
+        alert("This Class + Fee Head + Route + Academic Session combination already exists!");
         return;
       }
 
@@ -221,6 +242,25 @@ const FeeStructureMaster = () => {
               className="w-full border border-gray-300 p-1 rounded bg-gray-100"
             />
           </div>
+
+          <div>
+            <label className="block font-medium">Academic Session</label>
+            <select
+              name="academicSession"
+              value={feeData.academicSession}
+              onChange={handleChange}
+              className="w-full border border-gray-300 p-1 rounded"
+              required
+            >
+              <option value="">--Select Academic Session--</option>
+              {academicSessions.map(session => (
+                <option key={session._id} value={session.year}>{session.year}</option>
+              ))}
+            </select>
+          </div>
+
+
+
 
           <div>
             <label className="block font-medium">Class</label>
