@@ -88,236 +88,195 @@ const StudentsList = () => {
     return id.includes(searchTermLower) || name.includes(searchTermLower);
   });
 
-// pdf function start from here
-      const generatePDF = async (student) => {
-        if (!student) return;
+// --- PDF Function ---
+const generatePDF = async (student) => {
+  if (!student) return;
 
-        const doc = new jsPDF("p", "pt", "a4");
+  const doc = new jsPDF("p", "pt", "a4");
 
+  const res = await axios.get(`http://localhost:5000/api/students/${student._id}/full`);
+  const { childInfo, idCardInfo, udiseInfo } = res.data;
 
-          const res = await axios.get(`http://localhost:5000/api/students/${student._id}/full`);
-          const { childInfo, idCardInfo, udiseInfo } = res.data;
+  console.log("Child Info:", childInfo);        // basic student data
+  console.log("ID Card Info:", idCardInfo);     // ID card data
+  console.log("UDISE Info:", udiseInfo);        // UDISE data
 
-          console.log("Child Info:", childInfo);        // should show basic student data
-          console.log("ID Card Info:", idCardInfo);     // should show ID card data
-          console.log("UDISE Info:", udiseInfo);        // <-- THIS SHOULD SHOW UDISE DATA FROM DB
+  const getImageSrc = (photoObj) => {
+    if (!photoObj || !photoObj.data || !photoObj.contentType) return "";
+    let base64String = "";
+    if (photoObj.data && photoObj.data.buffer) {
+      const binary = new Uint8Array(photoObj.data.buffer);
+      base64String = btoa(String.fromCharCode(...binary));
+    } else if (photoObj.data && typeof photoObj.data === "string") {
+      base64String = photoObj.data.replace(/^data:.*;base64,/, "");
+    }
+    return `data:${photoObj.contentType};base64,${base64String}`;
+  };
 
-          // Optional: check if udiseInfo really has the fields you expect
-          if (!udiseInfo || Object.keys(udiseInfo).length === 0) {
-            console.warn("UDISE data is empty! Check the database and studentId matching.");
-          }
-      
-        // --- Helper Functions ---
-        const getImageSrc = (photoObj) => {
-          if (!photoObj || !photoObj.data || !photoObj.contentType) return "";
-          let base64String = "";
-          if (photoObj.data && photoObj.data.buffer) {
-            const binary = new Uint8Array(photoObj.data.buffer);
-            base64String = btoa(String.fromCharCode(...binary));
-          } else if (photoObj.data && typeof photoObj.data === "string") {
-            base64String = photoObj.data.replace(/^data:.*;base64,/, "");
-          }
-          return `data:${photoObj.contentType};base64,${base64String}`;
-        };
+  const twoColRow = (label1, value1, label2, value2) => `
+    <div style="display:flex; padding:2px 0;">
+      <div style="flex:1; display:flex;">
+        <div style="min-width:160px;"><strong>${label1}</strong></div>
+        <div>: ${value1 || ""}</div>
+      </div>
+      ${label2 ? `<div style="flex:1; display:flex;">
+        <div style="min-width:150px;"><strong>${label2}</strong></div>
+        <div>: ${value2 || ""}</div>
+      </div>` : ""}
+    </div>
+  `;
 
-        const twoColRow = (label1, value1, label2, value2) => `
-          <div style="display:flex; padding:2px 0;">
-            <div style="flex:1; display:flex;">
-              <div style="min-width:160px;"><strong>${label1}</strong></div>
-              <div>: ${value1 || ""}</div>
-            </div>
-            ${label2 ? `<div style="flex:1; display:flex;">
-              <div style="min-width:150px;"><strong>${label2}</strong></div>
-              <div>: ${value2 || ""}</div>
-            </div>` : ""}
+  const formatAddressBlock = (title, addr) => {
+    if (!addr) return "";
+    return `
+      <div style="font-weight:bold; color:#0ea5e9; text-align:left; margin:0 0 6px 0; font-size:9pt; padding:4px;">
+        ${title}
+      </div>
+      <div style="padding:0 10px 5px 10px; border:1px solid #000;">
+        ${twoColRow("Vill", addr.vill, "PO", addr.po)}
+        ${twoColRow("Block", addr.block, "PS", addr.ps)}
+        ${twoColRow("Dist", addr.dist, "PIN", addr.pin)}
+      </div>
+    `;
+  };
+
+  const getName = (s) => `${s.firstName || ""} ${s.lastName || ""}`;
+  const getClass = (s) => s.admitClass || "";
+  const formatDOB = (dob) => (dob ? new Date(dob).toLocaleDateString() : "");
+
+  // --- Photos HTML ---
+  const imagesHTML = `
+    <div style="display:flex; justify-content:center; gap:40px; margin:5px 0; text-align:center;">
+      ${student.fatherPhoto ? `
+        <div>
+          <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; border:1px solid #000;"/>
+          <strong>Father Photo</strong>
+        </div>` : ""}
+      ${student.motherPhoto ? `
+        <div>
+          <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; border:1px solid #000;"/>
+          <strong>Mother Photo</strong>
+        </div>` : ""}
+      ${student.childPhoto ? `
+        <div>
+          <img src="${getImageSrc(student.childPhoto)}" style="height:100px; border:1px solid #000;"/>
+          <strong>Child Photo</strong>
+        </div>` : ""}
+    </div>
+  `;
+
+  // --- Admission Page (Page 1) ---
+  const admissionContainer = document.createElement("div");
+  admissionContainer.style.width = "800px";
+  admissionContainer.style.padding = "20px";
+  admissionContainer.style.fontFamily = "Arial, sans-serif";
+  admissionContainer.style.fontSize = "12px";
+  admissionContainer.style.color = "#000";
+  admissionContainer.style.background = "#fff";
+
+  admissionContainer.innerHTML = `
+    <div style="border:1px solid #000; padding:0 15px 15px 15px; position:relative; z-index:1;">
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin:0 0 12px 0;">
+        <img src="/logo1.jpg" style="height:60px;" />
+        <div style="text-align:center; flex:1; margin:0 20px;">
+          <h2 style="margin:2px 0 0 0; font-size:18pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
+          <p style="margin:2px 0; color:#004080;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
+          <h3 style="margin:2px 0 0 0; font-size:14pt; color:#1e40af;">APPLICATION FOR ADMISSION</h3>
+        </div>
+        <img src="/logo1.jpg" style="height:60px;" />
+      </div>
+      <hr style="border:1px solid #004080;"/>
+      <!-- Photos -->
+      <div class="pdf-section-header"
+        style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
+        Photos
+      </div>
+      ${imagesHTML}
+
+      <!-- Child Information -->
+      <div class="pdf-section-header"
+        style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
+        A. Child Information
+      </div>
+      <div style="padding:0 10px 5px 10px; border:1px solid #000;">
+        ${twoColRow("Student ID", student.studentId, "Name", getName(student))}
+        ${twoColRow("Class", getClass(student), "Section", student.section)}
+        ${twoColRow("Roll No", student.rollNo, "Gender", student.gender)}
+        ${twoColRow("Social Cast", student.socialCaste, "DOB", formatDOB(student.dob))}
+        ${twoColRow("Height", student.height, "Weight", student.weight)}
+        ${twoColRow("Blood Group", student.bloodGroup, "Nationality", student.nationality)}
+        ${twoColRow("Languages Known", (student.languages || []).join(", "), "Transport Required", student.transportRequired)}
+        ${twoColRow("Distance from School(KM)", student.distanceFromSchool, "Emergency Person", student.emergencyPerson)}
+        ${twoColRow("Emergency Contact", student.emergencyContact, "", "")}
+      </div>
+
+      <!-- Permanent Address -->
+      ${formatAddressBlock("Permanent Address", student.permanentAddress)}
+
+      <!-- Current Address -->
+      ${formatAddressBlock("Current Address", student.currentAddress)}
+
+      <!-- Family Information -->
+      <div class="pdf-section-header"
+        style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
+        B. Family Information
+      </div>
+      <div style="padding:0 10px 5px 10px; border:1px solid #000;">
+        ${twoColRow("Father", student.fatherName, "Occupation", student.fatherOccupation)}
+        ${twoColRow("Father's Phone", student.fatherPhone, "Father's Email", student.fatherEmail)}
+        ${twoColRow("Father's Nationality", student.fatherNationality, "Father's Qualification", student.fatherQualification)}
+        ${twoColRow("Mother", student.motherName, "Occupation", student.motherOccupation)}
+        ${twoColRow("Mother's Phone", student.motherPhone, "Mother's Email", student.motherEmail)}
+        ${twoColRow("Mother's Nationality", student.motherNationality, "Mother's Qualification", student.motherQualification)}
+        ${twoColRow("No Of Brothers", student.brothers, "No Of Sisters", student.sisters)}
+        ${twoColRow("BPL", student.bpl, "BPL No", student.bplNo)}
+        ${twoColRow("Family Income", student.familyIncome, "", "")}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(admissionContainer);
+  let canvas = await html2canvas(admissionContainer, { scale: 2 });
+  let imgData = canvas.toDataURL("image/png");
+  let imgProps = doc.getImageProperties(imgData);
+  let pdfWidth = doc.internal.pageSize.getWidth();
+  let pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+  doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+  document.body.removeChild(admissionContainer);
+
+// --- Second Page: Combine ID Card + UDISE (only if they exist) ---
+const secondPageSections = [];
+
+if (idCardInfo && Object.keys(idCardInfo).length > 0) {
+  const idCardHtml = `
+    <div style="border:1px solid #000; padding:10px; margin-bottom:20px;">
+      <h2 style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">ID Card</h2>
+      <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+        <div style="flex:1; padding-right:10px;">
+          <div style="border:1px solid #000; padding:10px;">
+            ${twoColRow("Student ID", idCardInfo.studentId, "Name", idCardInfo.studentName)}
+            ${twoColRow("Class", idCardInfo.className, "DOB", formatDOB(idCardInfo.dob))}
+            ${twoColRow("Father", idCardInfo.fatherName, "Mother", idCardInfo.motherName)}
+            ${twoColRow("Contact No", idCardInfo.contactNo || idCardInfo.motherPhone || "", "Whatsapp No", idCardInfo.whatsappNo || "")}
           </div>
-        `;
-
-
-        const formatAddressBlock = (title, addr) => {
-          if (!addr) return "";
-          return `
-            <div style="font-weight:bold; color:#0ea5e9; text-align:left; margin:0 0 6px 0; font-size:9pt; padding:4px;">
-              ${title}
-            </div>
-            <div style="padding:0 10px 5px 10px; border:1px solid #000;">
-              ${twoColRow("Vill", addr.vill, "PO", addr.po)}
-              ${twoColRow("Block", addr.block, "PS", addr.ps)}
-              ${twoColRow("Dist", addr.dist, "PIN", addr.pin)}
-            </div>
-          `;
-        };
-
-        const getName = (s) => `${s.firstName || ""} ${s.lastName || ""}`;
-        const getClass = (s) => s.admitClass || "";
-        const formatDOB = (dob) => dob ? new Date(dob).toLocaleDateString() : "";
-
-        // --- Photos HTML ---
-        const imagesHTML = `
-          <div style="display:flex; justify-content:center; gap:40px; margin:5px 0; text-align:center;">
-            ${student.fatherPhoto ? `
-              <div>
-                <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; border:1px solid #000;"/>
-                <strong>Father Photo</strong>
-              </div>` : ""}
-            ${student.motherPhoto ? `
-              <div>
-                <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; border:1px solid #000;"/>
-                <strong>Mother Photo</strong>
-              </div>` : ""}
-            ${student.childPhoto ? `
-              <div>
-                <img src="${getImageSrc(student.childPhoto)}" style="height:100px; border:1px solid #000;"/>
-                <strong>Child Photo</strong>
-              </div>` : ""}
-          </div>
-        `;
-
-        // --- Admission Page ---
-        const admissionContainer = document.createElement("div");
-        admissionContainer.style.width = "800px";
-        admissionContainer.style.padding = "20px";
-        admissionContainer.style.fontFamily = "Arial, sans-serif";
-        admissionContainer.style.fontSize = "12px";
-        admissionContainer.style.color = "#000";
-        admissionContainer.style.background = "#fff";
-
-        admissionContainer.innerHTML = `
-      <div style="border:1px solid #000; padding:0 15px 15px 15px; position:relative; z-index:1;">
-        <!-- Header -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin:0 0 12px 0;">
-          <img src="/logo1.jpg" style="height:60px;" />
-          <div style="text-align:center; flex:1; margin:0 20px;">
-            <h2 style="margin:2px 0 0 0; font-size:18pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
-            <p style="margin:2px 0; color:#004080;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
-            <h3 style="margin:2px 0 0 0; font-size:14pt; color:#1e40af;">APPLICATION FOR ADMISSION</h3>
-          </div>
-          <img src="/logo1.jpg" style="height:60px;" />
+          ${formatAddressBlock("Address", idCardInfo.permanentAddress)}
         </div>
-        <hr style="border:1px solid #004080;"/>
-
-        <!-- Photos -->
-        <div class="pdf-section-header"
-          style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
-          Photos
-        </div>
-        ${imagesHTML}
-
-        <!-- Child Information -->
-        <div class="pdf-section-header"
-          style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
-          A. Child Information
-        </div>
-        <div style="padding:0 10px 5px 10px; border:1px solid #000;">
-          ${twoColRow("Student ID", student.studentId, "Name", getName(student))}
-          ${twoColRow("Class", getClass(student), "Section", student.section)}
-          ${twoColRow("Roll No", student.rollNo, "Gender", student.gender)}
-          ${twoColRow("Social Cast", student.socialCaste, "DOB", formatDOB(student.dob))}
-          ${twoColRow("Height", student.height, "Weight", student.weight)}
-          ${twoColRow("Blood Group", student.bloodGroup, "Nationality", student.nationality)}
-          ${twoColRow("Languages Known", (student.languages || []).join(", "), "Transport Required", student.transportRequired)}
-          ${twoColRow("Distance from School(KM)", student.distanceFromSchool, "Emergency Person", student.emergencyPerson)}
-          ${twoColRow("Emergency Contact", student.emergencyContact, "", "")}
-        </div>
-
-        <!-- Permanent Address -->
-        ${formatAddressBlock("Permanent Address", student.permanentAddress)}
-
-        <!-- Current Address -->
-        ${formatAddressBlock("Current Address", student.currentAddress)}
-
-        <!-- Family Information -->
-        <div class="pdf-section-header"
-          style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
-          B. Family Information
-        </div>
-        <div style="padding:0 10px 5px 10px; border:1px solid #000;">
-          ${twoColRow("Father", student.fatherName, "Occupation", student.fatherOccupation)}
-          ${twoColRow("Father's Phone", student.fatherPhone, "Father's Email", student.fatherEmail)}
-          ${twoColRow("Father's Nationality", student.fatherNationality, "Father's Qualification", student.fatherQualification)}
-
-          <div style="margin-bottom:8px;"></div>
-          
-
-          ${twoColRow("Mother", student.motherName, "Occupation", student.motherOccupation)}
-          ${twoColRow("Mother's Phone", student.motherPhone, "Mother's Email", student.motherEmail)}
-          ${twoColRow("Mother's Nationality", student.motherNationality, "Mother's Qualification", student.motherQualification)}
-          <div style="margin-bottom:8px;"></div>
-          ${twoColRow("No Of Brothers", student.brothers, "No Of Brothers", student.sisters)}
-
-          ${twoColRow("BPL", student.bpl, "BPL No", student.bplNo)}
-          ${twoColRow("Family Income", student.familyIncome, "", "")}
+        <div style="width:120px;">
+          <img src="${getImageSrc(idCardInfo.photo)}" style="width:100%; border:1px solid #000;" />
         </div>
       </div>
-      `;
+    </div>
+  `;
+  secondPageSections.push(idCardHtml);
+}
 
-        document.body.appendChild(admissionContainer);
-        let canvas = await html2canvas(admissionContainer, { scale: 2 });
-        let imgData = canvas.toDataURL("image/png");
-        let imgProps = doc.getImageProperties(imgData);
-        let pdfWidth = doc.internal.pageSize.getWidth();
-        let pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-        document.body.removeChild(admissionContainer);
-
-        // --- ID Card Page ---
-         if (idCardInfo && Object.keys(idCardInfo).length > 0) {
-        const idCardContainer = document.createElement("div");
-        idCardContainer.style.width = "800px";
-        idCardContainer.style.padding = "20px";
-        idCardContainer.style.fontFamily = "Arial, sans-serif";
-        idCardContainer.style.fontSize = "12px";
-        idCardContainer.style.color = "#000";
-        idCardContainer.style.background = "#fff";
-
-      idCardContainer.innerHTML = `
-      <div style="border:1px solid #000; padding:10px;">
-        <h2 style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">ID Card</h2>
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-          <div style="flex:1; padding-right:10px;">
-            <div style="border:1px solid #000; padding:10px;"> <!-- Only child details border -->
-              ${twoColRow("Student ID", idCardInfo.studentId, "Name", idCardInfo.studentName)}
-              ${twoColRow("Class", idCardInfo.className, "DOB", formatDOB(idCardInfo.dob))}
-              ${twoColRow("Father", idCardInfo.fatherName, "Mother", idCardInfo.motherName)}
-              ${twoColRow("Contact No", idCardInfo.contactNo || idCardInfo.motherPhone || "", "Whatsapp No", idCardInfo.whatsappNo || "")}
-            </div>
-            ${formatAddressBlock("Address", idCardInfo.permanentAddress)}
-          </div>
-          <div style="width:120px;">
-            <img src="${getImageSrc(idCardInfo.photo)}" style="width:100%; border:1px solid #000;" />
-          </div>
-        </div>
-      </div>
-      `;
-
-
-
-        document.body.appendChild(idCardContainer);
-        canvas = await html2canvas(idCardContainer, { scale: 2 });
-        imgData = canvas.toDataURL("image/png");
-        imgProps = doc.getImageProperties(imgData);
-        pdfWidth = doc.internal.pageSize.getWidth();
-        pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        doc.addPage();
-        doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-        document.body.removeChild(idCardContainer);
-         }
-
-      // --- UDISE Form Page ---
-       if (udiseInfo && Object.keys(udiseInfo).length > 0) {
-      const udiseContainer = document.createElement("div");
-      udiseContainer.style.width = "800px";
-      udiseContainer.style.padding = "20px";
-      udiseContainer.style.fontFamily = "Arial, sans-serif";
-      udiseContainer.style.fontSize = "12px";
-      udiseContainer.style.color = "#000";
-      udiseContainer.style.background = "#fff";
-
-      udiseContainer.innerHTML = `
-      <div style="border:1px solid #000; padding:10px;">
-        <h2 style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">UDISE Form</h2>
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-          <div style="flex:1; padding-right:10px;">
+if (udiseInfo && Object.keys(udiseInfo).length > 0) {
+  const udiseHtml = `
+    <div style="border:1px solid #000; padding:10px;">
+      <h2 style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">UDISE Form</h2>
+      <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+        <div style="flex:1; padding-right:10px;">
           <div style="border:1px solid #000; padding:10px;">
             ${twoColRow("Student ID", udiseInfo.studentId || "", "Name", udiseInfo.studentName || "")}
             ${twoColRow("Gender", udiseInfo.gender || "", "Height", udiseInfo.height || "")}
@@ -330,32 +289,47 @@ const StudentsList = () => {
             ${twoColRow("EWS", udiseInfo.ews || "", "Annual Income", udiseInfo.familyIncome || "")}
             ${twoColRow("Contact No", udiseInfo.contactNo || "", "CWSN", udiseInfo.cwsn || "")}
             ${twoColRow("Social Caste", udiseInfo.socialCaste || "", "Panchayat", udiseInfo.panchayat || "")}
-
-            </div>
-            ${formatAddressBlock("Address", udiseInfo.currentAddress || {})}
-          
           </div>
-          <div style="width:120px;">
-            <img src="${getImageSrc(udiseInfo.photo)}" style="width:100%; border:1px solid #000;" />
-          </div>
+          ${formatAddressBlock("Address", udiseInfo.currentAddress || {})}
+        </div>
+        <div style="width:120px;">
+          <img src="${getImageSrc(udiseInfo.photo)}" style="width:100%; border:1px solid #000;" />
         </div>
       </div>
-      `;
+    </div>
+  `;
+  secondPageSections.push(udiseHtml);
+}
 
-      document.body.appendChild(udiseContainer);
-      canvas = await html2canvas(udiseContainer, { scale: 2 });
-      imgData = canvas.toDataURL("image/png");
-      imgProps = doc.getImageProperties(imgData);
-      pdfWidth = doc.internal.pageSize.getWidth();
-      pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      doc.addPage();
-      doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      document.body.removeChild(udiseContainer);
-       }
+// Add second page only if there is at least one section
+if (secondPageSections.length > 0) {
+  const combinedContainer = document.createElement("div");
+  combinedContainer.style.width = "800px";
+  combinedContainer.style.padding = "20px";
+  combinedContainer.style.fontFamily = "Arial, sans-serif";
+  combinedContainer.style.fontSize = "12px";
+  combinedContainer.style.color = "#000";
+  combinedContainer.style.background = "#fff";
+  combinedContainer.innerHTML = secondPageSections.join(""); // combine sections
 
-        // --- Save PDF ---
-        doc.save(`${student.studentId || "student"}.pdf`);
-      };
+  document.body.appendChild(combinedContainer);
+
+  const canvas = await html2canvas(combinedContainer, { scale: 2 });
+  const imgData = canvas.toDataURL("image/png");
+  const imgProps = doc.getImageProperties(imgData);
+  const pdfWidth = doc.internal.pageSize.getWidth();
+  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+  doc.addPage();
+  doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+  document.body.removeChild(combinedContainer);
+}
+
+
+  // --- Save PDF ---
+  doc.save(`${student.studentId || "student"}.pdf`);
+};
 
    return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -435,13 +409,13 @@ const StudentsList = () => {
                         >
                           <FaPrint />
                         </button>
-                        <button
+                        {/* <button
                           onClick={() => generatePDF(stu)}
                           className="text-purple-600 hover:text-purple-800"
                           title="View PDF"
                         >
                           <FaEye />
-                        </button>
+                        </button> */}
                       </div>
                     </td>
                   </tr>
