@@ -10,7 +10,9 @@ const StudentMaster = () => {
   const [sameAddress, setSameAddress] = useState(false);
   const [studentData, setStudentData] = useState({
     studentId: "",
+    academicSession: "",
     admitClass: "",
+    transferFrom: "", 
     section: "",
     rollNo: "",
     firstName: "",
@@ -55,6 +57,18 @@ const StudentMaster = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const studentItem = location.state?.studentItem;
+  const [academicSessions, setAcademicSessions] = useState([]);
+
+    const fetchAcademicSessions = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/fees/academics");
+        setAcademicSessions(res.data || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+
 
   // Fetch students for roll number generation
   const fetchStudents = async () => {
@@ -98,23 +112,40 @@ const StudentMaster = () => {
     }
   };
 
-  useEffect(() => {
-    fetchClassList();
-    fetchStudents();
+useEffect(() => {
+  fetchClassList();
+  fetchStudents();
+  fetchAcademicSessions();
 
-    if (studentItem) {
-      const normalizedLanguages = (studentItem.languages || []).map((l) => l.toUpperCase());
-      setStudentData({ ...studentItem, languages: normalizedLanguages });
-      setIsEditMode(true);
+  if (studentItem) {
+    const normalizedLanguages = (studentItem.languages || []).map((l) => l.toUpperCase());
+    const savedSession = localStorage.getItem("selectedAcademicSession") || studentItem.academicSession || "";
 
-      if (studentItem.admitClass) {
-        fetchSections(studentItem.admitClass);
-      }
-    } else {
-      fetchNextStudentId();
+    // Set student data with proper handling for transferFrom
+    setStudentData({
+      ...studentItem,
+      languages: normalizedLanguages,
+      academicSession: savedSession,
+      transferFrom: studentItem.admitClass === "Class - I" ? "" : studentItem.transferFrom || "",
+    });
+
+    setIsEditMode(true);
+
+    if (studentItem.admitClass) {
+      fetchSections(studentItem.admitClass);
     }
-    // eslint-disable-next-line
-  }, []);
+  } else {
+    fetchNextStudentId();
+  }
+
+  const savedSession = localStorage.getItem("selectedAcademicSession") || "";
+  if (savedSession) {
+    setStudentData(prev => ({ ...prev, academicSession: savedSession }));
+  }
+
+  // eslint-disable-next-line
+}, []);
+
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -247,8 +278,25 @@ const StudentMaster = () => {
                   Student ID
                   <input name="studentId" value={studentData.studentId} readOnly className="border bg-gray-200 p-0 rounded w-full" />
                 </label>
+             <label>
+                  Academic Session
+                  <select
+                    name="academicSession"
+                    value={studentData.academicSession}
+                    onChange={handleChange}
+                    required
+                  >
+                    <option value="">--Select Academic Session--</option>
+                    {academicSessions.map((session) => (
+                      <option key={session._id} value={session.year}>
+                        {session.year}
+                      </option>
+                    ))}
+                  </select>
+                </label>
 
-              {/* Admit Class */}
+
+           {/* Admit Class */}
               <label>
                 Admit Class
                 <select
@@ -256,25 +304,57 @@ const StudentMaster = () => {
                   value={studentData.admitClass}
                   onChange={async (e) => {
                     const selectedClass = e.target.value;
-                    setStudentData((prev) => ({ ...prev, admitClass: selectedClass, section: "", rollNo: "" }));
 
-                    try {
-                      const res = await axios.get(
-                        `http://localhost:5000/api/classes/sections/${encodeURIComponent(selectedClass)}`
-                      );
-                      setSections(res.data || []);
-                    } catch (err) {
-                      console.error("Error fetching sections:", err);
-                    }
+                    // Update student data
+                    setStudentData((prev) => ({
+                      ...prev,
+                      admitClass: selectedClass,
+                      section: "",
+                      rollNo: "",
+                      transferFrom: selectedClass === "Class - I" ? "" : prev.transferFrom || "",
+                    }));
+
+                    // Fetch sections if class is not Class - I
+                  if (selectedClass) {
+                  try {
+                    const res = await axios.get(
+                      `http://localhost:5000/api/classes/sections/${encodeURIComponent(selectedClass)}`
+                    );
+                    setSections(res.data || []); // always set sections
+                  } catch (err) {
+                    console.error("Error fetching sections:", err);
+                    setSections([]);
+                  }
+                } else {
+                  setSections([]);
+                }
+
                   }}
                   className="border bg-gray-100 p-0 rounded w-full"
                 >
                   <option value="">--Select Class--</option>
                   {classList.map((cls, index) => (
-                    <option key={index} value={cls}>{cls}</option>
+                    <option key={index} value={cls}>
+                      {cls}
+                    </option>
                   ))}
                 </select>
               </label>
+
+              {/* Transfer From: only if class is not Class - I */}
+              {studentData.admitClass !== "Class - I" && (
+                <label>
+                  Transfer From
+                  <input
+                    type="text"
+                    name="transferFrom"
+                    placeholder="Previous School Name"
+                    value={studentData.transferFrom}
+                    onChange={handleChange}
+                    className="border bg-gray-100 p-0 rounded w-full"
+                  />
+                </label>
+              )}
 
               {/* Section */}
               <label>
@@ -284,12 +364,18 @@ const StudentMaster = () => {
                   value={studentData.section}
                   onChange={async (e) => {
                     const selectedSection = e.target.value;
-                    const selectedClass = studentData.admitClass; // now already updated from above
+                    const selectedClass = studentData.admitClass;
 
-                    setStudentData((prev) => ({ ...prev, section: selectedSection, rollNo: "" }));
+                    setStudentData((prev) => ({
+                      ...prev,
+                      section: selectedSection,
+                      rollNo: "",
+                    }));
 
-                  if (
-                      (selectedClass && selectedSection) &&
+                    // Generate roll number if class & section selected and either new or changed
+                    if (
+                      selectedClass &&
+                      selectedSection &&
                       (!isEditMode ||
                         selectedClass !== studentItem?.admitClass ||
                         selectedSection !== studentItem?.section)
@@ -298,12 +384,14 @@ const StudentMaster = () => {
                         const res = await axios.get(
                           `http://localhost:5000/api/students/next-roll/${encodeURIComponent(selectedClass)}/${encodeURIComponent(selectedSection)}`
                         );
-                        setStudentData((prev) => ({ ...prev, rollNo: res.data.rollNo.toString() }));
+                        setStudentData((prev) => ({
+                          ...prev,
+                          rollNo: res.data.rollNo.toString(),
+                        }));
                       } catch (err) {
                         console.error("Error fetching next roll:", err);
                       }
                     }
-
                   }}
                   className="border bg-gray-100 p-0 rounded w-full"
                 >
@@ -315,7 +403,6 @@ const StudentMaster = () => {
                   ))}
                 </select>
               </label>
-
 
               {/* Roll No */}
               <label>

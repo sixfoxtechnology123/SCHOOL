@@ -2,6 +2,8 @@ import StudentMaster from "../models/Student.js";
 import ClassMaster from "../models/Class.js";
 import IdCardInfo from "../models/IdCard.js";
 import UdiseInfo from "../models/Udise.js";
+import AcademicSession from "../models/AcademicSession.js";
+
 
 const PREFIX = "G";
 const PAD = 4;
@@ -229,5 +231,15 @@ export const getFullStudentInfo = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch full student info" });
+  }
+};
+// --- Academic Sessions ---
+export const getAllAcademicSessions = async (_req, res) => {
+  try {
+    const sessions = await AcademicSession.find().lean();
+    res.json(sessions);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch academic sessions" });
   }
 };

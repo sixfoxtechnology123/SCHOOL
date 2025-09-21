@@ -2,7 +2,9 @@ const mongoose = require("mongoose");
 
 const studentSchema = new mongoose.Schema({
   studentId: { type: String, required: true, unique: true }, // IMPORTANT
+  academicSession: { type: String, required: true },
   admitClass: String,
+  transferFrom: { type: String, default: "" }, 
   section: String,
   rollNo: { type: Number }, // Optional: Number is cleaner
   firstName: String,

@@ -9,6 +9,7 @@ import {
   getNextRollNo,
   getFullStudentInfo,
   getIdCardAndUdise,
+  getAllAcademicSessions
   
 } from "../controller/studentController.js";
 import StudentMaster from "../models/Student.js";
@@ -66,5 +67,6 @@ router.put("/:id", upload.fields([
 ]), updateStudent);
 
 router.delete("/:id", deleteStudent);
+router.get("/academic-sessions", getAllAcademicSessions);
 
 export default router;
