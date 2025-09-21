@@ -12,6 +12,7 @@ const FeeStructureMaster = () => {
     routeId: "",
     amount: "",
     academicSession: "",
+    distance: "",
   });
 
   const [academicSessions, setAcademicSessions] = useState([]);
@@ -25,11 +26,8 @@ const FeeStructureMaster = () => {
   const navigate = useNavigate();
   const feeItem = location.state?.feeItem || null;
 
-  // Convert Roman numerals to number for sorting
   const romanToNumber = (roman) => {
-    const map = {
-      I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6, VII: 7, VIII: 8, IX: 9, X: 10, XI: 11, XII: 12
-    };
+    const map = { I:1, II:2, III:3, IV:4, V:5, VI:6, VII:7, VIII:8, IX:9, X:10, XI:11, XII:12 };
     return map[roman] || 0;
   };
 
@@ -41,23 +39,15 @@ const FeeStructureMaster = () => {
     });
   };
 
-  // Fetch classes and fee heads
   const fetchDropdownData = async () => {
     try {
       const [clsRes, fhRes, acadRes] = await Promise.all([
         axios.get("http://localhost:5000/api/classes"),
         axios.get("http://localhost:5000/api/feeheads"),
         axios.get("http://localhost:5000/api/fees/academics")
-
       ]);
-      // Remove duplicate class names (keep only first occurrence)
-      const uniqueClassesMap = new Map();
-      clsRes.data.forEach(c => {
-        if (!uniqueClassesMap.has(c.className)) {
-          uniqueClassesMap.set(c.className, c);
-        }
-      });
-      const uniqueClasses = Array.from(uniqueClassesMap.values());
+
+      const uniqueClasses = Array.from(new Map(clsRes.data.map(c => [c.className, c])).values());
       setClasses(sortClasses(uniqueClasses));
       setFeeHeads(fhRes.data || []);
       setAcademicSessions(acadRes.data || []);
@@ -75,28 +65,24 @@ const FeeStructureMaster = () => {
     }
   };
 
-  const fetchRoutes = async () => {
+  const fetchRoutesBySession = async (session) => {
+    if (!session) return setRoutes([]);
     try {
-      const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
-      const routeList = res.data.map(r => ({
-        routeId: r.routeId,
-        distance: r.distance,
-        vanCharge: r.vanCharge,
-      }));
-      setRoutes(routeList);
-      return routeList;
+      const res = await axios.get(`http://localhost:5000/api/fees/transport/by-session?academicSession=${session}`);
+      setRoutes(res.data || []);
     } catch (err) {
       console.error(err);
       setRoutes([]);
-      return [];
     }
   };
 
-  const fetchAmount = async (classId, feeHeadId, routeId) => {
+  const fetchAmount = async (classId, feeHeadId) => {
     if (!classId || !feeHeadId) return;
     try {
+      const className = classes.find(c => c.classId === classId)?.className;
+      const feeHeadName = feeHeads.find(f => f.feeHeadId === feeHeadId)?.feeHeadName;
       const res = await axios.get("http://localhost:5000/api/fees/get-amount", {
-        params: { classId, feeHeadId, routeId: routeId || undefined },
+        params: { className, feeHeadName }
       });
       setFeeData(prev => ({ ...prev, amount: res.data.amount || '' }));
     } catch (err) {
@@ -105,122 +91,110 @@ const FeeStructureMaster = () => {
     }
   };
 
-useEffect(() => {
-  const init = async () => {
-    await fetchDropdownData();
+  useEffect(() => {
+    const init = async () => {
+      await fetchDropdownData();
 
-    // Load saved session from localStorage
-    const savedSession = localStorage.getItem("selectedAcademicSession");
-    if (savedSession) {
-      setFeeData(prev => ({ ...prev, academicSession: savedSession }));
-    }
-
-    if (feeItem) {
-      setIsEditMode(true);
-      const selectedFeeHead = feeItem.feeHeadId
-        ? (await axios.get("http://localhost:5000/api/feeheads")).data.find(
-            fh => fh.feeHeadId === feeItem.feeHeadId
-          )
-        : null;
-
-      let routeList = [];
-      if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
-        routeList = await fetchRoutes();
+      const savedSession = localStorage.getItem("selectedAcademicSession");
+      if (savedSession) {
+        setFeeData(prev => ({ ...prev, academicSession: savedSession }));
+        await fetchRoutesBySession(savedSession);
       }
 
-      setFeeData({
-        _id: feeItem._id,
-        feeStructId: feeItem.feeStructId,
-        classId: feeItem.classId,
-        feeHeadId: feeItem.feeHeadId,
-        routeId: feeItem.routeId || "",
-        amount:
-          feeItem.amount ||
-          (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport"
-            ? routeList.find(r => r.routeId === feeItem.routeId)?.vanCharge || ''
-            : 0),
-        academicSession: savedSession || feeItem.academicSession || ""
-      });
-    } else {
-      fetchNextId();
-    }
+      if (feeItem) {
+        setIsEditMode(true);
+        setFeeData({
+          _id: feeItem._id,
+          feeStructId: feeItem.feeStructId,
+          classId: feeItem.classId,
+          feeHeadId: feeItem.feeHeadId,
+          routeId: feeItem.routeId || "",
+          amount: feeItem.amount || 0,
+          academicSession: savedSession || feeItem.academicSession || "",
+          distance: feeItem.distance || "",
+        });
+      } else {
+        fetchNextId();
+      }
+      setLoading(false);
+    };
+    init();
+  }, []);
 
-    setLoading(false);
-  };
-  init();
-}, []);
-
-
-  // Show/hide transport dropdown
   useEffect(() => {
-    const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId);
-    if (selectedFeeHead && selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
-      fetchRoutes();
+    if (feeData.academicSession) {
+      fetchRoutesBySession(feeData.academicSession);
+      setFeeData(prev => ({ ...prev, routeId: "", distance: "" }));
+      localStorage.setItem("selectedAcademicSession", feeData.academicSession);
     } else {
       setRoutes([]);
-      setFeeData(prev => ({ ...prev, routeId: "", amount: prev.amount || '' }));
+      setFeeData(prev => ({ ...prev, routeId: "", distance: "" }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [feeData.feeHeadId]);
+  }, [feeData.academicSession]);
 
-  // Update amount dynamically
+  const isTransportFee = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId)?.feeHeadName.toLowerCase() === "transport";
+
   useEffect(() => {
-    const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId);
-    if (!selectedFeeHead) return;
+    if (isTransportFee) {
+      fetchRoutesBySession(feeData.academicSession);
+    } else {
+      setRoutes([]);
+      setFeeData(prev => ({ ...prev, routeId: "", distance: "" }));
+    }
+  }, [feeData.feeHeadId, feeData.academicSession]);
 
-    if (selectedFeeHead.feeHeadName.toLowerCase() === "transport") {
+  useEffect(() => {
+    if (!feeData.classId || !feeData.feeHeadId) return;
+
+    if (isTransportFee) {
       const selectedRoute = routes.find(r => r.routeId === feeData.routeId);
-      setFeeData(prev => ({ ...prev, amount: selectedRoute ? selectedRoute.vanCharge : '' }));
+      setFeeData(prev => ({
+        ...prev,
+        amount: selectedRoute ? selectedRoute.vanCharge : '',
+        distance: selectedRoute?.distance || ''
+      }));
     } else {
       fetchAmount(feeData.classId, feeData.feeHeadId);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feeData.classId, feeData.feeHeadId, feeData.routeId, routes]);
 
-
   const handleChange = (e) => {
-  const { name, value } = e.target;
-  setFeeData(prev => ({ ...prev, [name]: value }));
+    const { name, value } = e.target;
+    setFeeData(prev => ({ ...prev, [name]: value }));
 
-  if (name === "academicSession") {
-    localStorage.setItem("selectedAcademicSession", value);
+    if (name === "academicSession") localStorage.setItem("selectedAcademicSession", value);
+  };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  try {
+    const payload = { ...feeData };
+
+    const classObj = classes.find(c => c.classId === feeData.classId);
+    const feeHeadObj = feeHeads.find(f => f.feeHeadId === feeData.feeHeadId);
+    payload.className = classObj?.className || "";
+    payload.feeHeadName = feeHeadObj?.feeHeadName || "";
+
+    if (isTransportFee) {
+      const selectedRoute = routes.find(r => r.routeId === feeData.routeId);
+      payload.distance = selectedRoute ? `${selectedRoute.distance} KM` : "";
+    }
+
+    if (isEditMode) {
+      await axios.put(`http://localhost:5000/api/fees/${feeData._id}`, payload);
+      alert("Fee Structure updated!");
+    } else {
+      await axios.post("http://localhost:5000/api/fees", payload);
+      alert("Fee Structure saved!");
+    }
+    navigate("/FeeStructureList", { replace: true });
+  } catch (err) {
+    console.error(err);
+    alert(err.response?.data?.error || "Error saving Fee Structure");
   }
 };
 
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-      try {
-      // Fetch all fee structures
-      const allFees = (await axios.get("http://localhost:5000/api/fees")).data || [];
-
-      // Validation for duplicate: same class + feeHead + route + academicSession
-      const duplicate = allFees.find(f =>
-        f.classId === feeData.classId &&
-        f.feeHeadId === feeData.feeHeadId &&
-        (f.routeId || '') === (feeData.routeId || '') &&
-        f.academicSession === feeData.academicSession &&
-        (!isEditMode || f._id !== feeData._id) // exclude current record when editing
-      );
-
-      if (duplicate) {
-        alert("This Class + Fee Head + Route + Academic Session combination already exists!");
-        return;
-      }
-
-      if (isEditMode) {
-        await axios.put(`http://localhost:5000/api/fees/${feeData._id}`, feeData);
-        alert("Fee Structure updated!");
-      } else {
-        await axios.post("http://localhost:5000/api/fees", feeData);
-        alert("Fee Structure saved!");
-      }
-      navigate("/FeeStructureList", { replace: true });
-    } catch (err) {
-      alert("Error saving Fee Structure");
-      console.error(err);
-    }
-  };
 
   if (loading) return <div className="text-center mt-10">Loading...</div>;
 
@@ -234,106 +208,51 @@ useEffect(() => {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-2">
           <div>
             <label className="block font-medium">Fee Struct ID</label>
-            <input
-              type="text"
-              name="feeStructId"
-              value={feeData.feeStructId}
-              readOnly
-              className="w-full border border-gray-300 p-1 rounded bg-gray-100"
-            />
+            <input type="text" name="feeStructId" value={feeData.feeStructId} readOnly className="w-full border border-gray-300 p-1 rounded bg-gray-100" />
           </div>
 
           <div>
             <label className="block font-medium">Academic Session</label>
-            <select
-              name="academicSession"
-              value={feeData.academicSession}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-1 rounded"
-              required
-            >
+            <select name="academicSession" value={feeData.academicSession} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded" required>
               <option value="">--Select Academic Session--</option>
-              {academicSessions.map(session => (
-                <option key={session._id} value={session.year}>{session.year}</option>
-              ))}
+              {academicSessions.map(session => <option key={session._id} value={session.year}>{session.year}</option>)}
             </select>
           </div>
 
-
-
-
           <div>
             <label className="block font-medium">Class</label>
-            <select
-              name="classId"
-              value={feeData.classId}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-1 rounded"
-              required
-            >
+            <select name="classId" value={feeData.classId} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded" required>
               <option value="">--Select--</option>
-              {classes.map(c => (
-                <option key={c.classId} value={c.classId}>{c.className}</option>
-              ))}
+              {classes.map(c => <option key={c.classId} value={c.classId}>{c.className}</option>)}
             </select>
           </div>
 
           <div>
             <label className="block font-medium">Fee Head</label>
-            <select
-              name="feeHeadId"
-              value={feeData.feeHeadId}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-1 rounded"
-              required
-            >
+            <select name="feeHeadId" value={feeData.feeHeadId} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded" required>
               <option value="">--Select--</option>
-              {feeHeads.map(fh => (
-                <option key={fh.feeHeadId} value={fh.feeHeadId}>{fh.feeHeadName}</option>
-              ))}
+              {feeHeads.map(fh => <option key={fh.feeHeadId} value={fh.feeHeadId}>{fh.feeHeadName}</option>)}
             </select>
           </div>
 
-          {routes.length > 0 && (
+          {isTransportFee && (
             <div>
               <label className="block font-medium">Distance (KM)</label>
-              <select
-                name="routeId"
-                value={feeData.routeId}
-                onChange={handleChange}
-                className="w-full border border-gray-300 p-1 rounded"
-                required
-              >
+              <select name="routeId" value={feeData.routeId} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded" required>
                 <option value="">--Select Distance--</option>
-                {routes.map(r => (
-                  <option key={r.routeId} value={r.routeId}>{r.distance}</option>
-                ))}
+                {routes.map(r => <option key={r.routeId} value={r.routeId}>{r.distance}</option>)}
               </select>
             </div>
           )}
 
           <div>
             <label className="block font-medium">Amount</label>
-            <input
-              type="number"
-              name="amount"
-              value={feeData.amount}
-              onChange={handleChange}
-              className="w-full border border-gray-300 p-1 rounded"
-              required
-            />
+            <input type="number" name="amount" value={feeData.amount} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded" required />
           </div>
 
           <div className="flex justify-between">
             <BackButton />
-            <button
-              type="submit"
-              className={`px-4 py-1 rounded text-white ${
-                isEditMode
-                  ? "bg-yellow-500 hover:bg-yellow-600"
-                  : "bg-green-600 hover:bg-green-700"
-              }`}
-            >
+            <button type="submit" className={`px-4 py-1 rounded text-white ${isEditMode ? "bg-yellow-500 hover:bg-yellow-600" : "bg-green-600 hover:bg-green-700"}`}>
               {isEditMode ? "Update" : "Save"}
             </button>
           </div>

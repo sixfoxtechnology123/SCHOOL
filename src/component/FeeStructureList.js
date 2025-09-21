@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FaTrash, FaEdit } from "react-icons/fa";
@@ -9,67 +9,24 @@ import Header from "./Header";
 const FeeStructureList = () => {
   const [fees, setFees] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [classes, setClasses] = useState([]);
-  const [feeHeads, setFeeHeads] = useState([]);
-  const [routes, setRoutes] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Fetch dropdowns and routes
-  const fetchDropdownsAndRoutes = async () => {
-    try {
-      const [clsRes, fhRes, routeRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/classes"),
-        axios.get("http://localhost:5000/api/feeheads"),
-        axios.get("http://localhost:5000/api/fees/transport/routes")
-      ]);
-      setClasses(clsRes.data || []);
-      setFeeHeads(fhRes.data || []);
-      setRoutes(routeRes.data || []);
-    } catch (err) {
-      console.error("Failed to fetch dropdowns or routes:", err);
-    }
-  };
-
-  // Fetch raw fee structures
-  const fetchRawFees = async () => {
+  // Fetch all fee structures
+  const fetchData = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/fees");
-      setFees(res.data);
+      setFees(res.data || []);
     } catch (err) {
-      console.error("Failed to fetch fee structures:", err);
+      console.error("Error fetching fee structures:", err);
     }
   };
 
-  // Load dropdowns first
   useEffect(() => {
-    fetchDropdownsAndRoutes();
-    fetchRawFees();
+    fetchData();
   }, [location.key]);
 
-  // Map amount and distance whenever fees, feeHeads, or routes change
-  const mappedFees = fees.map(fee => {
-    let amount = "";
-    let distance = "-";
-
-    const feeHead = feeHeads.find(fh => fh.feeHeadId === fee.feeHeadId);
-
-    if (feeHead) {
-      if (feeHead.feeHeadName.toLowerCase() === "transport" && fee.routeId) {
-        const route = routes.find(r => r.routeId === fee.routeId);
-        if (route) {
-          amount = route.vanCharge || "";
-          distance = route.distance || "-";
-        }
-      } else {
-        // Non-transport fee
-        amount = fee.amount !== undefined ? fee.amount : "";
-      }
-    }
-
-    return { ...fee, amount, distance };
-  });
-
+  // Delete fee
   const deleteFee = async (id) => {
     if (!window.confirm("Are you sure you want to delete this Fee Structure?")) return;
     try {
@@ -80,27 +37,18 @@ const FeeStructureList = () => {
     }
   };
 
-  const getClassName = (classId) => {
-    const cls = classes.find(c => c.classId === classId);
-    return cls ? cls.className : classId;
-  };
-
-  const getFeeHeadName = (feeHeadId) => {
-    const fh = feeHeads.find(f => f.feeHeadId === feeHeadId);
-    return fh ? fh.feeHeadName : feeHeadId;
-  };
-
-  const filteredFees = mappedFees.filter(fee => {
-    const className = getClassName(fee.classId).toLowerCase();
-    const feeHeadName = getFeeHeadName(fee.feeHeadId).toLowerCase();
-    return className.includes(searchTerm.toLowerCase()) || feeHeadName.includes(searchTerm.toLowerCase());
-  });
+  // Filter fees based on search term
+  const filteredFees = fees.filter(fee =>
+    fee.className?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    fee.feeHeadName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    fee.academicSession?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      <Sidebar/>
+      <Sidebar />
       <div className="flex-1 overflow-y-auto p-3">
-        <Header/>
+        <Header />
         <div className="p-2 bg-white shadow-md rounded-md">
           <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
@@ -109,7 +57,7 @@ const FeeStructureList = () => {
                 <BackButton />
                 <input
                   type="text"
-                  placeholder="Search by Class or Fee Head"
+                  placeholder="Search by Class, Fee Head, or Session"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
@@ -142,10 +90,10 @@ const FeeStructureList = () => {
                   <tr key={fee._id} className="hover:bg-gray-100 transition">
                     <td className="border border-green-500 px-2 py-1">{fee.feeStructId}</td>
                     <td className="border border-green-500 px-2 py-1">{fee.academicSession}</td>
-                    <td className="border border-green-500 px-2 py-1">{getClassName(fee.classId)}</td>
-                    <td className="border border-green-500 px-2 py-1">{getFeeHeadName(fee.feeHeadId)}</td>
+                    <td className="border border-green-500 px-2 py-1">{fee.className}</td>
+                    <td className="border border-green-500 px-2 py-1">{fee.feeHeadName}</td>
                     <td className="border border-green-500 px-2 py-1">{fee.amount}</td>
-                    <td className="border border-green-500 px-2 py-1">{fee.distance}</td>
+                    <td className="border border-green-500 px-2 py-1">{fee.distance || "-"}</td>
                     <td className="border border-green-500 px-2 py-1 text-center">
                       <div className="flex justify-center items-center gap-4">
                         <button
@@ -166,7 +114,7 @@ const FeeStructureList = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="6" className="text-center py-4 text-gray-500">
+                  <td colSpan="7" className="text-center py-4 text-gray-500">
                     No Fee Structures found.
                   </td>
                 </tr>

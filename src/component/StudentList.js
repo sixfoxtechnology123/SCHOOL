@@ -88,6 +88,7 @@ const StudentsList = () => {
     return id.includes(searchTermLower) || name.includes(searchTermLower);
   });
 
+
 // --- PDF Function ---
 const generatePDF = async (student) => {
   if (!student) return;
@@ -96,10 +97,6 @@ const generatePDF = async (student) => {
 
   const res = await axios.get(`http://localhost:5000/api/students/${student._id}/full`);
   const { childInfo, idCardInfo, udiseInfo } = res.data;
-
-  console.log("Child Info:", childInfo);        // basic student data
-  console.log("ID Card Info:", idCardInfo);     // ID card data
-  console.log("UDISE Info:", udiseInfo);        // UDISE data
 
   const getImageSrc = (photoObj) => {
     if (!photoObj || !photoObj.data || !photoObj.contentType) return "";
@@ -144,24 +141,20 @@ const generatePDF = async (student) => {
   const getClass = (s) => s.admitClass || "";
   const formatDOB = (dob) => (dob ? new Date(dob).toLocaleDateString() : "");
 
-  // --- Photos HTML ---
   const imagesHTML = `
     <div style="display:flex; justify-content:center; gap:40px; margin:5px 0; text-align:center;">
-      ${student.fatherPhoto ? `
-        <div>
-          <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; border:1px solid #000;"/>
-          <strong>Father Photo</strong>
-        </div>` : ""}
-      ${student.motherPhoto ? `
-        <div>
-          <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; border:1px solid #000;"/>
-          <strong>Mother Photo</strong>
-        </div>` : ""}
-      ${student.childPhoto ? `
-        <div>
-          <img src="${getImageSrc(student.childPhoto)}" style="height:100px; border:1px solid #000;"/>
-          <strong>Child Photo</strong>
-        </div>` : ""}
+      ${student.fatherPhoto ? `<div>
+        <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; border:1px solid #000;"/>
+        <strong>Father Photo</strong>
+      </div>` : ""}
+      ${student.motherPhoto ? `<div>
+        <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; border:1px solid #000;"/>
+        <strong>Mother Photo</strong>
+      </div>` : ""}
+      ${student.childPhoto ? `<div>
+        <img src="${getImageSrc(student.childPhoto)}" style="height:100px; border:1px solid #000;"/>
+        <strong>Child Photo</strong>
+      </div>` : ""}
     </div>
   `;
 
@@ -200,15 +193,15 @@ const generatePDF = async (student) => {
         A. Child Information
       </div>
       <div style="padding:0 10px 5px 10px; border:1px solid #000;">
-        ${twoColRow("Student ID", student.studentId, "Name", getName(student))}
-        ${twoColRow("Class", getClass(student), "Section", student.section)}
-        ${twoColRow("Roll No", student.rollNo, "Gender", student.gender)}
-        ${twoColRow("Social Cast", student.socialCaste, "DOB", formatDOB(student.dob))}
-        ${twoColRow("Height", student.height, "Weight", student.weight)}
-        ${twoColRow("Blood Group", student.bloodGroup, "Nationality", student.nationality)}
-        ${twoColRow("Languages Known", (student.languages || []).join(", "), "Transport Required", student.transportRequired)}
-        ${twoColRow("Distance from School(KM)", student.distanceFromSchool, "Emergency Person", student.emergencyPerson)}
-        ${twoColRow("Emergency Contact", student.emergencyContact, "", "")}
+        ${twoColRow("Student ID", student.studentId, "Academic Session", student.academicSession)}
+        ${twoColRow("Name", getName(student), "Class", getClass(student))}
+        ${twoColRow("Section", student.section, "Roll No", student.rollNo)}
+        ${twoColRow("Gender", student.gender, "Social Cast", student.socialCaste)}
+        ${twoColRow("DOB", formatDOB(student.dob), "Height", student.height)}
+        ${twoColRow("Weight", student.weight, "Blood Group", student.bloodGroup)}
+        ${twoColRow("Nationality", student.nationality, "Languages Known", (student.languages || []).join(", "))}
+        ${twoColRow("Transport Required", student.transportRequired, "Distance from School(KM)", student.distanceFromSchool)}
+        ${twoColRow("Emergency Person", student.emergencyPerson, "Emergency Contact", student.emergencyContact)}
       </div>
 
       <!-- Permanent Address -->
@@ -245,91 +238,89 @@ const generatePDF = async (student) => {
   doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
   document.body.removeChild(admissionContainer);
 
-// --- Second Page: Combine ID Card + UDISE (only if they exist) ---
-const secondPageSections = [];
+  // --- ID Card + UDISE (Second Page) ---
+  const secondPageSections = [];
 
-if (idCardInfo && Object.keys(idCardInfo).length > 0) {
-  const idCardHtml = `
-    <div style="border:1px solid #000; padding:10px; margin-bottom:20px;">
-      <h2 style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">ID Card</h2>
-      <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-        <div style="flex:1; padding-right:10px;">
-          <div style="border:1px solid #000; padding:10px;">
-            ${twoColRow("Student ID", idCardInfo.studentId, "Name", idCardInfo.studentName)}
-            ${twoColRow("Class", idCardInfo.className, "DOB", formatDOB(idCardInfo.dob))}
-            ${twoColRow("Father", idCardInfo.fatherName, "Mother", idCardInfo.motherName)}
-            ${twoColRow("Contact No", idCardInfo.contactNo || idCardInfo.motherPhone || "", "Whatsapp No", idCardInfo.whatsappNo || "")}
+  if (idCardInfo && Object.keys(idCardInfo).length > 0) {
+    const idCardHtml = `
+      <div style="border:1px solid #000; padding:10px; margin-bottom:20px;">
+        <h2 style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">ID Card</h2>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+          <div style="flex:1; padding-right:10px;">
+            <div style="border:1px solid #000; padding:10px;">
+              ${twoColRow("Student ID", idCardInfo.studentId, "Name", idCardInfo.studentName)}
+              ${twoColRow("Class", idCardInfo.className, "DOB", formatDOB(idCardInfo.dob))}
+              ${twoColRow("Father", idCardInfo.fatherName, "Mother", idCardInfo.motherName)}
+              ${twoColRow("Contact No", idCardInfo.contactNo || idCardInfo.motherPhone || "", "Whatsapp No", idCardInfo.whatsappNo || "")}
+            </div>
+            ${formatAddressBlock("Address", idCardInfo.permanentAddress)}
           </div>
-          ${formatAddressBlock("Address", idCardInfo.permanentAddress)}
-        </div>
-        <div style="width:120px;">
-          <img src="${getImageSrc(idCardInfo.photo)}" style="width:100%; border:1px solid #000;" />
+          <div style="width:120px;">
+            <img src="${getImageSrc(idCardInfo.photo)}" style="width:100%; border:1px solid #000;" />
+          </div>
         </div>
       </div>
-    </div>
-  `;
-  secondPageSections.push(idCardHtml);
-}
+    `;
+    secondPageSections.push(idCardHtml);
+  }
 
-if (udiseInfo && Object.keys(udiseInfo).length > 0) {
-  const udiseHtml = `
-    <div style="border:1px solid #000; padding:10px;">
-      <h2 style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">UDISE Form</h2>
-      <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-        <div style="flex:1; padding-right:10px;">
-          <div style="border:1px solid #000; padding:10px;">
-            ${twoColRow("Student ID", udiseInfo.studentId || "", "Name", udiseInfo.studentName || "")}
-            ${twoColRow("Gender", udiseInfo.gender || "", "Height", udiseInfo.height || "")}
-            ${twoColRow("Weight", udiseInfo.weight || "", "DOB", formatDOB(udiseInfo.dob))}
-            ${twoColRow("Admit Class", udiseInfo.admitClass || "", "Mother Tongue", udiseInfo.motherTongue || "")}
-            ${twoColRow("Father", udiseInfo.fatherName || "", "Mother", udiseInfo.motherName || "")}
-            ${twoColRow("Guardian Name", udiseInfo.guardianName || "", "Guardian Qualification", udiseInfo.guardianQualification || "")}
-            ${twoColRow("Religion", udiseInfo.religion || "", "Nationality", udiseInfo.nationality || "")}
-            ${twoColRow("BPL", udiseInfo.bpl || "", "BPL No", udiseInfo.bplNo || "")}
-            ${twoColRow("EWS", udiseInfo.ews || "", "Annual Income", udiseInfo.familyIncome || "")}
-            ${twoColRow("Contact No", udiseInfo.contactNo || "", "CWSN", udiseInfo.cwsn || "")}
-            ${twoColRow("Social Caste", udiseInfo.socialCaste || "", "Panchayat", udiseInfo.panchayat || "")}
+  if (udiseInfo && Object.keys(udiseInfo).length > 0) {
+    const udiseHtml = `
+      <div style="border:1px solid #000; padding:10px;">
+        <h2 style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">UDISE Form</h2>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+          <div style="flex:1; padding-right:10px;">
+            <div style="border:1px solid #000; padding:10px;">
+              ${twoColRow("Student ID", udiseInfo.studentId || "", "Name", udiseInfo.studentName || "")}
+              ${twoColRow("Gender", udiseInfo.gender || "", "Height", udiseInfo.height || "")}
+              ${twoColRow("Weight", udiseInfo.weight || "", "DOB", formatDOB(udiseInfo.dob))}
+              ${twoColRow("Admit Class", udiseInfo.admitClass || "", "Mother Tongue", udiseInfo.motherTongue || "")}
+              ${twoColRow("Father", udiseInfo.fatherName || "", "Mother", udiseInfo.motherName || "")}
+              ${twoColRow("Guardian Name", udiseInfo.guardianName || "", "Guardian Qualification", udiseInfo.guardianQualification || "")}
+              ${twoColRow("Religion", udiseInfo.religion || "", "Nationality", udiseInfo.nationality || "")}
+              ${twoColRow("BPL", udiseInfo.bpl || "", "BPL No", udiseInfo.bplNo || "")}
+              ${twoColRow("EWS", udiseInfo.ews || "", "Annual Income", udiseInfo.familyIncome || "")}
+              ${twoColRow("Contact No", udiseInfo.contactNo || "", "CWSN", udiseInfo.cwsn || "")}
+              ${twoColRow("Social Caste", udiseInfo.socialCaste || "", "Panchayat", udiseInfo.panchayat || "")}
+            </div>
+            ${formatAddressBlock("Address", udiseInfo.currentAddress || {})}
           </div>
-          ${formatAddressBlock("Address", udiseInfo.currentAddress || {})}
-        </div>
-        <div style="width:120px;">
-          <img src="${getImageSrc(udiseInfo.photo)}" style="width:100%; border:1px solid #000;" />
+          <div style="width:120px;">
+            <img src="${getImageSrc(udiseInfo.photo)}" style="width:100%; border:1px solid #000;" />
+          </div>
         </div>
       </div>
-    </div>
-  `;
-  secondPageSections.push(udiseHtml);
-}
+    `;
+    secondPageSections.push(udiseHtml);
+  }
 
-// Add second page only if there is at least one section
-if (secondPageSections.length > 0) {
-  const combinedContainer = document.createElement("div");
-  combinedContainer.style.width = "800px";
-  combinedContainer.style.padding = "20px";
-  combinedContainer.style.fontFamily = "Arial, sans-serif";
-  combinedContainer.style.fontSize = "12px";
-  combinedContainer.style.color = "#000";
-  combinedContainer.style.background = "#fff";
-  combinedContainer.innerHTML = secondPageSections.join(""); // combine sections
+  if (secondPageSections.length > 0) {
+    const combinedContainer = document.createElement("div");
+    combinedContainer.style.width = "800px";
+    combinedContainer.style.padding = "20px";
+    combinedContainer.style.fontFamily = "Arial, sans-serif";
+    combinedContainer.style.fontSize = "12px";
+    combinedContainer.style.color = "#000";
+    combinedContainer.style.background = "#fff";
+    combinedContainer.innerHTML = secondPageSections.join("");
 
-  document.body.appendChild(combinedContainer);
+    document.body.appendChild(combinedContainer);
 
-  const canvas = await html2canvas(combinedContainer, { scale: 2 });
-  const imgData = canvas.toDataURL("image/png");
-  const imgProps = doc.getImageProperties(imgData);
-  const pdfWidth = doc.internal.pageSize.getWidth();
-  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    const canvas = await html2canvas(combinedContainer, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    const imgProps = doc.getImageProperties(imgData);
+    const pdfWidth = doc.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-  doc.addPage();
-  doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    doc.addPage();
+    doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
 
-  document.body.removeChild(combinedContainer);
-}
+    document.body.removeChild(combinedContainer);
+  }
 
-
-  // --- Save PDF ---
   doc.save(`${student.studentId || "student"}.pdf`);
 };
+
 
    return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -362,6 +353,7 @@ if (secondPageSections.length > 0) {
             <thead className="bg-green-100">
               <tr>
                 <th className="border border-green-500 px-2 py-1">Student ID</th>
+                <th className="border border-green-500 px-2 py-1">Session</th>
                 <th className="border border-green-500 px-2 py-1">Name</th>
                 <th className="border border-green-500 px-2 py-1">Class</th>
                 <th className="border border-green-500 px-2 py-1">Section</th>
@@ -378,6 +370,7 @@ if (secondPageSections.length > 0) {
                 filteredStudents.map((stu) => (
                   <tr key={stu._id} className="hover:bg-gray-100 transition">
                     <td className="border border-green-500 px-2 py-1">{stu.studentId}</td>
+                    <td className="border border-green-500 px-2 py-1">{stu.academicSession}</td>
                     <td className="border border-green-500 px-2 py-1">{getName(stu)}</td>
                     <td className="border border-green-500 px-2 py-1">{getClass(stu)}</td>
                     <td className="border border-green-500 px-2 py-1">{stu.section || ""}</td>

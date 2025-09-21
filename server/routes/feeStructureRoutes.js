@@ -7,8 +7,8 @@ const {
   updateFeeStructure,
   deleteFeeStructure,
   getFeeAmount,
-  getAllTransportRoutes,
-  getAllAcademicSessions
+  getAllAcademicSessions,
+  getTransportRoutesBySession,
 } = require("../controller/feeStructureController");
 
 // Fee Structure endpoints
@@ -18,8 +18,11 @@ router.post("/", createFeeStructure);
 router.put("/:id", updateFeeStructure);
 router.delete("/:id", deleteFeeStructure);
 router.get("/get-amount", getFeeAmount);
+
+// Academic sessions
 router.get("/academics", getAllAcademicSessions);
-// Transport Routes endpoint
-router.get("/transport/routes", getAllTransportRoutes);
+
+// Transport Routes filtered by session
+router.get("/transport/by-session", getTransportRoutesBySession);
 
 module.exports = router;
