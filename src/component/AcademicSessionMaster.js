@@ -49,6 +49,23 @@ const AcademicSessionMaster = () => {
     setSessionData({ ...sessionData, [name]: value });
   };
 
+  // --- Save activity to localStorage and dispatch event ---
+  const saveActivity = (message) => {
+    const newActivity = {
+      id: Date.now(),
+      text: message,
+      timestamp: new Date(),
+    };
+    const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+    const updated = [newActivity, ...stored];
+    localStorage.setItem("activities", JSON.stringify(updated));
+
+    window.dispatchEvent(
+      new CustomEvent("newActivity", { detail: { action: message } })
+    );
+  };
+  // --------------------------------------------------------
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -57,15 +74,23 @@ const AcademicSessionMaster = () => {
           `http://localhost:5000/api/sessions/${sessionData._id}`,
           sessionData
         );
+
+        const message = `Updated Academic Session ${sessionData.year}`;
+        saveActivity(message);
+
         alert("Session updated successfully!");
       } else {
         await axios.post("http://localhost:5000/api/sessions", sessionData);
+
+        const message = `Added new Academic Session ${sessionData.year}`;
+        saveActivity(message);
+
         alert("Session saved successfully!");
       }
       navigate("/AcademicSessionList", { replace: true });
     } catch (err) {
       console.error("Save failed:", err);
-      const message=err.response?.data?.error || "error saving route";
+      const message = err.response?.data?.error || "Error saving session";
       alert(message);
     }
   };

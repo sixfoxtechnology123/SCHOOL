@@ -45,7 +45,7 @@ const Sidebar = () => {
         { name: "Fees Heads", path: "/FeeHeadsList", icon: FaMoneyBill },
         { name: "Fees Structure", path: "/FeeStructureList", icon: FaFileInvoice },
         { name: "Transport", path: "/TransportRoutesList", icon: FaBus },
-        { name: "Users", path: "/UserList", icon: FaUserCog },
+        // { name: "Users", path: "/UserList", icon: FaUserCog },
       ],
     },
     {

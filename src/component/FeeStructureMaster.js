@@ -1,3 +1,4 @@
+// pages/FeeStructureMaster.js
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
@@ -165,36 +166,58 @@ const FeeStructureMaster = () => {
     if (name === "academicSession") localStorage.setItem("selectedAcademicSession", value);
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  try {
-    const payload = { ...feeData };
+  // --- Activity Logging Function ---
+  const saveActivity = (message) => {
+    const newActivity = {
+      id: Date.now(),
+      text: message,
+      timestamp: new Date(),
+    };
+    const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+    const updated = [newActivity, ...stored];
+    localStorage.setItem("activities", JSON.stringify(updated));
 
-    const classObj = classes.find(c => c.classId === feeData.classId);
-    const feeHeadObj = feeHeads.find(f => f.feeHeadId === feeData.feeHeadId);
-    payload.className = classObj?.className || "";
-    payload.feeHeadName = feeHeadObj?.feeHeadName || "";
+    window.dispatchEvent(
+      new CustomEvent("newActivity", { detail: { action: message } })
+    );
+  };
+  // --------------------------------
 
-    if (isTransportFee) {
-      const selectedRoute = routes.find(r => r.routeId === feeData.routeId);
-      payload.distance = selectedRoute ? `${selectedRoute.distance} KM` : "";
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = { ...feeData };
+
+      const classObj = classes.find(c => c.classId === feeData.classId);
+      const feeHeadObj = feeHeads.find(f => f.feeHeadId === feeData.feeHeadId);
+      payload.className = classObj?.className || "";
+      payload.feeHeadName = feeHeadObj?.feeHeadName || "";
+
+      if (isTransportFee) {
+        const selectedRoute = routes.find(r => r.routeId === feeData.routeId);
+        payload.distance = selectedRoute ? `${selectedRoute.distance} KM` : "";
+      }
+
+      if (isEditMode) {
+        await axios.put(`http://localhost:5000/api/fees/${feeData._id}`, payload);
+        alert("Fee Structure updated!");
+
+        const message = `Updated Fee Structure: ${payload.className} - ${payload.feeHeadName}`;
+        saveActivity(message);
+      } else {
+        await axios.post("http://localhost:5000/api/fees", payload);
+        alert("Fee Structure saved!");
+
+        const message = `Added Fee Structure: ${payload.className} - ${payload.feeHeadName}`;
+        saveActivity(message);
+      }
+
+      navigate("/FeeStructureList", { replace: true });
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "Error saving Fee Structure");
     }
-
-    if (isEditMode) {
-      await axios.put(`http://localhost:5000/api/fees/${feeData._id}`, payload);
-      alert("Fee Structure updated!");
-    } else {
-      await axios.post("http://localhost:5000/api/fees", payload);
-      alert("Fee Structure saved!");
-    }
-    navigate("/FeeStructureList", { replace: true });
-  } catch (err) {
-    console.error(err);
-    alert(err.response?.data?.error || "Error saving Fee Structure");
-  }
-};
-
-
+  };
 
   if (loading) return <div className="text-center mt-10">Loading...</div>;
 

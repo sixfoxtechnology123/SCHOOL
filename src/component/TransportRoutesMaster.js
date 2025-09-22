@@ -1,4 +1,3 @@
-// pages/TransportRoutesMaster.js
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
@@ -16,7 +15,6 @@ const TransportRoutesMaster = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Auto-generate next Route ID
   const fetchNextRouteId = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/transportroutes/latest");
@@ -28,58 +26,67 @@ const TransportRoutesMaster = () => {
   };
   
   const fetchAcademicSessions = async () => {
-  try {
-    const res = await axios.get("http://localhost:5000/api/fees/academics"); // or /api/academics if you changed route
-    setAcademicSessions(res.data || []);
-  } catch (err) {
-    console.error("Error fetching academic sessions:", err);
-    setAcademicSessions([]);
-  }
-};
-
-
-useEffect(() => {
-  const init = async () => {
-    const savedSession = localStorage.getItem("selectedAcademicSession");
-
-    // Always fetch sessions first so dropdown has options
-    await fetchAcademicSessions();
-
-    if (location.state?.routeItem) {
-      // Edit mode
-      const r = location.state.routeItem;
-      setIsEditMode(true);
-      setRouteData({
-        _id: r._id,
-        routeId: r.routeId || "",
-        distance: r.distance || "",
-        vanCharge: r.vanCharge || "",
-        academicSession: r.academicSession || savedSession || "",
-      });
-    } else {
-      // New mode
-      await fetchNextRouteId();
-      setIsEditMode(false);
-
-      if (savedSession) {
-        setRouteData((prev) => ({ ...prev, academicSession: savedSession }));
-      }
+    try {
+      const res = await axios.get("http://localhost:5000/api/fees/academics");
+      setAcademicSessions(res.data || []);
+    } catch (err) {
+      console.error("Error fetching academic sessions:", err);
+      setAcademicSessions([]);
     }
   };
 
-  init();
-}, [location.state]);
+  useEffect(() => {
+    const init = async () => {
+      const savedSession = localStorage.getItem("selectedAcademicSession");
 
+      await fetchAcademicSessions();
 
- const handleChange = (e) => {
-  const { name, value } = e.target;
-  setRouteData((prev) => ({ ...prev, [name]: value }));
+      if (location.state?.routeItem) {
+        const r = location.state.routeItem;
+        setIsEditMode(true);
+        setRouteData({
+          _id: r._id,
+          routeId: r.routeId || "",
+          distance: r.distance || "",
+          vanCharge: r.vanCharge || "",
+          academicSession: r.academicSession || savedSession || "",
+        });
+      } else {
+        await fetchNextRouteId();
+        setIsEditMode(false);
+        if (savedSession) {
+          setRouteData((prev) => ({ ...prev, academicSession: savedSession }));
+        }
+      }
+    };
 
-  if (name === "academicSession") {
-    localStorage.setItem("selectedAcademicSession", value); // save default
-  }
-};
+    init();
+  }, [location.state]);
 
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setRouteData((prev) => ({ ...prev, [name]: value }));
+    if (name === "academicSession") {
+      localStorage.setItem("selectedAcademicSession", value);
+    }
+  };
+
+  const saveActivity = (message) => {
+    // Save activity in localStorage
+    const newActivity = {
+      id: Date.now(),
+      text: message,
+      timestamp: new Date(),
+    };
+    const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+    const updated = [newActivity, ...stored];
+    localStorage.setItem("activities", JSON.stringify(updated));
+
+    // Dispatch event for Layout to catch
+    window.dispatchEvent(
+      new CustomEvent("newActivity", { detail: { action: message } })
+    );
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,25 +96,24 @@ useEffect(() => {
           `http://localhost:5000/api/transportroutes/${routeData._id}`,
           routeData
         );
+        const message = `Updated transport route ${routeData.routeId}`;
+        saveActivity(message);
+        console.log(`Activity Event Fired: ${message}`);
         alert("Route updated successfully!");
-        navigate("/TransportRoutesList", { replace: true });
       } else {
         await axios.post("http://localhost:5000/api/transportroutes", routeData);
+        const message = `Added new transport route ${routeData.routeId}`;
+        saveActivity(message);
+        console.log(`Activity Event Fired: ${message}`);
         alert("Route saved successfully!");
-        const res = await axios.get("http://localhost:5000/api/transportroutes/latest");
-        setRouteData({
-          routeId: res.data?.routeId || "TRANSPORT001",
-          distance: "",
-          vanCharge: "",
-        });
-        navigate("/TransportRoutesList", { replace: true });
       }
-      } catch (err) {
+
+      navigate("/TransportRoutesList", { replace: true });
+    } catch (err) {
       console.error("Save failed:", err);
       const message = err.response?.data?.error || "Error saving route";
       alert(message);
     }
-
   };
 
   return (
@@ -118,7 +124,6 @@ useEffect(() => {
         </h2>
 
         <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-2">
-          {/* Route ID */}
           <div>
             <label className="block font-medium">Route ID</label>
             <input
@@ -130,7 +135,6 @@ useEffect(() => {
             />
           </div>
 
-          {/* Academic Session */}
           <div>
             <label className="block font-medium">Academic Session</label>
             <select
@@ -149,7 +153,6 @@ useEffect(() => {
             </select>
           </div>
 
-          {/* Distance (Dropdown) */}
           <div>
             <label className="block font-medium">Distance (KM)</label>
             <select
@@ -171,7 +174,6 @@ useEffect(() => {
             </select>
           </div>
 
-          {/* Van Charge */}
           <div>
             <label className="block font-medium">Van Charge</label>
             <input

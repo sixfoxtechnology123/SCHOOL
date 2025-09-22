@@ -23,13 +23,36 @@ const FeeHeadsList = () => {
 
   useEffect(() => {
     fetchFeeHeads();
+
+    const handleActivity = (e) => {
+      console.log("Activity Event Fired:", e.detail?.action);
+    };
+
+    window.addEventListener("newActivity", handleActivity);
+    return () => window.removeEventListener("newActivity", handleActivity);
   }, [location.key]);
 
-  const deleteFeeHead = async (id) => {
+  const deleteFeeHead = async (id, feeHeadName) => {
     if (!window.confirm("Are you sure you want to delete this Fee Head?")) return;
     try {
       await axios.delete(`http://localhost:5000/api/feeheads/${id}`);
       setFeeHeads((prev) => prev.filter((f) => f._id !== id));
+
+      // Save activity in localStorage
+      const newActivity = {
+        id: Date.now(),
+        text: `Deleted Fee Head ${feeHeadName}`,
+        timestamp: new Date(),
+      };
+      const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+      const updated = [newActivity, ...stored];
+      localStorage.setItem("activities", JSON.stringify(updated));
+
+      // Dispatch event for Layout
+      window.dispatchEvent(
+        new CustomEvent("newActivity", { detail: { action: newActivity.text } })
+      );
+
     } catch (err) {
       console.error("Failed to delete Fee Head:", err);
     }
@@ -38,73 +61,72 @@ const FeeHeadsList = () => {
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar/>
-     <div className="flex-1 overflow-y-auto p-3">
-        {/*  Added Header */}
+      <div className="flex-1 overflow-y-auto p-3">
         <Header/>
-    <div className="p-2 bg-white shadow-md rounded-md">
-      <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-bold text-green-800">Fee Heads</h2>
-          <div className="flex gap-4">
-            <BackButton />
-            <button
-              onClick={() => navigate("/FeeHeadsMaster")}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
-            >
-              Add Fee Head
-            </button>
+        <div className="p-2 bg-white shadow-md rounded-md">
+          <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-bold text-green-800">Fee Heads</h2>
+              <div className="flex gap-4">
+                <BackButton />
+                <button
+                  onClick={() => navigate("/FeeHeadsMaster")}
+                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
+                >
+                  Add Fee Head
+                </button>
+              </div>
+            </div>
           </div>
+
+          <table className="w-full table-auto border border-green-500">
+            <thead className="bg-green-100 text-sm">
+              <tr>
+                <th className="border border-green-500 px-2 py-1">FeeHead ID</th>
+                <th className="border border-green-500 px-2 py-1">FeeHead Name</th>
+                <th className="border border-green-500 px-2 py-1">Description</th>
+                <th className="border border-green-500 px-2 py-1">Action</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm text-center">
+              {feeHeads.length > 0 ? (
+                feeHeads.map((fh) => (
+                  <tr key={fh._id} className="hover:bg-gray-100 transition">
+                    <td className="border border-green-500 px-2 py-1">{fh.feeHeadId}</td>
+                    <td className="border border-green-500 px-2 py-1">{fh.feeHeadName}</td>
+                    <td className="border border-green-500 px-2 py-1">{fh.description}</td>
+                    <td className="border border-green-500 px-2 py-1 text-center">
+                      <div className="flex justify-center items-center gap-4">
+                        <button
+                          onClick={() =>
+                            navigate("/FeeHeadsMaster", { state: { feeHeadItem: fh } })
+                          }
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => deleteFeeHead(fh._id, fh.feeHeadName)}
+                          className="text-red-600 hover:text-red-800"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="4" className="text-center py-4 text-gray-500">
+                    No Fee Heads found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
-
-      <table className="w-full table-auto border border-green-500">
-        <thead className="bg-green-100 text-sm">
-          <tr>
-            <th className="border border-green-500 px-2 py-1">FeeHead ID</th>
-            <th className="border border-green-500 px-2 py-1">FeeHead Name</th>
-            <th className="border border-green-500 px-2 py-1">Description</th>
-            <th className="border border-green-500 px-2 py-1">Action</th>
-          </tr>
-        </thead>
-        <tbody className="text-sm text-center">
-          {feeHeads.length > 0 ? (
-            feeHeads.map((fh) => (
-              <tr key={fh._id} className="hover:bg-gray-100 transition">
-                <td className="border border-green-500 px-2 py-1">{fh.feeHeadId}</td>
-                <td className="border border-green-500 px-2 py-1">{fh.feeHeadName}</td>
-                <td className="border border-green-500 px-2 py-1">{fh.description}</td>
-                <td className="border border-green-500 px-2 py-1 text-center">
-                  <div className="flex justify-center items-center gap-4">
-                    <button
-                      onClick={() =>
-                        navigate("/feeheadsmaster", { state: { feeHeadItem: fh } })
-                      }
-                      className="text-blue-600 hover:text-blue-800"
-                    >
-                      <FaEdit />
-                    </button>
-                    <button
-                      onClick={() => deleteFeeHead(fh._id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="4" className="text-center py-4 text-gray-500">
-                No Fee Heads found.
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
     </div>
-    </div>
-</div>
   );
 };
 

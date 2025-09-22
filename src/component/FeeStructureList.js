@@ -1,3 +1,4 @@
+// pages/FeeStructureList.js
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -43,18 +44,41 @@ const FeeStructureList = () => {
   useEffect(() => {
     fetchData();
     fetchSessions();
+
+    const handleActivity = (e) => {
+      console.log("Activity Event Fired:", e.detail?.action);
+    };
+
+    window.addEventListener("newActivity", handleActivity);
+    return () => window.removeEventListener("newActivity", handleActivity);
   }, [location.key]);
 
-  // Delete fee
-  const deleteFee = async (id) => {
+  // --- Delete fee with activity logging ---
+  const deleteFee = async (id, className, feeHeadName) => {
     if (!window.confirm("Are you sure you want to delete this Fee Structure?")) return;
     try {
       await axios.delete(`http://localhost:5000/api/fees/${id}`);
       setFees(prev => prev.filter(f => f._id !== id));
+
+      // Save activity in localStorage
+      const newActivity = {
+        id: Date.now(),
+        text: `Deleted Fee Structure: ${className} - ${feeHeadName}`,
+        timestamp: new Date(),
+      };
+      const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+      const updated = [newActivity, ...stored];
+      localStorage.setItem("activities", JSON.stringify(updated));
+
+      // Dispatch event for layout
+      window.dispatchEvent(
+        new CustomEvent("newActivity", { detail: { action: newActivity.text } })
+      );
     } catch (err) {
       console.error("Failed to delete Fee Structure:", err);
     }
   };
+  // -----------------------------------------
 
   // Filter fees based on search term and session filter
   const filteredFees = fees.filter(fee =>
@@ -143,7 +167,7 @@ const FeeStructureList = () => {
                           <FaEdit />
                         </button>
                         <button
-                          onClick={() => deleteFee(fee._id)}
+                          onClick={() => deleteFee(fee._id, fee.className, fee.feeHeadName)}
                           className="text-red-600 hover:text-red-800"
                         >
                           <FaTrash />

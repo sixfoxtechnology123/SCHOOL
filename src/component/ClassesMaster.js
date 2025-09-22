@@ -50,6 +50,23 @@ const ClassesMaster = () => {
     setClassData({ ...classData, [name]: value });
   };
 
+  // --- Save activity to localStorage and dispatch event ---
+  const saveActivity = (message) => {
+    const newActivity = {
+      id: Date.now(),
+      text: message,
+      timestamp: new Date(),
+    };
+    const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+    const updated = [newActivity, ...stored];
+    localStorage.setItem("activities", JSON.stringify(updated));
+
+    window.dispatchEvent(
+      new CustomEvent("newActivity", { detail: { action: message } })
+    );
+  };
+  // --------------------------------------------------------
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -74,14 +91,24 @@ const ClassesMaster = () => {
           `http://localhost:5000/api/classes/${classData._id}`,
           classData
         );
+
+        const message = `Updated Class ${classData.className} - Section ${classData.section}`;
+        saveActivity(message);
+        console.log(`Activity Event Fired: ${message}`);
+
         alert("Class updated successfully!");
         navigate("/ClassesList", { replace: true });
       } else {
         await axios.post("http://localhost:5000/api/classes", classData);
+
+        const message = `Added new Class ${classData.className} - Section ${classData.section}`;
+        saveActivity(message);
+        console.log(`Activity Event Fired: ${message}`);
+
         alert("Class saved successfully!");
-        const res = await axios.get("http://localhost:5000/api/classes/latest");
+        const resNext = await axios.get("http://localhost:5000/api/classes/latest");
         setClassData({
-          classId: res.data?.classId || "C01",
+          classId: resNext.data?.classId || "C01",
           className: "",
           section: "",
         });

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FaTrash, FaEdit } from "react-icons/fa";
 import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
@@ -10,9 +10,7 @@ const TransportRoutesList = () => {
   const [routes, setRoutes] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [filterSession, setFilterSession] = useState("");
-
   const navigate = useNavigate();
-  const location = useLocation();
 
   // Fetch transport routes
   const fetchRoutes = async () => {
@@ -27,9 +25,8 @@ const TransportRoutesList = () => {
   // Fetch academic sessions
   const fetchSessions = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/sessions"); // make sure this route returns sessions
+      const res = await axios.get("http://localhost:5000/api/sessions");
       if (Array.isArray(res.data)) {
-        // Assuming your session object has _id and name/year
         const sorted = res.data
           .map(s => ({ id: s._id, name: s.name || s.year }))
           .sort((a, b) => a.name.localeCompare(b.name));
@@ -43,42 +40,66 @@ const TransportRoutesList = () => {
   useEffect(() => {
     fetchRoutes();
     fetchSessions();
-  }, [location.key]);
 
-  const deleteRoute = async (id) => {
+    // Optional: log activity events in console
+    const handleActivity = (e) => {
+      console.log("Activity Event Fired:", e.detail?.action);
+    };
+
+    window.addEventListener("newActivity", handleActivity);
+
+    return () => {
+      window.removeEventListener("newActivity", handleActivity);
+    };
+  }, []);
+
+  // Delete route
+  const deleteRoute = async (id, routeId) => {
     if (!window.confirm("Are you sure you want to delete this route?")) return;
+
     try {
       await axios.delete(`http://localhost:5000/api/transportroutes/${id}`);
       setRoutes((prev) => prev.filter((r) => r._id !== id));
+
+      //  Save activity in localStorage for Layout
+      const newActivity = {
+        id: Date.now(),
+        text: `Deleted transport route ${routeId}`,
+        timestamp: new Date(),
+      };
+      const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+      const updated = [newActivity, ...stored];
+      localStorage.setItem("activities", JSON.stringify(updated));
+
+      // Fire event for Layout
+      window.dispatchEvent(
+        new CustomEvent("newActivity", { detail: { action: newActivity.text } })
+      );
+
     } catch (err) {
       console.error("Failed to delete route:", err);
     }
   };
 
   // Filter routes by selected session
-  const filteredRoutes = routes.filter(r => {
-    return filterSession ? r.academicSession === filterSession : true;
-  });
+  const filteredRoutes = routes.filter(r => filterSession ? r.academicSession === filterSession : true);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar />
       <div className="flex-1 overflow-y-auto p-3">
         <Header />
-
         <div className="p-2 bg-white shadow-md rounded-md">
-          <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-green-800">Transport Routes</h2>
-              <div className="flex gap-4">
-                <BackButton />
-                <button
-                  onClick={() => navigate("/TransportRoutesMaster")}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
-                >
-                  Add Route
-                </button>
-              </div>
+          <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4 flex justify-between items-center">
+            <h2 className="text-xl font-bold text-green-800">Transport Routes</h2>
+            <div className="flex gap-4">
+              <BackButton />
+              <button
+                onClick={() => navigate("/TransportRoutesMaster")}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
+              >
+                Add Route
+              </button>
             </div>
           </div>
 
@@ -97,7 +118,6 @@ const TransportRoutesList = () => {
                 ))}
               </select>
             </div>
-
             {filterSession && (
               <button
                 onClick={() => setFilterSession("")}
@@ -138,7 +158,7 @@ const TransportRoutesList = () => {
                           <FaEdit />
                         </button>
                         <button
-                          onClick={() => deleteRoute(r._id)}
+                          onClick={() => deleteRoute(r._id, r.routeId)}
                           className="text-red-600 hover:text-red-800"
                         >
                           <FaTrash />
@@ -149,9 +169,7 @@ const TransportRoutesList = () => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="text-center py-4 text-gray-500">
-                    No routes found.
-                  </td>
+                  <td colSpan="5" className="text-center py-4 text-gray-500">No routes found.</td>
                 </tr>
               )}
             </tbody>
