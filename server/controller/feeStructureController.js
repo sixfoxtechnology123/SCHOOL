@@ -29,13 +29,7 @@ exports.getLatestFeeStructId = async (_req, res) => {
 exports.getAllFeeStructures = async (_req, res) => {
   try {
     const list = await FeeStructure.find().lean();
-    const fixedList = list.map(item => ({
-      ...item,
-      distance: item.distance
-        ? item.distance.includes("KM") ? item.distance : `${item.distance} KM`
-        : ""
-    }));
-    res.json(fixedList);
+    res.json(list);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch fee structures" });
   }
@@ -58,9 +52,7 @@ exports.createFeeStructure = async (req, res) => {
     if (routeId && feeHeadObj?.feeHeadName.toLowerCase() === "transport") {
       const routeObj = await TransportRoute.findOne({ routeId }).lean();
       if (routeObj?.distance) {
-        distance = routeObj.distance.includes("KM")
-          ? routeObj.distance
-          : `${routeObj.distance} KM`;
+        distance = routeObj.distance;
       }
     }
 
@@ -121,9 +113,7 @@ exports.updateFeeStructure = async (req, res) => {
       const routeObj = await TransportRoute.findOne({ routeId }).lean();
       if (routeObj?.distance) {
         payload.routeId = routeId;
-        payload.distance = routeObj.distance.includes("KM")
-          ? routeObj.distance
-          : `${routeObj.distance} KM`;
+        payload.distance = routeObj.distance;
       }
     } else {
       payload.routeId = "";
@@ -211,9 +201,7 @@ exports.getTransportRoutesBySession = async (req, res) => {
       _id: r._id,
       routeId: r.routeId,
       routeName: r.routeName || r.routeId,
-      distance: r.distance
-        ? r.distance.includes("KM") ? r.distance : `${r.distance} KM`
-        : "",
+      distance: r.distance || "",
       vanCharge: r.vanCharge,
     })));
   } catch (err) {

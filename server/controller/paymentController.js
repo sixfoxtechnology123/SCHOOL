@@ -36,18 +36,19 @@ const getAllClasses = async (_req, res) => {
   }
 };
 
+// ================== Get Sections by Class ==================
 const getSectionsByClass = async (req, res) => {
   try {
     const { className } = req.query;
+
     if (className) {
-      const sections = await Student.distinct("section", { admitClass: className });
-      return res.json(sections.map((s) => ({ className, section: s })));
+      const classDocs = await ClassMaster.find({ className }).select("section className -_id").lean();
+      const sections = classDocs.map((c) => ({ className: c.className, section: c.section }));
+      return res.json(sections);
     } else {
-      const pairs = await Student.aggregate([
-        { $group: { _id: { className: "$admitClass", section: "$section" } } },
-        { $project: { _id: 0, className: "$_id.className", section: "$_id.section" } },
-      ]);
-      res.json(pairs);
+      const classDocs = await ClassMaster.find().select("className section -_id").lean();
+      const uniquePairs = classDocs.map((c) => ({ className: c.className, section: c.section }));
+      return res.json(uniquePairs);
     }
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to fetch sections" });
@@ -61,7 +62,7 @@ const getStudentsByClassAndSection = async (req, res) => {
       return res.status(400).json({ error: "className and section required" });
 
     const students = await Student.find({ admitClass: className, section })
-      .select("_id firstName lastName studentName rollNo studentId admitClass section")
+      .select("_id firstName lastName studentName rollNo studentId admitClass section academicSession distanceFromSchool transportRequired")
       .lean();
 
     res.json(students);
@@ -89,6 +90,22 @@ const getLatestPaymentId = async (_req, res) => {
   }
 };
 
+// ================== Helper: Parse distance range ==================
+function parseDistanceRange(distanceStr) {
+  if (!distanceStr) return { min: 0, max: 0 };
+  const cleaned = distanceStr.replace(/[a-zA-Z]/g, "").trim(); // remove letters
+  let min = 0, max = 0;
+  if (cleaned.includes("-")) {
+    const [start, end] = cleaned.split("-");
+    min = parseInt(start.trim());
+    max = parseInt(end.trim());
+  } else {
+    min = parseInt(cleaned);
+    max = min;
+  }
+  return { min, max };
+}
+
 // ================== Helper: Populate Fee Amounts ==================
 async function populateFeeAmounts(paymentBody) {
   if (!Array.isArray(paymentBody.feeDetails)) {
@@ -99,12 +116,7 @@ async function populateFeeAmounts(paymentBody) {
     }
   }
 
-  //  Ensure date is stored as Date type
-  if (paymentBody.date) {
-    paymentBody.date = new Date(paymentBody.date);
-  } else {
-    paymentBody.date = new Date();
-  }
+  paymentBody.date = paymentBody.date ? new Date(paymentBody.date) : new Date();
 
   let studentDoc = null;
   if (paymentBody.student) {
@@ -117,6 +129,7 @@ async function populateFeeAmounts(paymentBody) {
       paymentBody.admitClass = studentDoc.admitClass;
       paymentBody.section = studentDoc.section;
       paymentBody.rollNo = studentDoc.rollNo;
+      paymentBody.academicSession = studentDoc.academicSession;
     }
   }
 
@@ -126,7 +139,10 @@ async function populateFeeAmounts(paymentBody) {
     if (classData) classId = classData.classId;
   }
 
-  const classStructures = await FeeStructure.find({ classId }).lean();
+  const classStructures = await FeeStructure.find({
+    classId,
+    academicSession: paymentBody.academicSession
+  }).lean();
   const feeHeads = await FeeHead.find().lean();
 
   let total = 0;
@@ -134,23 +150,22 @@ async function populateFeeAmounts(paymentBody) {
     paymentBody.feeDetails.map(async (f) => {
       let amount = 0;
       const feeHeadData = feeHeads.find(h => h.feeHeadName === f.feeHead);
-
       if (!feeHeadData) return { ...f, amount: 0 };
 
+      // ====== TRANSPORT AUTO-FILL LOGIC ======
       if (f.feeHead.toLowerCase() === "transport") {
         if ((!f.routeId || f.routeId === "") && studentDoc?.distanceFromSchool && studentDoc.transportRequired === "Yes") {
-          const routes = await FeeStructure.find({ classId, feeHeadId: feeHeadData.feeHeadId }).lean();
+          const routes = classStructures.filter(cs => cs.feeHeadId === feeHeadData.feeHeadId);
           const km = Number(studentDoc.distanceFromSchool);
 
           const autoRoute = routes.find(r => {
-            const cleaned = r.label.replace("KM", "").trim();
-            const [min, max] = cleaned.split("-").map(n => parseInt(n.trim()));
+            const { min, max } = parseDistanceRange(r.distance);
             return km >= min && km <= max;
           });
 
           if (autoRoute) {
             f.routeId = autoRoute.routeId;
-            f.distance = autoRoute.label;
+            f.distance = autoRoute.distance;
           }
         }
 
@@ -163,8 +178,9 @@ async function populateFeeAmounts(paymentBody) {
           amount = Number(f.amount || 0);
         }
       } else {
-        const feeStructure = classStructures.find(cs => cs.feeHeadId === feeHeadData.feeHeadId);
-        amount = feeStructure ? Number(feeStructure.amount) : Number(f.amount || 0);
+        // Non-transport fee
+        const feeData = classStructures.find(cs => cs.feeHeadId === feeHeadData.feeHeadId);
+        amount = feeData ? Number(feeData.amount) : Number(f.amount || 0);
       }
 
       total += amount;
@@ -175,11 +191,10 @@ async function populateFeeAmounts(paymentBody) {
   paymentBody.feeDetails = finalFeeDetails;
   paymentBody.currentFee = total;
 
-  // --- Get previous pending from last receipt only ---
   let previousPending = 0;
   if (studentDoc) {
     const lastPayment = await Payment.findOne({ student: studentDoc.studentId })
-      .sort({ date: -1, _id: -1 }) //  FIXED
+      .sort({ date: -1, _id: -1 })
       .lean();
     previousPending = lastPayment ? Number(lastPayment.pendingAmount || 0) : 0;
   }
@@ -198,17 +213,6 @@ async function populateFeeAmounts(paymentBody) {
   }
 
   paymentBody.paymentStatus = paymentBody.pendingAmount > 0 ? "Pending" : "Full Payment";
-
-  // console.log(" Final Payment Debug:", {
-  //   student: paymentBody.student,
-  //   currentFee: paymentBody.currentFee,
-  //   previousPending: paymentBody.previousPending,
-  //   totalAmount: paymentBody.totalAmount,
-  //   discount: paymentBody.discount,
-  //   netPayable: paymentBody.netPayable,
-  //   amountPaid: paymentBody.amountPaid,
-  //   pendingAmount: paymentBody.pendingAmount,
-  // });
 }
 
 // ================== Create Payment ==================
@@ -270,7 +274,7 @@ const deletePayment = async (req, res) => {
   }
 };
 
-// ================== Get Previous Pending and All Payments ==================
+// ================== Get Previous Pending ==================
 const getPreviousPending = async (req, res) => {
   try {
     const { studentId } = req.params;
@@ -285,17 +289,12 @@ const getPreviousPending = async (req, res) => {
 
     if (!studentDoc) return res.status(404).json({ error: "Student not found" });
 
-    const payments = await Payment.find({ student: studentDoc.studentId }).lean();
-
     const lastPayment = await Payment.findOne({ student: studentDoc.studentId })
-      .sort({ date: -1, _id: -1 }) //  FIXED
+      .sort({ date: -1, _id: -1 })
       .lean();
     const previousPending = lastPayment ? Number(lastPayment.pendingAmount || 0) : 0;
 
-    // console.log(`Previous pending for student ${studentDoc.studentId}: ${previousPending}`);
-    // console.log("All payments for this student:", payments);
-
-    return res.json({ studentId: studentDoc.studentId, previousPending, payments });
+    return res.json({ studentId: studentDoc.studentId, previousPending });
   } catch (err) {
     console.error("Error fetching previous pending:", err);
     return res.status(500).json({ error: err.message || "Failed to fetch previous pending" });
@@ -338,6 +337,54 @@ const getFeeAmount = async (req, res) => {
   }
 };
 
+// ====== Get all Fee Heads Amount for Class + Academic Session ======
+const getClassFeeStructure = async (req, res) => {
+  try {
+    const { className, academicSession, distance } = req.query;
+
+    if (!className || !academicSession) {
+      return res.status(400).json({ message: "className and academicSession required" });
+    }
+
+    let query = { className, academicSession };
+    let feeStructs = await FeeStructure.find(query).lean();
+
+    if (distance) {
+      const dist = Number(distance);
+      feeStructs = feeStructs.filter(f => {
+        if (f.feeHeadName !== "Transport" || !f.distance) return true;
+        const { min, max } = parseDistanceRange(f.distance);
+        return dist >= min && dist <= max;
+      });
+    }
+
+    res.json(feeStructs);
+  } catch (err) {
+    console.error("Error fetching class fee structure:", err);
+    res.status(500).json({ message: "Error fetching fee structure" });
+  }
+};
+
+// ====== New: Get Fee Structure By ClassId & AcademicSession ======
+const getFeeStructureByClassAndSession = async (req, res) => {
+  try {
+    const { classId, academicSession } = req.query;
+
+    if (!classId || !academicSession) {
+      return res.status(400).json({ message: "classId and academicSession required" });
+    }
+
+    const feeStructures = await FeeStructure.find({
+      classId,
+      academicSession,
+    }).select("feeHeadId feeHeadName amount distance");
+
+    res.json(feeStructures);
+  } catch (err) {
+    res.status(500).json({ message: "Error fetching fee structure", error: err.message });
+  }
+};
+
 // ================== Export All ==================
 module.exports = {
   getAllPayments,
@@ -352,4 +399,6 @@ module.exports = {
   getAllClasses,
   checkDuplicatePayment,
   getPreviousPending,
+  getClassFeeStructure,
+  getFeeStructureByClassAndSession,
 };

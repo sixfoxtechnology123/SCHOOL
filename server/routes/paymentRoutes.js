@@ -11,7 +11,8 @@ router.get("/latest", controller.getLatestPaymentId);
 router.get("/students", controller.getAllStudents);
 router.get("/fee-amount", controller.getFeeAmount);
 router.get("/payments/check-duplicate", controller.checkDuplicatePayment);
-
+router.get("/class-fees", controller.getClassFeeStructure);
+router.get("/feestructure", controller.getFeeStructureByClassAndSession);
 
 // New routes
 router.get("/sections", controller.getSectionsByClass);

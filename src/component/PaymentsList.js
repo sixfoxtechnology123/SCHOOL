@@ -306,58 +306,60 @@ const getStudentName = (studentId) => {
           <table className="w-full table-auto border border-green-600">
             <thead className="bg-green-100 text-sm">
               <tr>
-                <th className="border border-green-600 px-2 py-1">Payment ID</th>
-                <th className="border border-green-600 px-2 py-1">Student</th>
-                <th className="border border-green-600 px-2 py-1">Class</th>
-                <th className="border border-green-600 px-2 py-1">Sec</th>
-                <th className="border border-green-600 px-2 py-1">Roll</th>
-                <th className="border border-green-600 px-2 py-1">Fee Heads</th>
-                <th className="border border-green-600 px-2 py-1">Total Amount</th>
-                <th className="border border-green-600 px-2 py-1">Paid Amount</th>
-                <th className="border border-green-600 px-2 py-1">Pending Amount</th>
-                <th className="border border-green-600 px-2 py-1">Date</th>
-                <th className="border border-green-600 px-2 py-1">Pay Mode</th>
-                <th className="border border-green-600 px-2 py-1">Txn ID</th>
-                <th className="border border-green-600 px-2 py-1">Card Number</th>
-                <th className="border border-green-600 px-2 py-1">Remarks</th>
-                <th className="border border-green-600 px-2 py-1">Collected By</th>
-                <th className="border border-green-600 px-2 py-1">Action</th>
+                <th className="border border-green-600 px-1 py-1">Payment ID</th>
+                <th className="border border-green-600 px-1 py-1">Session</th>
+                <th className="border border-green-600 px-1 py-1">Student</th>
+                <th className="border border-green-600 px-1 py-1">Class</th>
+                <th className="border border-green-600 px-1 py-1">Sec</th>
+                <th className="border border-green-600 px-1 py-1">Roll</th>
+                <th className="border border-green-600 px-1 py-1">Fee Heads</th>
+                <th className="border border-green-600 px-1 py-1">Total Amount</th>
+                <th className="border border-green-600 px-1 py-1">Paid Amount</th>
+                <th className="border border-green-600 px-1 py-1">Pending Amount</th>
+                <th className="border border-green-600 px-1 py-1">Date</th>
+                <th className="border border-green-600 px-1 py-1">Pay Mode</th>
+                {/* <th className="border border-green-600 px-1 py-1">Txn ID</th>
+                <th className="border border-green-600 px-1 py-1">Card Number</th> */}
+                <th className="border border-green-600 px-1 py-1">Remarks</th>
+                <th className="border border-green-600 px-1 py-1">Collected By</th>
+                <th className="border border-green-600 px-1 py-1">Action</th>
               </tr>
             </thead>
             <tbody className="text-sm text-center">
               {filteredPayments.length > 0 ? (
                 filteredPayments.map((p) => (
                   <tr key={p._id} className="hover:bg-gray-100 transition">
-                    <td className="border border-green-600 px-2 py-1">{p.paymentId}</td>
-                    <td className="border border-green-600 px-2 py-1">{getStudentName(p.student)}</td>
-                    <td className="border border-green-600 px-2 py-1">{p.admitClass}</td>
-                    <td className="border border-green-600 px-2 py-1">{p.section}</td>
-                    <td className="border border-green-600 px-2 py-1">{p.rollNo}</td>
-                   <td className="border border-green-600 px-2 py-1 text-left">
+                    <td className="border border-green-600 px-1 py-1">{p.paymentId}</td>
+                    <td className="border border-green-600 px-1 py-1">{p.academicSession}</td>
+                    <td className="border border-green-600 px-1 py-1">{getStudentName(p.student)}</td>
+                    <td className="border border-green-600 px-1 py-1">{p.admitClass}</td>
+                    <td className="border border-green-600 px-1 py-1">{p.section}</td>
+                    <td className="border border-green-600 px-1 py-1">{p.rollNo}</td>
+                   <td className="border border-green-600 px-1 py-1 text-left">
                       {p.feeDetails && p.feeDetails.length > 0
                         ? p.feeDetails.map(f => `${f.feeHead}: ₹${f.amount}`).join(", ")
                         : "-"}
                     </td>
-                    <td className="border border-green-600 px-2 py-1">
+                    <td className="border border-green-600 px-1 py-1">
                       ₹{Number(p.totalAmount).toFixed(2)}
                     </td>
-                    <td className="border border-green-600 px-2 py-1">
+                    <td className="border border-green-600 px-1 py-1">
                       ₹{Number(p.amountPaid).toFixed(2)}
                     </td>
-                     <td className="border border-green-600 px-2 py-1">
+                     <td className="border border-green-600 px-1 py-1">
                       ₹{Number(p.pendingAmount).toFixed(2)}
                     </td>
-                    <td className="border border-green-600 px-2 py-1">{formatDDMMYYYY(p.date)}</td>
-                    <td className="border border-green-600 px-2 py-1">{p.paymentMode}</td>
-                    <td className="border border-green-600 px-2 py-1">
+                    <td className="border border-green-600 px-1 py-1">{formatDDMMYYYY(p.date)}</td>
+                    <td className="border border-green-600 px-1 py-1">{p.paymentMode}</td>
+                    {/* <td className="border border-green-600 px-1 py-1">
                       {p.transactionId || "-"}
                     </td>
-                    <td className="border border-green-600 px-2 py-1">
+                    <td className="border border-green-600 px-1 py-1">
                       {p.cardNumber || "-"}
-                    </td>
-                    <td className="border border-green-600 px-2 py-1">{p.remarks || "-"}</td>
-                    <td className="border border-green-600 px-2 py-1">{p.user || "-"}</td>
-                    <td className="border border-green-600 px-2 py-1">
+                    </td> */}
+                    <td className="border border-green-600 px-1 py-1">{p.remarks || "-"}</td>
+                    <td className="border border-green-600 px-1 py-1">{p.user || "-"}</td>
+                    <td className="border border-green-600 px-1 py-1">
                       <div className="flex justify-center gap-4">
                         <button
                           onClick={() => handlePrint(p._id)}

@@ -20,14 +20,15 @@ const PaymentsMaster = () => {
     remarks: "",
     user: localStorage.getItem("userId") || "admin",
   });
-const [formData, setFormData] = useState({});
 
-const [previousPending, setPreviousPending] = useState(0); // new
-const [currentFee, setCurrentFee] = useState(0);           // new
-const [discount, setDiscount] = useState('');               // new
-const [netPayable, setNetPayable] = useState(0);           // new
+  const [previousPending, setPreviousPending] = useState(0);
+  const [currentFee, setCurrentFee] = useState(0);
+  const [discount, setDiscount] = useState('');
+  const [netPayable, setNetPayable] = useState(0);
+  const [amountPaid, setAmountPaid] = useState("");
+  const [pendingAmount, setPendingAmount] = useState(0);
 
-  const [classes, setClasses] = useState([]); 
+  const [classes, setClasses] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [students, setStudents] = useState([]);
   const [sections, setSections] = useState([]);
@@ -39,14 +40,10 @@ const [netPayable, setNetPayable] = useState(0);           // new
   const [classOptions, setClassOptions] = useState([]);
   const [sectionOptions, setSectionOptions] = useState([]);
   const [studentOptions, setStudentOptions] = useState([]);
-
   const [initialSectionOptions, setInitialSectionOptions] = useState([]);
   const [initialStudentOptions, setInitialStudentOptions] = useState([]);
 
-  // ===== NEW STATE FOR PAYMENT STATUS FEATURE =====
-  const [paymentStatus, setPaymentStatus] = useState("Full Payment"); // default
-  const [amountPaid, setAmountPaid] = useState("");
-  const [pendingAmount, setPendingAmount] = useState(0);
+  const [paymentStatus, setPaymentStatus] = useState("Full Payment");
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,8 +59,6 @@ const [netPayable, setNetPayable] = useState(0);           // new
       ]);
 
       const studentsData = stuRes.data || [];
-      setStudents(studentsData);
-
       const stuOpts = studentsData.map((s) => {
         const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
         return {
@@ -72,53 +67,64 @@ const [netPayable, setNetPayable] = useState(0);           // new
           admitClass: s.admitClass,
           section: s.section,
           rollNo: s.rollNo,
-          transport: s.transport,
-          distance: s.distance || 0,
+          transportRequired: s.transportRequired,
+          distanceFromSchool: s.distanceFromSchool || 0,
+          academicSession: s.academicSession || "",
         };
       });
 
-      setStudentOptions(stuOpts);
-      setInitialStudentOptions(stuOpts);
-
       const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
       const classOpts = classData.map((c) => ({ value: c, label: c }));
-      setClassOptions(classOpts);
 
       const sectionsData = sectionRes.data || [];
-      setSections(sectionsData);
       const secOpts = sectionsData.map((s) => ({
         value: s.section,
         label: s.section,
         className: s.className,
       }));
+
+      setStudents(studentsData);
+      setStudentOptions(stuOpts);
+      setInitialStudentOptions(stuOpts);
+
+      setClassOptions(classOpts);
+      setSections(sectionsData);
       setSectionOptions(secOpts);
       setInitialSectionOptions(secOpts);
 
       setFeeHeads(fhRes.data || []);
-      return { studentsData, classData, sectionsData };
     } catch (err) {
       console.error("Error fetching dropdown data:", err);
-      return { studentsData: [], classData: [], sectionsData: [] };
     }
   };
 
   const fetchRoutes = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/fees/transport/routes");
-      const routeList = res.data.map((r) => ({
-        routeId: r.routeId,
-        distance: r.distance || 0,
-        vanCharge: r.vanCharge || 0,
-        label: r.distance.toString().includes("KM") ? r.distance : `${r.distance} KM`,
-      }));
+      const routeList = res.data.map((r) => {
+        let minKm = 0, maxKm = 0;
+        if (r.distance.includes("-")) {
+          const [minStr, maxStr] = r.distance.split("-");
+          minKm = Number(minStr.trim());
+          maxKm = Number(maxStr.trim());
+        } else {
+          minKm = maxKm = Number(r.distance.trim());
+        }
+        return {
+          routeId: r.routeId,
+          distance: r.distance,
+          vanCharge: r.vanCharge || 0,
+          label: r.distance,
+          minKm,
+          maxKm,
+        };
+      });
       setRoutes(routeList);
       setShowRouteDropdown(routeList.length > 0);
-      return routeList;
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching routes:", err);
       setRoutes([]);
       setShowRouteDropdown(false);
-      return [];
     }
   };
 
@@ -134,162 +140,15 @@ const [netPayable, setNetPayable] = useState(0);           // new
 
 useEffect(() => {
   const init = async () => {
-    try {
-      // --- Fetch all dropdown data ---
-      const [stuRes, classRes, sectionRes, fhRes, routeRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/payments/students"),
-        axios.get("http://localhost:5000/api/payments/classes"),
-        axios.get("http://localhost:5000/api/payments/sections"),
-        axios.get("http://localhost:5000/api/feeheads"),
-        axios.get("http://localhost:5000/api/fees/transport/routes"),
-      ]);
-
-      const studentsData = stuRes.data || [];
-      const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
-      const sectionsData = sectionRes.data || [];
-      const feeHeadsData = fhRes.data || [];
-      const routeList = routeRes.data || [];
-
-      // --- Prepare options ---
-      const stuOpts = studentsData.map((s) => {
-        const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
-        return {
-          value: s._id,
-          label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""}`,
-          admitClass: s.admitClass,
-          section: s.section,
-          rollNo: s.rollNo,
-          transportRequired: s.transportRequired,
-          distanceFromSchool: s.distanceFromSchool,
-        };
-      });
-
-      const classOpts = classData.map((c) => ({ value: c, label: c }));
-      const secOpts = sectionsData.map((s) => ({
-        value: s.section,
-        label: s.section,
-        className: s.className,
-      }));
-
-      const routeOpts = routeList.map((r) => ({
-        routeId: r.routeId,
-        distance: r.distance || 0,
-        vanCharge: r.vanCharge || 0,
-        label: r.distance.toString().includes("KM") ? r.distance : `${r.distance} KM`,
-      }));
-
-      // --- Set states ---
-      setStudents(studentsData);
-      setStudentOptions(stuOpts);
-      setInitialStudentOptions(stuOpts);
-
-      setClassOptions(classOpts);
-      setSections(sectionsData);
-      setSectionOptions(secOpts);
-      setInitialSectionOptions(secOpts);
-
-      setFeeHeads(feeHeadsData);
-      setRoutes(routeOpts);
-      setShowRouteDropdown(routeOpts.length > 0);
-
-      // --- Edit mode prefill ---
-      if (location.state?.paymentItem) {
-        const p = location.state.paymentItem;
-        setIsEditMode(true);
-
-        // Prefill basic fields
-        setPaymentData((prev) => ({
-          ...prev,
-          ...p,
-          date: p.date ? new Date(p.date).toISOString().slice(0, 10) : "",
-          user: p.user || localStorage.getItem("userId") || "admin",
-        }));
-        
-        setPreviousPending(p.previousPending || 0);
-        setCurrentFee(p.currentFee || 0);
-        setDiscount(p.discount || 0);
-        setNetPayable(p.netPayable || 0);
-        setPaymentStatus(p.paymentStatus || "Full Payment");
-        setAmountPaid(p.amountPaid || p.totalAmount || 0);
-        setPendingAmount(p.pendingAmount || 0);
-
-        // Filter sections for class
-        const filteredSections = secOpts.filter((s) => s.className === p.admitClass);
-        setSectionOptions(filteredSections);
-
-        // Filter students for class & section
-        const filteredStudents = stuOpts.filter(
-          (s) => s.admitClass === p.admitClass && s.section === p.section
-        );
-        setStudentOptions(filteredStudents);
-
-        // Prefill student with ID & display name
-        const selectedStudent = filteredStudents.find((s) => s.value === p.student);
-        if (selectedStudent) {
-          const stu = studentsData.find((s) => s._id === selectedStudent.value);
-          const fullName = [stu?.firstName, stu?.lastName].filter(Boolean).join(" ");
-          const displayName = `${fullName || stu?.studentName || "Unnamed"} (${stu?.studentId || ""})`;
-
-          setPaymentData((prev) => ({
-            ...prev,
-            student: selectedStudent.value,
-            studentName: displayName,
-            admitClass: selectedStudent.admitClass,
-            section: selectedStudent.section,
-            rollNo: selectedStudent.rollNo,
-          }));
-        }
-
-        // --- Fetch all payments of this student and log ---
-        if (p.student) {
-          try {
-            const allPaymentsRes = await axios.get(
-              `http://localhost:5000/api/payments/student/${p.student}`
-            );
-            const allPayments = allPaymentsRes.data.payments || [];
-            console.log("All payments for this student:", allPayments);
-
-            // Optional: calculate total pending
-            const totalPending = allPayments.reduce(
-              (acc, pay) => acc + (pay.pendingAmount || 0),
-              0
-            );
-            console.log("Total pending for this student:", totalPending);
-            setPreviousPending(totalPending);
-          } catch (err) {
-            console.error("Error fetching student payments:", err);
-          }
-        }
-
-        // Prefill transport route if exists
-        const transportFee = p.feeDetails?.find(
-          (f) => f.feeHead.toLowerCase() === "transport"
-        );
-        if (transportFee) {
-          setSelectedRoute(transportFee.routeId || "");
-          setShowRouteDropdown(true);
-        }
-      } else {
-        // --- New Payment ---
-        const res = await axios.get("http://localhost:5000/api/payments/latest");
-        const nextId = res.data?.paymentId || "RECEIPT001";
-        setPaymentData((prev) => ({ ...prev, paymentId: nextId }));
-        setIsEditMode(false);
-        setShowRouteDropdown(false);
-        setSelectedRoute("");
-      }
-    } catch (err) {
-      console.error("Error initializing form:", err);
-    }
+    await fetchRoutes();       // fetch transport routes first
+    await fetchDropdownData(); // then fetch students
+    await fetchNextPaymentId();
   };
-
   init();
-}, [location.state]);
+}, []);
 
 
-
-
-  // ===== Handlers (Class, Section, Student) =====
+  // ===== Handlers =====
   const handleClassChange = (selected) => {
     if (!selected) {
       setPaymentData((prev) => ({ ...prev, admitClass: "", section: "", student: "", rollNo: "" }));
@@ -327,191 +186,155 @@ useEffect(() => {
 
 const handleStudentChange = async (selected) => {
   if (!selected) {
-    setPaymentData((prev) => ({ ...prev, student: "", rollNo: "" }));
+    setPaymentData(prev => ({
+      ...prev,
+      student: "",
+      rollNo: "",
+      admitClass: "",
+      section: "",
+      academicSession: "",
+      feeDetails: [],
+    }));
     setPreviousPending(0);
     setCurrentFee(0);
     setNetPayable(0);
     setAmountPaid("");
     setPendingAmount(0);
+    setSelectedRoute("");
     return;
   }
 
-  const stu = initialStudentOptions.find((s) => s.value === selected.value);
+  const stu = initialStudentOptions.find(s => s.value === selected.value);
   if (!stu) return;
 
-  setPaymentData((prev) => ({
+  setPaymentData(prev => ({
     ...prev,
     student: stu.value,
     rollNo: stu.rollNo,
     admitClass: stu.admitClass,
     section: stu.section,
+    academicSession: stu.academicSession,
+    feeDetails: [], // keep blank for manual selection
   }));
 
+  // --- Fetch previous pending ---
   try {
-    const res = await axios.get(
-      `http://localhost:5000/api/payments/pending/${stu.value}`
-    );
-
-    const previousPending = Number(res.data?.previousPending || 0);
-
-    console.log("Previous pending from backend:", previousPending);
-
-    setPreviousPending(previousPending);
-
-    //  Corrected calculation (don’t double-count previousPending)
-    const totalFee = Number(currentFee || 0); 
-    const discountValue = Number(discount || 0);
-    const paid = Number(amountPaid || 0);
-
-    // latest pending comes from backend
-    const totalPayable = totalFee + previousPending;
-    const net = totalPayable - discountValue;
-    const pendingAmt = net - paid;
-
-    setNetPayable(net);
-    setPendingAmount(pendingAmt > 0 ? pendingAmt : 0);
+    const res = await axios.get(`http://localhost:5000/api/payments/pending/${stu.value}`);
+    setPreviousPending(Number(res.data?.previousPending || 0));
   } catch (err) {
-    console.error("Error fetching previous pending:", err);
-
+    console.error(err);
     setPreviousPending(0);
-    const totalFee = Number(currentFee || 0);
-    const net = totalFee - Number(discount || 0);
-    const pendingAmt = net - Number(amountPaid || 0);
-    setNetPayable(net);
-    setPendingAmount(pendingAmt > 0 ? pendingAmt : 0);
   }
+
+  // --- Fetch Fee Heads (for dropdown only, not selected automatically) ---
+  try {
+    const feesRes = await axios.get("http://localhost:5000/api/payments/class-fees", {
+      params: { className: stu.admitClass, academicSession: stu.academicSession },
+    });
+
+    const feeHeadOptions = feesRes.data.map(f => ({
+      feeHeadName: f.feeHeadName,
+      amount: f.amount,
+      distance: f.distance || "",
+      feeStructId: f.feeStructId,
+    }));
+
+    setFeeHeads(feeHeadOptions);
+
+    // --- Determine transport range for student ---
+    if (stu.transportRequired) {
+      const transportFee = feeHeadOptions.find(fh => fh.feeHeadName.toLowerCase() === "transport");
+      if (transportFee) {
+        const [min, max] = transportFee.distance.split("-").map(Number);
+        if (stu.distanceFromSchool >= min && stu.distanceFromSchool <= max) {
+          setSelectedRoute(transportFee.distance); // show student’s applicable transport distance
+        }
+      }
+    }
+
+  } catch (err) {
+    console.error("Error fetching fee heads:", err);
+  }
+
+  // Reset current fee & net payable
+  setCurrentFee(0);
+  setNetPayable(0);
+  setPendingAmount(0);
+  setAmountPaid("");
 };
 
 
 
+const handleFeeHeadChange = (selectedHeads) => {
+  if (!selectedHeads) selectedHeads = [];
 
+  const selectedHeadNames = selectedHeads.map(fh => fh.value);
 
-  const fetchAmount = async (admitClass, feeHeadName, routeId) => {
-    if (!admitClass || !feeHeadName) return 0;
-    try {
-      const res = await axios.get("http://localhost:5000/api/payments/fee-amount", {
-        params: { admitClass, feeHeadName, routeId: routeId || undefined },
+  const updatedFeeDetails = selectedHeadNames.map(name => {
+    const feeObj = feeHeads.find(fh => fh.feeHeadName === name);
+
+    if (!feeObj) return null;
+
+    // --- Transport: assign correct amount based on student's distance ---
+    if (name.toLowerCase() === "transport") {
+      const studentDistance = initialStudentOptions.find(s => s.value === paymentData.student)?.distanceFromSchool || 0;
+      let matchedFee = feeHeads.find(fh => {
+        if (fh.feeHeadName.toLowerCase() !== "transport") return false;
+        const [min, max] = fh.distance.split("-").map(Number);
+        return studentDistance >= min && studentDistance <= max;
       });
-      return res.data?.amount || 0;
-    } catch (err) {
-      console.error("Error fetching fee amount:", err);
-      return 0;
+      if (!matchedFee) matchedFee = feeObj;
+
+      return {
+        feeHead: "Transport",
+        amount: matchedFee.amount,
+        distance: matchedFee.distance,
+        routeId: "",
+      };
     }
-  };
 
-// ===== handleFeeHeadChange =====
-const handleFeeHeadChange = async (selected) => {
-  const newHeads = selected || [];
-  const hasTransport = newHeads.some(
-    (fh) => fh.value.toLowerCase() === "transport"
-  );
+    return {
+      feeHead: feeObj.feeHeadName,
+      amount: feeObj.amount,
+      distance: "",
+      routeId: "",
+    };
+  }).filter(Boolean);
 
-  // remove old transport entry
-  const otherFeeHeads = paymentData.feeDetails.filter(
-    (f) => f.feeHead.toLowerCase() !== "transport"
-  );
-
-  let transportDetail = null;
-
-  if (hasTransport) {
-    const routeList = await fetchRoutes();
-    const student = students.find((s) => s._id === paymentData.student);
-
-    if (student?.transportRequired === "Yes" && student.distanceFromSchool) {
-      const km = Number(student.distanceFromSchool);
-
-      // find matching route
-      const autoRoute = routeList.find((r) => {
-        let min = 0, max = 0;
-        if (r.label.includes("-")) {
-          [min, max] = r.label.replace("KM", "").split("-").map((n) => parseInt(n.trim()));
-        } else {
-          min = 0;
-          max = parseInt(r.label.replace("KM", "").trim());
-        }
-        return km >= min && km <= max;
-      });
-
-      if (autoRoute) {
-        const amount = await fetchAmount(
-          paymentData.admitClass,
-          "Transport",
-          autoRoute.routeId
-        );
-
-        transportDetail = {
-          feeHead: "Transport",
-          amount,
-          routeId: autoRoute.routeId,
-          distance: autoRoute.label,
-        };
-
-        setSelectedRoute(autoRoute.routeId);
-        setShowRouteDropdown(true);
-      } else {
-        // student marked transport but no route matches
-        setShowRouteDropdown(true);
-      }
-    } else {
-      // no transport info in student record → allow manual select
-      setShowRouteDropdown(true);
-    }
-  } else {
-    setShowRouteDropdown(false);
-    setSelectedRoute("");
-  }
-
-  // prepare updated fee details
-  const finalFeeDetails = await Promise.all(
-    newHeads.map(async (fh) => {
-      if (fh.value.toLowerCase() === "transport") {
-        return transportDetail || { feeHead: "Transport", amount: 0, routeId: "" };
-      } else {
-        const amount = await fetchAmount(paymentData.admitClass, fh.value);
-        return { feeHead: fh.value, amount };
-      }
-    })
-  );
-
-  // recalc totals
-  const total = finalFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-  const totalPayable = previousPending + total;
-  const net = totalPayable - Number(discount || 0);
+  const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  const net = total + previousPending - Number(discount || 0);
   const pending = net - Number(amountPaid || 0);
 
   setCurrentFee(total);
   setNetPayable(net);
   setPendingAmount(pending);
 
-  setPaymentData((prev) => ({
-    ...prev,
-    feeDetails: finalFeeDetails,
-    totalAmount: total,
-  }));
+  setPaymentData(prev => ({ ...prev, feeDetails: updatedFeeDetails }));
+
+  // Show route dropdown only if Transport selected
+  const hasTransport = selectedHeadNames.some(h => h.toLowerCase() === "transport");
+  setShowRouteDropdown(hasTransport);
 };
 
-// ===== handleRouteChange =====
-const handleRouteChange = async (routeId) => {
-  const selectedRoute = routes.find((r) => r.routeId === routeId);
-  const updatedFeeDetails = await Promise.all(
-    paymentData.feeDetails.map(async (f) => {
+
+
+  const handleRouteChange = async (routeId) => {
+    const selectedRouteObj = routes.find((r) => r.routeId === routeId);
+    const updatedFeeDetails = paymentData.feeDetails.map(f => {
       if (f.feeHead.toLowerCase() === "transport") {
-        const amount = await fetchAmount(paymentData.admitClass, f.feeHead, routeId);
         return {
           ...f,
-          amount,
-          routeId,
-          distance: selectedRoute?.label || "",
+          amount: selectedRouteObj?.vanCharge || f.amount,
+          distance: selectedRouteObj?.label || "",
+          routeId: routeId,
         };
       }
       return f;
-    })
-  );
+    });
 
-  const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-  setPaymentData((prev) => ({ ...prev, feeDetails: updatedFeeDetails, totalAmount: total }));
-};
-
+    const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+    setPaymentData(prev => ({ ...prev, feeDetails: updatedFeeDetails, totalAmount: total }));
+  };
 
   const handleAmountChange = (feeHead, value) => {
     const updatedFeeDetails = paymentData.feeDetails.map((f) =>
@@ -520,7 +343,6 @@ const handleRouteChange = async (routeId) => {
     const total = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
     setPaymentData((prev) => ({ ...prev, feeDetails: updatedFeeDetails, totalAmount: total }));
 
-    // Update pending amount
     if (paymentStatus === "Pending") {
       const remaining = total - Number(amountPaid || 0);
       setPendingAmount(remaining > 0 ? remaining : 0);
@@ -575,6 +397,7 @@ const submissionData = {
   pendingAmount,
   feeDetails: paymentData.feeDetails,
   paymentStatus,
+  academicSession: paymentData.academicSession,
 };
 
 
@@ -622,8 +445,6 @@ const submissionData = {
 };
 
 
-
-
   return (
     <div className="min-h-screen bg-zinc-300 flex items-center justify-center">
       <div className="bg-white shadow-lg rounded-lg p-4 w-full m-5">
@@ -631,11 +452,8 @@ const submissionData = {
           {isEditMode ? "Update Receipt" : "New Receipt"}
         </h2>
 
-        <form
-          onSubmit={handleSubmit}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-          {/* Payment Id */}
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Payment Id */}
           <label className="flex flex-col text-sm font-semibold text-black">
             Payment Id
             <input
@@ -722,48 +540,53 @@ const submissionData = {
             />
           </label>
 
-          {/* Fee Heads Multi-select */}
-          <label className="flex flex-col text-sm font-semibold text-black col-span-2">
-            Fee Heads
-            <Select
-              isMulti
-              options={feeHeads.map((fh) => ({
-                value: fh.feeHeadName,
-                label: fh.feeHeadName,
-              }))}
-              onChange={handleFeeHeadChange}
-              value={paymentData.feeDetails.map((f) => ({
-                value: f.feeHead,
-                label: f.feeHead,
-              }))}
-              placeholder="Select Fee Heads..."
-              isSearchable
+          {/* Academic Session */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Academic Session
+            <input
+              type="text"
+              name="academicSession"
+              value={paymentData.academicSession || ""}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100"
             />
           </label>
 
-        {showRouteDropdown && (
-            <label className="flex flex-col text-sm font-semibold text-black">
-              Distance (KM)
-              <select
-                name="routeId"
-                disabled
-                value={selectedRoute || ""}
-                onChange={async (e) => {
-                  setSelectedRoute(e.target.value);
-                  await handleRouteChange(e.target.value);
-                }}
-                className="border border-gray-400 p-1 rounded cursor-not-allowed"
-              >
-                <option value="">--Select Distance--</option>
-                {routes.map((r) => (
-                  <option key={r.routeId} value={r.routeId}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
+    <label className="flex flex-col text-sm font-semibold text-black col-span-2">
+  Fee Heads
+  <Select
+  isMulti
+  options={feeHeads.map((fh) => ({
+    value: fh.feeHeadName,
+    label: fh.feeHeadName,
+  }))}
+  onChange={handleFeeHeadChange}
+  value={paymentData.feeDetails
+    .map((f) => feeHeads.find((fh) => fh.feeHeadName === f.feeHead))
+    .filter(Boolean)
+    .map((f) => ({ value: f.feeHeadName, label: f.feeHeadName }))}
+  placeholder="Select Fee Heads..."
+  isSearchable
+/>
 
+</label>
+
+
+ {paymentData.feeDetails.some(f => f.feeHead.toLowerCase() === "transport") && (
+  <label className="flex flex-col text-sm font-semibold text-black">
+    Distance (KM)
+    <input
+      type="number"
+      value={initialStudentOptions.find(s => s.value === paymentData.student)?.distanceFromSchool || ""}
+      readOnly
+      className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
+    />
+  </label>
+)}
+
+
+
+         
 
           {/* Amount per head */}
           {paymentData.feeDetails.map((f) => (
@@ -1011,6 +834,7 @@ const submissionData = {
               {isEditMode ? "Update" : "Save"}
             </button>
           </div>
+
         </form>
       </div>
     </div>
@@ -1018,4 +842,3 @@ const submissionData = {
 };
 
 export default PaymentsMaster;
-

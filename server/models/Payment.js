@@ -12,6 +12,7 @@ const paymentSchema = new mongoose.Schema(
     paymentId: { type: String, required: true, unique: true },
     student: { type: String, required: true }, // store student ID as string
     studentName: { type: String }, 
+    academicSession: String,
     admitClass: String,
     section: String,
     rollNo: String,
