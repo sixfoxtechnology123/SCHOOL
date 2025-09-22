@@ -13,7 +13,9 @@ const FeeHeadsReport = () => {
   const [selectedStudents, setSelectedStudents] = useState([]);
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [availableClasses, setAvailableClasses] = useState([]);
+  const [availableSessions, setAvailableSessions] = useState([]);
   const [selectedClass, setSelectedClass] = useState("All");
+  const [selectedSession, setSelectedSession] = useState("All");
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -25,12 +27,22 @@ const FeeHeadsReport = () => {
       setLoading(true);
       setErrorMsg("");
       try {
+        // Fetch fee head summary
         const res = await axios.get(
           "http://localhost:5000/api/reports/fee-head-summary"
         );
         const data = Array.isArray(res.data) ? res.data : [];
         setFeeData(data);
         setFilteredFeeData(data);
+
+        // Fetch academic sessions from master
+        const sessionRes = await axios.get(
+          "http://localhost:5000/api/reports/sessions"
+        );
+        const sessions = Array.isArray(sessionRes.data)
+          ? sessionRes.data.map((s) => s.year)
+          : [];
+        setAvailableSessions(sessions.sort());
       } catch (err) {
         console.error("Error fetching fee head summary:", err);
         setErrorMsg(
@@ -40,6 +52,7 @@ const FeeHeadsReport = () => {
         );
         setFeeData([]);
         setFilteredFeeData([]);
+        setAvailableSessions([]);
       } finally {
         setLoading(false);
       }
@@ -48,20 +61,29 @@ const FeeHeadsReport = () => {
     fetch();
   }, []);
 
-  // Handle fee head search
-  const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    if (!value) {
-      setFilteredFeeData(feeData);
-    } else {
-      const filtered = feeData.filter((f) =>
-        f.feeHead?.toLowerCase().includes(value.toLowerCase())
+  // Filter main table by session and search term
+  useEffect(() => {
+    let filtered = feeData;
+
+    if (searchTerm) {
+      filtered = filtered.filter((f) =>
+        f.feeHead?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-      setFilteredFeeData(filtered);
     }
+
+    if (selectedSession !== "All") {
+      filtered = filtered.filter((f) => f.academicSession === selectedSession);
+    }
+
+    setFilteredFeeData(filtered);
+  }, [feeData, searchTerm, selectedSession]);
+
+  // Handle search
+  const handleSearch = (e) => {
+    setSearchTerm(e.target.value);
   };
 
+  // Handle view students modal
   const handleView = (students) => {
     const allStudents = students || [];
     setSelectedStudents(allStudents);
@@ -70,13 +92,14 @@ const FeeHeadsReport = () => {
     const classes = Array.from(
       new Set(allStudents.map((s) => s?.class || s?.admitClass).filter(Boolean))
     ).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
-
     setAvailableClasses(classes);
     setSelectedClass("All");
+
     setFilteredStudents(allStudents);
     setShowModal(true);
   };
 
+  // Filter students by class
   const handleClassFilter = (cls) => {
     setSelectedClass(cls);
     if (cls === "All") {
@@ -88,6 +111,11 @@ const FeeHeadsReport = () => {
     }
   };
 
+  // Handle session filter change
+  const handleSessionFilter = (session) => {
+    setSelectedSession(session);
+  };
+
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar />
@@ -95,13 +123,13 @@ const FeeHeadsReport = () => {
         <Header />
 
         <div className="p-2 bg-white shadow-md rounded-md">
-          {/* Title Bar with Search */}
+          {/* Title Bar with Search and Session Filter */}
           <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-              {/* Left: Title */}
-              <h2 className="text-xl font-bold text-green-800">Fee Head-Wise Summary</h2>
+              <h2 className="text-xl font-bold text-green-800">
+                Fee Head-Wise Summary
+              </h2>
 
-              {/* Right / Middle: Back + Search + Dashboard */}
               <div className="flex items-center w-full md:w-auto gap-2">
                 <BackButton />
                 <input
@@ -111,6 +139,20 @@ const FeeHeadsReport = () => {
                   onChange={handleSearch}
                   className="flex-1 border px-2 py-1 rounded text-sm border-gray-500"
                 />
+
+                <select
+                  value={selectedSession}
+                  onChange={(e) => handleSessionFilter(e.target.value)}
+                  className="border px-2 py-1 rounded text-sm"
+                >
+                  <option value="All">All Sessions</option>
+                  {availableSessions.map((s, idx) => (
+                    <option key={idx} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+
                 <button
                   onClick={() => navigate("/ReportsDashboard")}
                   className="flex-shrink-0 flex items-center px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
@@ -126,20 +168,24 @@ const FeeHeadsReport = () => {
           {loading ? (
             <div className="text-center py-8 text-gray-600">Loading...</div>
           ) : errorMsg ? (
-            <div className="text-center py-4 text-red-600">
-              {errorMsg}
-              <div className="mt-2 text-sm text-gray-500">
-                Open <code>/api/reports/fee-head-summary</code> in browser to debug.
-              </div>
-            </div>
+            <div className="text-center py-4 text-red-600">{errorMsg}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full table-auto border border-green-500">
                 <thead className="bg-green-100 text-sm">
                   <tr>
-                    <th className="border border-green-500 px-2 py-1">Fee Head</th>
-                    <th className="border border-green-500 px-2 py-1">Students Paid</th>
-                    <th className="border border-green-500 px-2 py-1">Amount Collected</th>
+                    <th className="border border-green-500 px-2 py-1">
+                      Academic Session
+                    </th>
+                    <th className="border border-green-500 px-2 py-1">
+                      Fee Head
+                    </th>
+                    <th className="border border-green-500 px-2 py-1">
+                      Students Paid
+                    </th>
+                    <th className="border border-green-500 px-2 py-1">
+                      Amount Collected
+                    </th>
                     <th className="border border-green-500 px-2 py-1">Action</th>
                   </tr>
                 </thead>
@@ -148,9 +194,18 @@ const FeeHeadsReport = () => {
                   {filteredFeeData.length > 0 ? (
                     filteredFeeData.map((item, index) => (
                       <tr key={index} className="hover:bg-gray-100 transition">
-                        <td className="border border-green-500 px-2 py-1">{item.feeHead || "-"}</td>
-                        <td className="border border-green-500 px-2 py-1">{item.studentsPaid ?? 0}</td>
-                        <td className="border border-green-500 px-2 py-1">₹{item.amountCollected ?? 0}</td>
+                        <td className="border border-green-500 px-2 py-1">
+                          {item.academicSession || "-"}
+                        </td>
+                        <td className="border border-green-500 px-2 py-1">
+                          {item.feeHead || "-"}
+                        </td>
+                        <td className="border border-green-500 px-2 py-1">
+                          {item.studentsPaid ?? 0}
+                        </td>
+                        <td className="border border-green-500 px-2 py-1">
+                          ₹{item.amountCollected ?? 0}
+                        </td>
                         <td className="border border-green-500 px-2 py-1">
                           <button
                             onClick={() => handleView(item.students)}
@@ -163,11 +218,8 @@ const FeeHeadsReport = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="4" className="text-center py-8 text-gray-500">
+                      <td colSpan="5" className="text-center py-8 text-gray-500">
                         No records found.
-                        <div className="mt-2 text-xs text-gray-400">
-                          Try checking the API endpoint in browser or server console.
-                        </div>
                       </td>
                     </tr>
                   )}
@@ -183,7 +235,9 @@ const FeeHeadsReport = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-4 w-full max-w-2xl shadow-lg">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-semibold text-green-700">Students Paid</h3>
+              <h3 className="text-lg font-semibold text-green-700">
+                Students Paid
+              </h3>
               <button
                 onClick={() => setShowModal(false)}
                 className="text-sm px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
@@ -195,7 +249,9 @@ const FeeHeadsReport = () => {
             {/* Class filter dropdown */}
             {availableClasses.length > 0 && (
               <div className="mb-3">
-                <label className="mr-2 font-medium text-sm text-gray-700">Filter by Class:</label>
+                <label className="mr-2 font-medium text-sm text-gray-700">
+                  Filter by Class:
+                </label>
                 <select
                   value={selectedClass}
                   onChange={(e) => handleClassFilter(e.target.value)}
@@ -203,7 +259,9 @@ const FeeHeadsReport = () => {
                 >
                   <option value="All">All</option>
                   {availableClasses.map((cls, idx) => (
-                    <option key={idx} value={cls}>{cls}</option>
+                    <option key={idx} value={cls}>
+                      {cls}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -227,7 +285,6 @@ const FeeHeadsReport = () => {
                         <td className="border border-green-500 px-2 py-1">{s?.name || "-"}</td>
                         <td className="border border-green-500 px-2 py-1">{s?.class || "-"}</td>
                         <td className="border border-green-500 px-2 py-1">{s?.section || "-"}</td>
-
                       </tr>
                     ))}
                   </tbody>

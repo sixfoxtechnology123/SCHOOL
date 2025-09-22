@@ -131,40 +131,27 @@ const OutstandingFees = () => {
             <table className="w-full table-auto border border-green-500">
               <thead className="bg-green-100 text-sm">
                 <tr>
-                  <th className="border border-green-500 px-2 py-1">
-                    Student Name
-                  </th>
+                  <th className="border border-green-500 px-2 py-1">Student Name</th>
                   <th className="border border-green-500 px-2 py-1">Class</th>
                   <th className="border border-green-500 px-2 py-1">Section</th>
-                  <th className="border border-green-500 px-2 py-1">
-                    Pending Fee Amount
-                  </th>
+                  <th className="border border-green-500 px-2 py-1">Roll Number</th> {/* New column */}
+                  <th className="border border-green-500 px-2 py-1">Pending Fee Amount</th>
                 </tr>
               </thead>
               <tbody className="text-sm text-center">
                 {filteredData.length > 0 ? (
                   filteredData.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-100 transition">
-                      <td className="border border-green-500 px-2 py-1">
-                        {item.studentName || "-"}
-                      </td>
-                      <td className="border border-green-500 px-2 py-1">
-                        {item.class || "-"}
-                      </td>
-                      <td className="border border-green-500 px-2 py-1">
-                        {item.section || "-"}
-                      </td>
-                      <td className="border border-green-500 px-2 py-1">
-                        ₹{item.pendingAmount}
-                      </td>
+                      <td className="border border-green-500 px-2 py-1">{item.studentName || "-"}</td>
+                      <td className="border border-green-500 px-2 py-1">{item.class || "-"}</td>
+                      <td className="border border-green-500 px-2 py-1">{item.section || "-"}</td>
+                      <td className="border border-green-500 px-2 py-1">{item.rollNo || "-"}</td> {/* Roll value */}
+                      <td className="border border-green-500 px-2 py-1">₹{item.pendingAmount}</td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="4"
-                      className="text-center py-4 text-gray-500"
-                    >
+                    <td colSpan="5" className="text-center py-4 text-gray-500">
                       No records found.
                     </td>
                   </tr>

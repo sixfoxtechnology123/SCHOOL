@@ -173,6 +173,7 @@ const DailyCollection = () => {
                     <th className="border border-green-500 px-2 py-1">Name</th>
                     <th className="border border-green-500 px-2 py-1">Class</th>
                     <th className="border border-green-500 px-2 py-1">Section</th>
+                    <th className="border border-green-500 px-2 py-1">Roll</th>
                   </tr>
                 </thead>
                 <tbody className="text-sm text-center">
@@ -187,6 +188,9 @@ const DailyCollection = () => {
                         </td>
                         <td className="border border-green-500 px-2 py-1">
                           {s.section}
+                        </td>
+                        <td className="border border-green-500 px-2 py-1">
+                          {s.rollNo || "-"} 
                         </td>
                       </tr>
                     ))

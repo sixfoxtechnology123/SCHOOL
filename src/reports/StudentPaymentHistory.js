@@ -1,4 +1,3 @@
-// pages/StudentPaymentHistory.js
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
@@ -11,11 +10,14 @@ const StudentPaymentHistory = () => {
   const [historyData, setHistoryData] = useState([]);
   const [filteredHistory, setFilteredHistory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sessions, setSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState("All");
+  const [showModal, setShowModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [filteredPayments, setFilteredPayments] = useState([]);
   const [availableStudents, setAvailableStudents] = useState([]);
   const [selectedStudentFilter, setSelectedStudentFilter] = useState("All");
-  const [showModal, setShowModal] = useState(false);
+  const [selectedSessionFilter, setSelectedSessionFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
@@ -24,11 +26,13 @@ const StudentPaymentHistory = () => {
     const fetchData = async () => {
       setLoading(true);
       setErrorMsg("");
+
       try {
-        const res = await axios.get(
+        // Fetch payment history
+        const historyRes = await axios.get(
           "http://localhost:5000/api/reports/student-history"
         );
-        const data = Array.isArray(res.data) ? res.data : [];
+        const data = Array.isArray(historyRes.data) ? historyRes.data : [];
         setHistoryData(data);
         setFilteredHistory(data);
 
@@ -37,15 +41,24 @@ const StudentPaymentHistory = () => {
           new Set(data.map((p) => p.studentName).filter(Boolean))
         ).sort();
         setAvailableStudents(students);
+
+        // Fetch sessions from academic master
+        const sessionRes = await axios.get(
+          "http://localhost:5000/api/reports/sessions"
+        );
+        const sessionData = Array.isArray(sessionRes.data)
+          ? sessionRes.data.map((s) => s.year)
+          : [];
+        setSessions(sessionData.sort());
       } catch (err) {
-        console.error("Error fetching student history:", err);
+        console.error("Error fetching data:", err);
         setErrorMsg(
-          err?.response?.data?.message ||
-            err.message ||
-            "Error fetching data from server"
+          err?.response?.data?.message || err.message || "Error fetching data from server"
         );
         setHistoryData([]);
         setFilteredHistory([]);
+        setAvailableStudents([]);
+        setSessions([]);
       } finally {
         setLoading(false);
       }
@@ -54,35 +67,55 @@ const StudentPaymentHistory = () => {
     fetchData();
   }, []);
 
+  // Filters main table
+  useEffect(() => {
+    let filtered = historyData;
+    if (searchTerm) {
+      filtered = filtered.filter((p) =>
+        p.studentName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (selectedSession !== "All") {
+      filtered = filtered.filter((p) => p.academicSession === selectedSession);
+    }
+    setFilteredHistory(filtered);
+  }, [historyData, searchTerm, selectedSession]);
+
   const handleView = (studentName) => {
-    const payments = historyData.filter((p) => p.studentName === studentName);
+    const payments = historyData.filter(
+      (p) =>
+        p.studentName === studentName &&
+        (selectedSession === "All" || p.academicSession === selectedSession)
+    );
     setSelectedStudent(studentName);
     setFilteredPayments(payments);
     setSelectedStudentFilter(studentName);
+    setSelectedSessionFilter(selectedSession);
     setShowModal(true);
   };
 
   const handleStudentFilter = (studentName) => {
     setSelectedStudentFilter(studentName);
-    if (studentName === "All") {
-      setFilteredPayments(historyData);
-    } else {
-      setFilteredPayments(historyData.filter((p) => p.studentName === studentName));
+    let filtered = historyData;
+    if (studentName !== "All") {
+      filtered = filtered.filter((p) => p.studentName === studentName);
     }
+    if (selectedSessionFilter !== "All") {
+      filtered = filtered.filter((p) => p.academicSession === selectedSessionFilter);
+    }
+    setFilteredPayments(filtered);
   };
 
-  const handleSearch = (e) => {
-    const value = e.target.value;
-    setSearchTerm(value);
-    if (!value) {
-      setFilteredHistory(historyData);
-    } else {
-      setFilteredHistory(
-        historyData.filter((p) =>
-          p.studentName.toLowerCase().includes(value.toLowerCase())
-        )
-      );
+  const handleSessionFilterModal = (session) => {
+    setSelectedSessionFilter(session);
+    let filtered = historyData;
+    if (selectedStudentFilter !== "All") {
+      filtered = filtered.filter((p) => p.studentName === selectedStudentFilter);
     }
+    if (session !== "All") {
+      filtered = filtered.filter((p) => p.academicSession === session);
+    }
+    setFilteredPayments(filtered);
   };
 
   return (
@@ -92,39 +125,44 @@ const StudentPaymentHistory = () => {
         <Header />
 
         <div className="p-2 bg-white shadow-md rounded-md">
-        {/* Green Title Bar */}
-        <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-            {/* Left: Title */}
-            <h2 className="text-xl font-bold text-green-800">Student Fee History</h2>
-
-            {/* Middle / Right: Back + Search + Dashboard */}
-            <div className="flex items-center w-full md:w-auto gap-2">
-              {/* Back button on left */}
-              <BackButton />
-
-              {/* Search bar fills remaining space on mobile */}
-              <input
-                type="text"
-                placeholder="Search by student name"
-                value={searchTerm}
-                onChange={handleSearch}
-                className="flex-1 border px-2 py-1 rounded text-sm border-gray-500"
-              />
-
-              {/* Dashboard button on right */}
-              <button
-                onClick={() => navigate("/ReportsDashboard")}
-                className="flex-shrink-0 flex items-center px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                title="Reports Dashboard"
-              >
-                <FaThLarge />
-              </button>
+          {/* Green Title Bar */}
+          <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <h2 className="text-xl font-bold text-green-800">
+                Student Fee History
+              </h2>
+              <div className="flex items-center w-full md:w-auto gap-2">
+                <BackButton />
+                <input
+                  type="text"
+                  placeholder="Search by student name"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 border px-2 py-1 rounded text-sm border-gray-500"
+                />
+                <select
+                  value={selectedSession}
+                  onChange={(e) => setSelectedSession(e.target.value)}
+                  className="border px-2 py-1 rounded text-sm"
+                >
+                  <option value="All">All Sessions</option>
+                  {sessions.map((s, idx) => (
+                    <option key={idx} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={() => navigate("/ReportsDashboard")}
+                  className="flex-shrink-0 flex items-center px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition"
+                  title="Reports Dashboard"
+                >
+                  <FaThLarge />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-          {/* Error / Loading */}
           {loading ? (
             <div className="text-center py-8 text-gray-600">Loading...</div>
           ) : errorMsg ? (
@@ -134,10 +172,17 @@ const StudentPaymentHistory = () => {
               <table className="w-full table-auto border border-green-500">
                 <thead className="bg-green-100 text-sm">
                   <tr>
-                    <th className="border border-green-500 px-2 py-1">Student Name</th>
+                    <th className="border border-green-500 px-2 py-1">
+                      Academic Session
+                    </th>
+                    <th className="border border-green-500 px-2 py-1">
+                      Student Name
+                    </th>
                     <th className="border border-green-500 px-2 py-1">Date</th>
                     <th className="border border-green-500 px-2 py-1">Fee Type</th>
-                    <th className="border border-green-500 px-2 py-1">Amount Paid</th>
+                    <th className="border border-green-500 px-2 py-1">
+                      Amount Paid
+                    </th>
                     <th className="border border-green-500 px-2 py-1">Action</th>
                   </tr>
                 </thead>
@@ -145,6 +190,9 @@ const StudentPaymentHistory = () => {
                   {filteredHistory.length > 0 ? (
                     filteredHistory.map((item, index) => (
                       <tr key={index} className="hover:bg-gray-100 transition">
+                        <td className="border border-green-500 px-2 py-1">
+                          {item.academicSession || "-"}
+                        </td>
                         <td className="border border-green-500 px-2 py-1">
                           {item.studentName || "-"}
                         </td>
@@ -173,7 +221,7 @@ const StudentPaymentHistory = () => {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="5" className="text-center py-4 text-gray-500">
+                      <td colSpan="6" className="text-center py-4 text-gray-500">
                         No records found.
                       </td>
                     </tr>
@@ -201,26 +249,48 @@ const StudentPaymentHistory = () => {
               </button>
             </div>
 
-            {/* Student filter */}
-            {availableStudents.length > 0 && (
-              <div className="mb-3">
-                <label className="mr-2 font-medium text-sm text-gray-700">
-                  Filter by Student:
-                </label>
-                <select
-                  value={selectedStudentFilter}
-                  onChange={(e) => handleStudentFilter(e.target.value)}
-                  className="border px-2 py-1 rounded text-sm"
-                >
-                  <option value="All">All</option>
-                  {availableStudents.map((s, idx) => (
-                    <option key={idx} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            {/* Modal Filters */}
+            <div className="mb-3 flex flex-wrap gap-2 items-center">
+              {availableStudents.length > 0 && (
+                <div>
+                  <label className="mr-2 font-medium text-sm text-gray-700">
+                    Filter by Student:
+                  </label>
+                  <select
+                    value={selectedStudentFilter}
+                    onChange={(e) => handleStudentFilter(e.target.value)}
+                    className="border px-2 py-1 rounded text-sm"
+                  >
+                    <option value="All">All</option>
+                    {availableStudents.map((s, idx) => (
+                      <option key={idx} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {sessions.length > 0 && (
+                <div>
+                  <label className="mr-2 font-medium text-sm text-gray-700">
+                    Filter by Session:
+                  </label>
+                  <select
+                    value={selectedSessionFilter}
+                    onChange={(e) => handleSessionFilterModal(e.target.value)}
+                    className="border px-2 py-1 rounded text-sm"
+                  >
+                    <option value="All">All</option>
+                    {sessions.map((s, idx) => (
+                      <option key={idx} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
 
             {filteredPayments.length > 0 ? (
               <div className="overflow-auto max-h-72">
@@ -228,6 +298,9 @@ const StudentPaymentHistory = () => {
                   <thead className="bg-green-100">
                     <tr>
                       <th className="border border-green-500 px-2 py-1">Sl No.</th>
+                      <th className="border border-green-500 px-2 py-1">
+                        Academic Session
+                      </th>
                       <th className="border border-green-500 px-2 py-1">Date</th>
                       <th className="border border-green-500 px-2 py-1">Fee Type</th>
                       <th className="border border-green-500 px-2 py-1">Amount Paid</th>
@@ -238,6 +311,9 @@ const StudentPaymentHistory = () => {
                       <tr key={i} className="text-center hover:bg-gray-50">
                         <td className="border border-green-500 px-2 py-1">{i + 1}</td>
                         <td className="border border-green-500 px-2 py-1">
+                          {p.academicSession}
+                        </td>
+                        <td className="border border-green-500 px-2 py-1">
                           {new Date(p.date).toLocaleDateString("en-GB", {
                             day: "2-digit",
                             month: "short",
@@ -245,7 +321,9 @@ const StudentPaymentHistory = () => {
                           })}
                         </td>
                         <td className="border border-green-500 px-2 py-1">{p.feeType}</td>
-                        <td className="border border-green-500 px-2 py-1">₹{p.amountPaid}</td>
+                        <td className="border border-green-500 px-2 py-1">
+                          ₹{p.amountPaid}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

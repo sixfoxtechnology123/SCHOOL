@@ -8,71 +8,39 @@ import { FaThLarge } from "react-icons/fa";
 
 const ClassSummary = () => {
   const [data, setData] = useState([]);
+  const [classes, setClasses] = useState([]);
+  const [sections, setSections] = useState([]);
   const [filterClass, setFilterClass] = useState("");
   const [filterSection, setFilterSection] = useState("");
+
   const navigate = useNavigate();
 
-  // Sections and classes (used if you want all predefined classes)
-  const allSections = ["A", "B", "C"];
-  const predefinedClasses = [
-    "Class - I", "Class - II", "Class - III", "Class - IV",
-    "Class - V", "Class - VI", "Class - VII", "Class - VIII",
-    "Class - IX", "Class - X", "Class - XI", "Class - XII"
-  ];
-
-  const romanToNumber = (roman) => {
-    const map = {
-      I: 1, II: 2, III: 3, IV: 4, V: 5, VI: 6,
-      VII: 7, VIII: 8, IX: 9, X: 10, XI: 11, XII: 12
-    };
-    return map[roman] || 0;
-  };
-
-  const sortClasses = (classArray) => {
-    return classArray.sort((a, b) => {
-      const romanA = a.split("-")[1]?.trim();
-      const romanB = b.split("-")[1]?.trim();
-      return romanToNumber(romanA) - romanToNumber(romanB);
-    });
-  };
-
   useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/reports/class-summary")
-      .then((res) => {
-        // Data already has studentsPaid and totalAmount from backend
-        setData(res.data);
-      })
-      .catch((err) => {
-        console.log(err);
-        setData([]);
-      });
+    // Fetch class summary report
+    axios.get("http://localhost:5000/api/reports/class-summary")
+      .then((res) => setData(res.data || []))
+      .catch((err) => console.log(err));
+
+    // Fetch unique classes for dropdown
+    axios.get("http://localhost:5000/api/classes/unique/classes")
+      .then((res) => setClasses(res.data || []))
+      .catch((err) => console.log(err));
   }, []);
 
-  const classes = sortClasses(predefinedClasses);
-  const sections = allSections;
+  // Fetch sections when a class is selected
+  useEffect(() => {
+    if (filterClass) {
+      axios.get(`http://localhost:5000/api/classes/sections/${filterClass}`)
+        .then((res) => setSections(res.data || []))
+        .catch((err) => console.log(err));
+    } else {
+      setSections([]);
+      setFilterSection("");
+    }
+  }, [filterClass]);
 
-  // Build table data: ensure every class-section is shown
-  const tableData = [];
-  classes.forEach((cls) => {
-    sections.forEach((sec) => {
-      const row = data.find(
-        (r) =>
-          r.className?.trim() === cls.trim() &&
-          r.section?.trim().toUpperCase() === sec.trim().toUpperCase()
-      );
-      tableData.push(
-        row || {
-          className: cls,
-          section: sec,
-          studentsPaid: 0,
-          totalAmount: 0,
-        }
-      );
-    });
-  });
-
-  const filteredData = tableData.filter((row) => {
+  // Build table data based on fetched report and selected filters
+  const filteredData = data.filter((row) => {
     const matchClass = filterClass ? row.className?.trim() === filterClass.trim() : true;
     const matchSection = filterSection ? row.section?.trim().toUpperCase() === filterSection.trim().toUpperCase() : true;
     return matchClass && matchSection;
@@ -87,9 +55,7 @@ const ClassSummary = () => {
         <div className="p-2 bg-white shadow-md rounded-md">
           <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold text-green-800">
-                Class/Section-wise Summary
-              </h2>
+              <h2 className="text-xl font-bold text-green-800">Class/Section-wise Summary</h2>
               <div className="flex gap-2">
                 <BackButton />
                 <button
@@ -103,6 +69,7 @@ const ClassSummary = () => {
             </div>
           </div>
 
+          {/* Filters */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <div>
               <label className="text-sm font-medium text-gray-700">Class:</label>
@@ -124,6 +91,7 @@ const ClassSummary = () => {
                 value={filterSection}
                 onChange={(e) => setFilterSection(e.target.value)}
                 className="border border-gray-300 rounded px-2 py-1 text-sm"
+                disabled={!filterClass}
               >
                 <option value="">All</option>
                 {sections.map((sec) => (
@@ -137,11 +105,12 @@ const ClassSummary = () => {
                 onClick={() => { setFilterClass(""); setFilterSection(""); }}
                 className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
               >
-                Clear Class/Section
+                Clear Filters
               </button>
             )}
           </div>
 
+          {/* Table */}
           <div className="overflow-x-auto">
             <table className="w-full table-auto border border-green-500">
               <thead className="bg-green-100 text-sm">

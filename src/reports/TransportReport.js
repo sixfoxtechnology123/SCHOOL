@@ -10,9 +10,12 @@ const TransportReport = () => {
   const [transportData, setTransportData] = useState([]);
   const [filterDistance, setFilterDistance] = useState("");
   const [distances, setDistances] = useState([]);
+  const [sessions, setSessions] = useState([]);
+  const [selectedSession, setSelectedSession] = useState("All");
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Fetch transport report data
     axios
       .get("http://localhost:5000/api/transport-report")
       .then((res) => {
@@ -20,16 +23,27 @@ const TransportReport = () => {
         setTransportData(data);
 
         // Extract unique distances
-        const uniqueDistances = data.map(d => d.distance).sort();
+        const uniqueDistances = Array.from(new Set(data.map(d => d.distance))).sort();
         setDistances(uniqueDistances);
+      })
+      .catch((err) => console.log(err));
+
+    // Fetch academic sessions from master
+    axios
+      .get("http://localhost:5000/api/reports/sessions")
+      .then((res) => {
+        const sess = Array.isArray(res.data) ? res.data.map(s => s.year) : [];
+        setSessions(sess.sort());
       })
       .catch((err) => console.log(err));
   }, []);
 
-  // Filter by distance
-  const filteredData = filterDistance
-    ? transportData.filter((item) => item.distance === filterDistance)
-    : transportData;
+  // Filter by distance and session
+  const filteredData = transportData.filter((item) => {
+    const matchDistance = filterDistance ? item.distance === filterDistance : true;
+    const matchSession = selectedSession !== "All" ? item.academicSession === selectedSession : true;
+    return matchDistance && matchSession;
+  });
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -55,8 +69,32 @@ const TransportReport = () => {
             </div>
           </div>
 
-          {/* Filter by Distance */}
+          {/* Filters */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
+            {/* Session Filter */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mr-2">Academic Session:</label>
+              <select
+                value={selectedSession}
+                onChange={(e) => setSelectedSession(e.target.value)}
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+              >
+                <option value="All">All</option>
+                {sessions.map((s, idx) => (
+                  <option key={idx} value={s}>{s}</option>
+                ))}
+              </select>
+              {selectedSession !== "All" && (
+                <button
+                  onClick={() => setSelectedSession("All")}
+                  className="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                >
+                  Clear Session Filter
+                </button>
+              )}
+            </div>
+
+            {/* Distance Filter */}
             <div>
               <label className="text-sm font-medium text-gray-700 mr-2">Distance:</label>
               <select
@@ -69,16 +107,15 @@ const TransportReport = () => {
                   <option key={d} value={d}>{d}</option>
                 ))}
               </select>
+              {filterDistance && (
+                <button
+                  onClick={() => setFilterDistance("")}
+                  className="ml-2 text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                >
+                  Clear Distance Filter
+                </button>
+              )}
             </div>
-
-            {filterDistance && (
-              <button
-                onClick={() => setFilterDistance("")}
-                className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
-              >
-                Clear Filter
-              </button>
-            )}
           </div>
 
           {/* Table */}
@@ -86,6 +123,7 @@ const TransportReport = () => {
             <table className="w-full table-auto border border-green-500">
               <thead className="bg-green-100 text-sm">
                 <tr>
+                  <th className="border border-green-500 px-2 py-1">Academic Session</th>
                   <th className="border border-green-500 px-2 py-1">Distance (KM)</th>
                   <th className="border border-green-500 px-2 py-1">No. of Students</th>
                   <th className="border border-green-500 px-2 py-1">Total Amount (₹)</th>
@@ -95,6 +133,7 @@ const TransportReport = () => {
                 {filteredData.length > 0 ? (
                   filteredData.map((item, index) => (
                     <tr key={index} className="hover:bg-gray-100 transition">
+                      <td className="border border-green-500 px-2 py-1">{item.academicSession}</td>
                       <td className="border border-green-500 px-2 py-1">{item.distance}</td>
                       <td className="border border-green-500 px-2 py-1">{item.studentCount}</td>
                       <td className="border border-green-500 px-2 py-1">₹{item.totalAmount.toFixed(2)}</td>
@@ -102,7 +141,7 @@ const TransportReport = () => {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="3" className="text-center py-4 text-gray-500 border border-green-500">
+                    <td colSpan="4" className="text-center py-4 text-gray-500 border border-green-500">
                       No records found.
                     </td>
                   </tr>

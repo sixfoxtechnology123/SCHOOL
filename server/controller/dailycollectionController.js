@@ -11,9 +11,10 @@ exports.getDailyCollections = async (req, res) => {
               name: "$studentName",       // use stored studentName
               class: "$admitClass",       // use stored class
               section: "$section",
+              rollNo: "$rollNo"
             },
           },
-          totalAmount: { $sum: "$totalAmount" },
+          totalAmount: { $sum: "$amountPaid" },
         },
       },
       {

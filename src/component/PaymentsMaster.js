@@ -553,36 +553,36 @@ const submissionData = {
           </label>
 
     <label className="flex flex-col text-sm font-semibold text-black col-span-2">
-  Fee Heads
-  <Select
-  isMulti
-  options={feeHeads.map((fh) => ({
-    value: fh.feeHeadName,
-    label: fh.feeHeadName,
-  }))}
-  onChange={handleFeeHeadChange}
-  value={paymentData.feeDetails
-    .map((f) => feeHeads.find((fh) => fh.feeHeadName === f.feeHead))
-    .filter(Boolean)
-    .map((f) => ({ value: f.feeHeadName, label: f.feeHeadName }))}
-  placeholder="Select Fee Heads..."
-  isSearchable
-/>
+          Fee Heads
+          <Select
+          isMulti
+          options={feeHeads.map((fh) => ({
+            value: fh.feeHeadName,
+            label: fh.feeHeadName,
+          }))}
+          onChange={handleFeeHeadChange}
+          value={paymentData.feeDetails
+            .map((f) => feeHeads.find((fh) => fh.feeHeadName === f.feeHead))
+            .filter(Boolean)
+            .map((f) => ({ value: f.feeHeadName, label: f.feeHeadName }))}
+          placeholder="Select Fee Heads..."
+          isSearchable
+        />
 
-</label>
+        </label>
 
 
- {paymentData.feeDetails.some(f => f.feeHead.toLowerCase() === "transport") && (
-  <label className="flex flex-col text-sm font-semibold text-black">
-    Distance (KM)
-    <input
-      type="number"
-      value={initialStudentOptions.find(s => s.value === paymentData.student)?.distanceFromSchool || ""}
-      readOnly
-      className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
-    />
-  </label>
-)}
+      {paymentData.feeDetails.some(f => f.feeHead.toLowerCase() === "transport") && (
+        <label className="flex flex-col text-sm font-semibold text-black">
+          Distance (KM)
+          <input
+            type="number"
+            value={initialStudentOptions.find(s => s.value === paymentData.student)?.distanceFromSchool || ""}
+            readOnly
+            className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
+          />
+        </label>
+      )}
 
 
 

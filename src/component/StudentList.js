@@ -9,6 +9,9 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
 const StudentsList = () => {
+  const [sessions, setSessions] = useState([]);
+  const [filterSession, setFilterSession] = useState("");
+
   const [students, setStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
@@ -22,10 +25,24 @@ const StudentsList = () => {
       console.error("Failed to fetch students:", e);
     }
   };
+  const fetchSessions = async () => {
+  try {
+    const res = await axios.get("http://localhost:5000/api/sessions"); // your sessions API
+    if (Array.isArray(res.data)) {
+      const sorted = res.data
+        .map(s => ({ id: s._id, name: s.name || s.year })) // adjust according to your DB
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setSessions(sorted);
+    }
+  } catch (err) {
+    console.error("Failed to fetch sessions:", err);
+  }
+};
 
   // Initial fetch
   useEffect(() => {
     fetchStudents();
+    fetchSessions();
   }, []);
 
   // Refresh if navigated back from StudentMaster with state.refresh
@@ -81,12 +98,14 @@ const StudentsList = () => {
   };
 
   const searchTermLower = searchTerm.trim().toLowerCase();
-  const filteredStudents = students.filter((s) => {
-    if (!searchTermLower) return true;
-    const id = (s.studentId || "").toString().toLowerCase();
-    const name = getName(s).toLowerCase();
-    return id.includes(searchTermLower) || name.includes(searchTermLower);
-  });
+const filteredStudents = students.filter((s) => {
+  const id = (s.studentId || "").toString().toLowerCase();
+  const name = getName(s).toLowerCase();
+  const sessionMatch = filterSession ? s.academicSession === filterSession : true;
+  const searchMatch = !searchTermLower || id.includes(searchTermLower) || name.includes(searchTermLower);
+  return sessionMatch && searchMatch;
+});
+
 
 
 // --- PDF Function ---
@@ -340,6 +359,17 @@ const generatePDF = async (student) => {
                   onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
                   className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
                 />
+                <select
+                  value={filterSession}
+                  onChange={(e) => setFilterSession(e.target.value)}
+                  className="border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
+                >
+                  <option value="">All Sessions</option>
+                  {sessions.map((s) => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+
                 <button
                   onClick={() => navigate("/StudentMaster")}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"

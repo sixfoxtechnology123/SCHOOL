@@ -9,6 +9,9 @@ import Header from "./Header";
 const FeeStructureList = () => {
   const [fees, setFees] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sessions, setSessions] = useState([]);
+  const [filterSession, setFilterSession] = useState("");
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -22,8 +25,24 @@ const FeeStructureList = () => {
     }
   };
 
+  // Fetch academic sessions
+  const fetchSessions = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/sessions");
+      if (Array.isArray(res.data)) {
+        const sorted = res.data
+          .map(s => ({ id: s._id, name: s.name || s.year }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+        setSessions(sorted);
+      }
+    } catch (err) {
+      console.error("Failed to fetch sessions:", err);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchSessions();
   }, [location.key]);
 
   // Delete fee
@@ -37,11 +56,12 @@ const FeeStructureList = () => {
     }
   };
 
-  // Filter fees based on search term
+  // Filter fees based on search term and session filter
   const filteredFees = fees.filter(fee =>
-    fee.className?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (fee.className?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     fee.feeHeadName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fee.academicSession?.toLowerCase().includes(searchTerm.toLowerCase())
+    fee.academicSession?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+    (filterSession ? fee.academicSession === filterSession : true)
   );
 
   return (
@@ -55,13 +75,33 @@ const FeeStructureList = () => {
               <h2 className="text-xl font-bold text-green-800">Fee Structures</h2>
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
                 <BackButton />
+                {/* Search Input */}
                 <input
                   type="text"
                   placeholder="Search by Class, Fee Head, or Session"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
+                  className="flex-1 min-w-[270px] border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
                 />
+                {/* Session Filter */}
+                <select
+                  value={filterSession}
+                  onChange={(e) => setFilterSession(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value="">All Sessions</option>
+                  {sessions.map((s) => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+                {filterSession && (
+                  <button
+                    onClick={() => setFilterSession("")}
+                    className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                  >
+                    Clear
+                  </button>
+                )}
                 <button
                   onClick={() => navigate("/FeeStructureMaster")}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"

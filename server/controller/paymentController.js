@@ -6,7 +6,7 @@ const FeeHead = require("../models/FeeHead");
 const ClassMaster = require("../models/Class");
 
 const PREFIX = "RECEIPT";
-const PAD = 3; // RECEIPT001, RECEIPT002...
+const PAD = 5; // RECEIPT001, RECEIPT002...
 
 // ================== Helper: Generate next PaymentId ==================
 async function generateNextPaymentId() {
