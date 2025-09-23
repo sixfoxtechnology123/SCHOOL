@@ -20,12 +20,33 @@ const OutstandingFees = () => {
     "Class - IX", "Class - X", "Class - XI", "Class - XII",
   ];
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:5000/api/reports/outstanding-fees")
-      .then((res) => setOutstandingData(res.data || []))
-      .catch((err) => console.log(err));
-  }, []);
+useEffect(() => {
+  axios
+    .get("http://localhost:5000/api/reports/outstanding-fees")
+    .then((res) => {
+      const data = res.data || [];
+
+      // Step 1: Group by studentId and keep only the latest receipt per student
+      const latestReceiptPerStudent = Object.values(
+        data.reduce((acc, item) => {
+          const key = item.studentId;
+          if (!acc[key] || new Date(item.date) > new Date(acc[key].date)) {
+            acc[key] = item;
+          }
+          return acc;
+        }, {})
+      );
+
+      // Step 2: Keep only students whose latest receipt has pendingAmount > 0
+      const outstandingOnly = latestReceiptPerStudent.filter(
+        (item) => Number(item.pendingAmount) > 0
+      );
+
+      setOutstandingData(outstandingOnly);
+    })
+    .catch((err) => console.log(err));
+}, []);
+
 
   // Apply filters
   const filteredData = outstandingData.filter((item) => {
@@ -44,15 +65,11 @@ const OutstandingFees = () => {
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
-      {/* Sidebar */}
       <Sidebar />
-
-      {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-3">
         <Header />
 
         <div className="p-2 bg-white shadow-md rounded-md">
-          {/* Green Title Bar */}
           <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
             <div className="flex justify-between items-center flex-wrap gap-2">
               <h2 className="text-xl font-bold text-green-800">
@@ -89,9 +106,7 @@ const OutstandingFees = () => {
               >
                 <option value="">All</option>
                 {predefinedClasses.map((cls) => (
-                  <option key={cls} value={cls}>
-                    {cls}
-                  </option>
+                  <option key={cls} value={cls}>{cls}</option>
                 ))}
               </select>
             </div>
@@ -105,9 +120,7 @@ const OutstandingFees = () => {
               >
                 <option value="">All</option>
                 {allSections.map((sec) => (
-                  <option key={sec} value={sec}>
-                    {sec}
-                  </option>
+                  <option key={sec} value={sec}>{sec}</option>
                 ))}
               </select>
             </div>
@@ -134,7 +147,7 @@ const OutstandingFees = () => {
                   <th className="border border-green-500 px-2 py-1">Student Name</th>
                   <th className="border border-green-500 px-2 py-1">Class</th>
                   <th className="border border-green-500 px-2 py-1">Section</th>
-                  <th className="border border-green-500 px-2 py-1">Roll Number</th> {/* New column */}
+                  <th className="border border-green-500 px-2 py-1">Roll Number</th>
                   <th className="border border-green-500 px-2 py-1">Pending Fee Amount</th>
                 </tr>
               </thead>
@@ -145,7 +158,7 @@ const OutstandingFees = () => {
                       <td className="border border-green-500 px-2 py-1">{item.studentName || "-"}</td>
                       <td className="border border-green-500 px-2 py-1">{item.class || "-"}</td>
                       <td className="border border-green-500 px-2 py-1">{item.section || "-"}</td>
-                      <td className="border border-green-500 px-2 py-1">{item.rollNo || "-"}</td> {/* Roll value */}
+                      <td className="border border-green-500 px-2 py-1">{item.rollNo || "-"}</td>
                       <td className="border border-green-500 px-2 py-1">₹{item.pendingAmount}</td>
                     </tr>
                   ))

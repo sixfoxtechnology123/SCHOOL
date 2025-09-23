@@ -12,7 +12,7 @@ const StudentMaster = () => {
     studentId: "",
     academicSession: "",
     admitClass: "",
-    transferFrom: "", 
+    transferFrom: "",
     section: "",
     rollNo: "",
     firstName: "",
@@ -59,18 +59,17 @@ const StudentMaster = () => {
   const studentItem = location.state?.studentItem;
   const [academicSessions, setAcademicSessions] = useState([]);
 
-    const fetchAcademicSessions = async () => {
-      try {
-        const res = await axios.get("http://localhost:5000/api/fees/academics");
-        setAcademicSessions(res.data || []);
-      } catch (err) {
-        console.error(err);
-      }
-    };
+  // --- Fetch academic sessions ---
+  const fetchAcademicSessions = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/fees/academics");
+      setAcademicSessions(res.data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-
-
-  // Fetch students for roll number generation
+  // --- Fetch students ---
   const fetchStudents = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/students");
@@ -80,7 +79,7 @@ const StudentMaster = () => {
     }
   };
 
-  // Fetch next Student ID
+  // --- Fetch next student ID ---
   const fetchNextStudentId = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/students/latest");
@@ -91,7 +90,7 @@ const StudentMaster = () => {
     }
   };
 
-  // Fetch class list
+  // --- Fetch class list ---
   const fetchClassList = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/classes/unique/classes");
@@ -101,6 +100,7 @@ const StudentMaster = () => {
     }
   };
 
+  // --- Fetch sections ---
   const fetchSections = async (className) => {
     try {
       const res = await axios.get(
@@ -112,41 +112,40 @@ const StudentMaster = () => {
     }
   };
 
-useEffect(() => {
-  fetchClassList();
-  fetchStudents();
-  fetchAcademicSessions();
+  // --- Initialize page ---
+  useEffect(() => {
+    fetchClassList();
+    fetchStudents();
+    fetchAcademicSessions();
 
-  if (studentItem) {
-    const normalizedLanguages = (studentItem.languages || []).map((l) => l.toUpperCase());
-    const savedSession = localStorage.getItem("selectedAcademicSession") || studentItem.academicSession || "";
+    if (studentItem) {
+      const normalizedLanguages = (studentItem.languages || []).map((l) => l.toUpperCase());
+      const savedSession = localStorage.getItem("selectedAcademicSession") || studentItem.academicSession || "";
 
-    // Set student data with proper handling for transferFrom
-    setStudentData({
-      ...studentItem,
-      languages: normalizedLanguages,
-      academicSession: savedSession,
-      transferFrom: studentItem.admitClass === "Class - I" ? "" : studentItem.transferFrom || "",
-    });
+      setStudentData({
+        ...studentItem,
+        languages: normalizedLanguages,
+        academicSession: savedSession,
+        transferFrom: studentItem.admitClass === "Class - I" ? "" : studentItem.transferFrom || "",
+      });
 
-    setIsEditMode(true);
+      setIsEditMode(true);
 
-    if (studentItem.admitClass) {
-      fetchSections(studentItem.admitClass);
+      if (studentItem.admitClass) {
+        fetchSections(studentItem.admitClass);
+      }
+    } else {
+      fetchNextStudentId();
     }
-  } else {
-    fetchNextStudentId();
-  }
 
-  const savedSession = localStorage.getItem("selectedAcademicSession") || "";
-  if (savedSession) {
-    setStudentData(prev => ({ ...prev, academicSession: savedSession }));
-  }
+    const savedSession = localStorage.getItem("selectedAcademicSession") || "";
+    if (savedSession) {
+      setStudentData(prev => ({ ...prev, academicSession: savedSession }));
+    }
+    // eslint-disable-next-line
+  }, []);
 
-  // eslint-disable-next-line
-}, []);
-
-
+  // --- Handle form changes ---
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (type === "checkbox" && name === "language") {
@@ -200,30 +199,42 @@ useEffect(() => {
     setStep(2);
   };
 
-  // STEP 2 SUBMIT (Update/Save)
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (isEditMode) {
-        await axios.put(
-          `http://localhost:5000/api/students/${studentData._id}`,
-          studentData
-        );
-        alert("Student updated successfully!");
-      } else {
-        await axios.post("http://localhost:5000/api/students", studentData);
-        alert("Student saved successfully!");
-      }
-
-      // REFRESH STUDENTS STATE
-      await fetchStudents();
-
-      navigate("/StudentList", { replace: true });
-    } catch (err) {
-      console.error("Save failed:", err);
-      alert("Error saving student");
-    }
+//  Activity saving logic (same as AcademicSessionMaster)
+const saveActivity = (action) => {
+  const newActivity = {
+    id: Date.now(),
+    text: action,
+    timestamp: new Date(),
   };
+
+  const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+  const updated = [newActivity, ...stored];
+  localStorage.setItem("activities", JSON.stringify(updated));
+
+  window.dispatchEvent(
+    new CustomEvent("newActivity", { detail: { action } })
+  );
+};
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    if (isEditMode) {
+      await axios.put(
+        `http://localhost:5000/api/students/${studentData._id}`,
+        studentData
+      );
+      saveActivity(`Updated Student ${studentData.firstName} ${studentData.lastName}`);
+    } else {
+      await axios.post("http://localhost:5000/api/students", studentData);
+      saveActivity(`Added new Student ${studentData.firstName} ${studentData.lastName}`);
+    }
+    navigate("/student-list");
+  } catch (error) {
+    console.error("Error saving student:", error);
+  }
+};
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -884,26 +895,45 @@ useEffect(() => {
                     formData.append(key, studentData[key]);
                   }
                 });
+                const saveActivity = (action) => {
+                  const newActivity = {
+                    id: Date.now(),
+                    text: action,
+                    timestamp: new Date(),
+                  };
 
-                try {
-                  if (isEditMode) {
-                    await axios.put(
-                      `http://localhost:5000/api/students/${studentData._id}`,
-                      formData,
-                      { headers: { "Content-Type": "multipart/form-data" } }
-                    );
-                    alert("Student updated successfully!");
-                  } else {
-                    await axios.post("http://localhost:5000/api/students", formData, {
-                      headers: { "Content-Type": "multipart/form-data" },
-                    });
-                    alert("Student and Photos saved successfully!");
-                  }
-                  navigate("/StudentList", { replace: true });
-                } catch (err) {
-                  console.error("Error saving student with photos:", err);
-                  alert("Failed to save student");
-                }
+                  const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+                  const updated = [newActivity, ...stored];
+                  localStorage.setItem("activities", JSON.stringify(updated));
+
+                  window.dispatchEvent(
+                    new CustomEvent("newActivity", { detail: { action } })
+                  );
+                };
+
+
+            try {
+              if (isEditMode) {
+                await axios.put(
+                  `http://localhost:5000/api/students/${studentData._id}`,
+                  formData,
+                  { headers: { "Content-Type": "multipart/form-data" } }
+                );
+                saveActivity(`Updated Student ${studentData.firstName} ${studentData.lastName}`);
+                alert("Student updated successfully!");
+              } else {
+                await axios.post("http://localhost:5000/api/students", formData, {
+                  headers: { "Content-Type": "multipart/form-data" },
+                });
+                saveActivity(`Added new Student ${studentData.firstName} ${studentData.lastName}`);
+                alert("Student and Photos saved successfully!");
+              }
+              navigate("/StudentList", { replace: true });
+            } catch (err) {
+              console.error("Error saving student with photos:", err);
+              alert("Failed to save student");
+            }
+
               }}
               className="grid grid-cols-1 gap-4"
             >

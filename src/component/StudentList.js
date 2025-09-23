@@ -54,15 +54,36 @@ const StudentsList = () => {
     }
   }, [location.state]);
 
-  const deleteStudent = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this student?")) return;
-    try {
-      await axios.delete(`http://localhost:5000/api/students/${id}`);
-      setStudents((prev) => prev.filter((s) => s._id !== id));
-    } catch (err) {
-      console.error("Failed to delete student:", err);
-    }
+// --- Save activity to localStorage and dispatch event ---
+const saveActivity = (message) => {
+  const newActivity = {
+    id: Date.now(),
+    text: message,
+    timestamp: new Date(),
   };
+  const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+  const updated = [newActivity, ...stored];
+  localStorage.setItem("activities", JSON.stringify(updated));
+
+  window.dispatchEvent(
+    new CustomEvent("newActivity", { detail: { action: message } })
+  );
+};
+// --------------------------------------------------------
+
+const deleteStudent = async (id, name) => {
+  if (!window.confirm("Are you sure you want to delete this student?")) return;
+  try {
+    await axios.delete(`http://localhost:5000/api/students/${id}`);
+    setStudents((prev) => prev.filter((s) => s._id !== id));
+
+    const message = `Deleted Student ${name}`;
+    saveActivity(message);
+  } catch (err) {
+    console.error("Failed to delete student:", err);
+  }
+};
+
 
   const getName = (stu) => {
     if (!stu) return "";
@@ -420,7 +441,7 @@ const generatePDF = async (student) => {
                           <FaEdit />
                         </button>
                         <button
-                          onClick={() => deleteStudent(stu._id)}
+                          onClick={() => deleteStudent(stu._id, getName(stu))}
                           className="text-red-600 hover:text-red-800"
                         >
                           <FaTrash />

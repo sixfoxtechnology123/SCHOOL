@@ -4,16 +4,13 @@ const Payment = require("../models/Payment");
 const getOutstandingFees = async (req, res) => {
   try {
     const outstanding = await Payment.aggregate([
-      // Only consider payments that still have a pending amount
-      { $match: { pendingAmount: { $gt: 0 } } },
-
-      // Sort by student (to group) and by _id desc so the newest document for each student comes first
+      // Step 1: Sort by student and _id descending (latest first)
       { $sort: { student: 1, _id: -1 } },
 
-      // Group by student id — take the FIRST entry (which will be the latest one because of the sort)
+      // Step 2: Group by student — take the first (latest) receipt
       {
         $group: {
-          _id: "$student",                   // group by student id (unique)
+          _id: "$student",
           studentId: { $first: "$student" },
           studentName: { $first: "$studentName" },
           class: { $first: "$admitClass" },
@@ -25,7 +22,10 @@ const getOutstandingFees = async (req, res) => {
         }
       },
 
-      // Shape the output (remove _id)
+      // Step 3: Only keep students whose latest receipt has pending > 0
+      { $match: { pendingAmount: { $gt: 0 } } },
+
+      // Step 4: Shape output
       {
         $project: {
           _id: 0,
@@ -40,12 +40,9 @@ const getOutstandingFees = async (req, res) => {
         }
       },
 
-      // Optional: sort for display
+      // Step 5: Optional: sort for display
       { $sort: { class: 1, section: 1, rollNo: 1 } }
     ]);
-
-    // Debugging: you can uncomment the next line temporarily to inspect results in server console
-    // console.log("Outstanding aggregation result:", outstanding);
 
     res.json(outstanding);
   } catch (err) {

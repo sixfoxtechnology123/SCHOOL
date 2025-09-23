@@ -357,6 +357,24 @@ const handleFeeHeadChange = (selectedHeads) => {
     setPaymentData((prev) => ({ ...prev, [name]: value }));
   };
 
+
+  //  Activity saving logic
+const saveActivity = (action) => {
+  const newActivity = {
+    id: Date.now(),
+    text: action,
+    timestamp: new Date(),
+  };
+
+  const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+  const updated = [newActivity, ...stored];
+  localStorage.setItem("activities", JSON.stringify(updated));
+
+  window.dispatchEvent(
+    new CustomEvent("newActivity", { detail: { action } })
+  );
+};
+
 const handleSubmit = async (e) => {
   e.preventDefault();
 
@@ -374,48 +392,55 @@ const handleSubmit = async (e) => {
   }
 
   try {
-    //  Don’t overwrite feeDetails amount with 0
     const updatedFeeDetails = paymentData.feeDetails.map((f) => ({
       ...f,
-      amount: f.amount || 0, // keep existing amount
+      amount: f.amount || 0,
     }));
 
-    //  Calculate total again
     const total = updatedFeeDetails.reduce(
       (sum, f) => sum + Number(f.amount || 0),
       0
     );
 
-const submissionData = {
-  ...paymentData,
-  previousPending,
-  currentFee,
-  totalAmount: previousPending + currentFee,
-  discount,
-  netPayable,
-  amountPaid,
-  pendingAmount,
-  feeDetails: paymentData.feeDetails,
-  paymentStatus,
-  academicSession: paymentData.academicSession,
-};
+    const submissionData = {
+      ...paymentData,
+      previousPending,
+      currentFee,
+      totalAmount: previousPending + currentFee,
+      discount,
+      netPayable,
+      amountPaid,
+      pendingAmount,
+      feeDetails: paymentData.feeDetails,
+      paymentStatus,
+      academicSession: paymentData.academicSession,
+    };
 
-
-
+    // Get student name from students state using _id
+    const studentObj = students.find((s) => s._id === paymentData.student);
+    const studentName = studentObj
+      ? `${studentObj.firstName || ""} ${studentObj.lastName || ""}`.trim()
+      : paymentData.student;
 
     if (isEditMode) {
       await axios.put(
         `http://localhost:5000/api/payments/${paymentData._id}`,
         submissionData
       );
+      saveActivity(
+        `Updated Payment Receipt ${paymentData.paymentId} of ${studentName}`
+      );
       alert("Receipt updated successfully!");
       navigate("/PaymentsList", { replace: true });
     } else {
       await axios.post("http://localhost:5000/api/payments", submissionData);
+      saveActivity(
+        `Added new Payment Receipt ${paymentData.paymentId} of ${studentName}`
+      );
       alert("Receipt saved successfully!");
       await fetchNextPaymentId();
 
-      // reset form
+      // Reset form
       setPaymentData({
         paymentId: "",
         date: new Date().toISOString().split("T")[0],
@@ -443,6 +468,8 @@ const submissionData = {
     alert("Error saving receipt. Check console.");
   }
 };
+
+
 
 
   return (
