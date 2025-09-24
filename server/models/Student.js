@@ -4,7 +4,7 @@ const studentSchema = new mongoose.Schema({
   studentId: { type: String, required: true, unique: true }, // IMPORTANT
   academicSession: { type: String, required: true },
   admissionDate: {
-    type: Date,
+    type: String,
     default: Date.now, // saves current date automatically
   },
   admitClass: String,

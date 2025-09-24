@@ -118,14 +118,19 @@ const deleteStudent = async (id, name) => {
     return "";
   };
 
-  const searchTermLower = searchTerm.trim().toLowerCase();
+const searchTermLower = searchTerm.trim().toLowerCase();
+
 const filteredStudents = students.filter((s) => {
   const id = (s.studentId || "").toString().toLowerCase();
-  const name = getName(s).toLowerCase();
+  const firstName = getName(s).split(" ")[0].toLowerCase(); // only first name
   const sessionMatch = filterSession ? s.academicSession === filterSession : true;
-  const searchMatch = !searchTermLower || id.includes(searchTermLower) || name.includes(searchTermLower);
+  const searchMatch =
+    !searchTermLower ||
+    id.includes(searchTermLower) ||      // match Student ID
+    firstName.startsWith(searchTermLower); // match first name only
   return sessionMatch && searchMatch;
 });
+
 
 
 
@@ -375,7 +380,7 @@ const generatePDF = async (student) => {
                 <BackButton />
                 <input
                   type="text"
-                  placeholder="Search by Student ID or Name"
+                  placeholder="Search by Student ID or Name Alphabet"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
                   className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
