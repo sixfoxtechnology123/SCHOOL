@@ -3,6 +3,10 @@ const mongoose = require("mongoose");
 const studentSchema = new mongoose.Schema({
   studentId: { type: String, required: true, unique: true }, // IMPORTANT
   academicSession: { type: String, required: true },
+  admissionDate: {
+    type: Date,
+    default: Date.now, // saves current date automatically
+  },
   admitClass: String,
   transferFrom: { type: String, default: "" }, 
   section: String,

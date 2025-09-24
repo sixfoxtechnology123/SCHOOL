@@ -5,12 +5,22 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import Sidebar from "../component/Sidebar";
 import Header from "./Header";
 
+
+const formatDate = (date) => {
+  const d = new Date(date);
+  const day = String(d.getDate()).padStart(2, "0");
+  const month = String(d.getMonth() + 1).padStart(2, "0"); // month is 0-based
+  const year = d.getFullYear();
+  return `${day}-${month}-${year}`;
+};
+const today = new Date().toISOString().split("T")[0];
 const StudentMaster = () => {
   const [step, setStep] = useState(1);
   const [sameAddress, setSameAddress] = useState(false);
   const [studentData, setStudentData] = useState({
     studentId: "",
     academicSession: "",
+    admissionDate: today,
     admitClass: "",
     transferFrom: "",
     section: "",
@@ -292,6 +302,7 @@ const handleSubmit = async (e) => {
              <label>
                   Academic Session
                   <select
+                  className="border bg-gray-100 p-0 rounded w-full"
                     name="academicSession"
                     value={studentData.academicSession}
                     onChange={handleChange}
@@ -304,9 +315,18 @@ const handleSubmit = async (e) => {
                       </option>
                     ))}
                   </select>
+                  
                 </label>
 
-
+              <label>Admission Date
+              <input
+                type="text"
+                name="admissionDate"
+                value={formatDate(studentData.admissionDate)} // DD-MM-YYYY
+                readOnly
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+              />
+            </label>
            {/* Admit Class */}
               <label>
                 Admit Class

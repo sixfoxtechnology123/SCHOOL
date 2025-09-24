@@ -98,6 +98,7 @@ export const createStudent = async (req, res) => {
     const newStudent = new StudentMaster({
       ...req.body,
       studentId,
+      admissionDate: req.body.admissionDate || new Date(),
       rollNo,
       languages: req.body.languages || [],
       fatherPhoto: req.files?.fatherPhoto
