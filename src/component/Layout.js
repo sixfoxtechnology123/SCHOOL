@@ -68,7 +68,7 @@ const Layout = () => {
     }
   };
 
-  // ✅ Listen to all activity events and reload from localStorage
+  // Listen to all activity events and reload from localStorage
   useEffect(() => {
     const handleActivityEvent = () => {
       const stored = JSON.parse(localStorage.getItem("activities") || "[]");
@@ -101,7 +101,7 @@ const Layout = () => {
           <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
             <FaMoneyBill size={30} className="text-green-800 mb-2" />
             <h2 className="text-lg font-semibold text-green-800">
-              Today's Collectionssssssssssss
+              Today's Collections
             </h2>
             <p className="text-2xl font-bold text-green-800">
               ₹ {todaysCollection.toLocaleString("en-IN")}
