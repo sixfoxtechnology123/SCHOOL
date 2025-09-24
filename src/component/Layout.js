@@ -100,7 +100,7 @@ const Layout = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
             <FaMoneyBill size={30} className="text-green-800 mb-2" />
-            <h2 className="text-7xl font-semibold text-green-800">
+            <h2 className="text-lg font-semibold text-green-800">
               Today's Collections
             </h2>
             <p className="text-2xl font-bold text-green-800">
