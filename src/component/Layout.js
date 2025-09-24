@@ -156,10 +156,21 @@ const Layout = () => {
         </div>
 
         {/* Activity Log */}
+{/* Activity Log */}
 <div className="bg-white p-4 rounded-md shadow border border-gray-300 max-h-96 overflow-y-auto">
-  <h2 className="text-lg font-semibold mb-3 text-gray-800">
-    Activity Log
-  </h2>
+  <div className="flex justify-between items-center mb-3">
+    <h2 className="text-lg font-semibold text-gray-800">Activity Log</h2>
+    <button
+      onClick={() => {
+        localStorage.removeItem("activities"); // clear from localStorage
+        setActivities([]); // clear from state
+      }}
+      className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+    >
+      Clear
+    </button>
+  </div>
+
   <ul className="text-sm text-gray-700">
     {activities.length > 0 ? (
       activities.map((act) => (
@@ -176,6 +187,7 @@ const Layout = () => {
     )}
   </ul>
 </div>
+
 
       </main>
     </div>
