@@ -965,7 +965,7 @@ const handleSubmit = async (e) => {
                     name="fatherPhoto"
                     accept="image/*"
                     className="border bg-gray-100 p-1 rounded w-full"
-                    required={!isEditMode}
+                    // required={!isEditMode}
                   />
                 </label>
                 <label>
@@ -975,7 +975,7 @@ const handleSubmit = async (e) => {
                     name="motherPhoto"
                     accept="image/*"
                     className="border bg-gray-100 p-1 rounded w-full"
-                    required={!isEditMode}
+                    // required={!isEditMode}
                   />
                 </label>
                 <label>
@@ -985,7 +985,7 @@ const handleSubmit = async (e) => {
                     name="childPhoto"
                     accept="image/*"
                     className="border bg-gray-100 p-1 rounded w-full"
-                    required={!isEditMode}
+                    // required={!isEditMode}
                   />
                 </label>
               </div>
