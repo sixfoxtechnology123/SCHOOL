@@ -38,7 +38,7 @@ exports.getAllFeeStructures = async (_req, res) => {
 // Create Fee Structure
 exports.createFeeStructure = async (req, res) => {
   try {
-    const { classId, feeHeadId, routeId, amount, academicSession } = req.body;
+    const { classId, feeHeadId, routeId, amount, academicSession, month } = req.body;
 
     if (!classId || !feeHeadId || !amount || !academicSession)
       return res.status(400).json({ error: "All fields are required" });
@@ -57,16 +57,33 @@ exports.createFeeStructure = async (req, res) => {
     }
 
     // ---- VALIDATION: prevent duplicate ----
-    const exists = await FeeStructure.findOne({
-      academicSession,
-      classId,
-      feeHeadId,
-      distance
-    }).lean();
-    if (exists) {
-      return res.status(400).json({
-        error: "Fee Structure already exists for same Session, Class, Fee Head and Distance"
-      });
+    let exists;
+    if (feeHeadObj?.feeHeadName.toLowerCase() === "tuition fee") {
+      // Tuition Fee: check same class, session, month
+      exists = await FeeStructure.findOne({
+        academicSession,
+        classId,
+        feeHeadId,
+        month
+      }).lean();
+      if (exists) {
+        return res.status(400).json({
+          error: `Tuition Fee already exists for Class "${classObj?.className}" in ${month}, Session "${academicSession}"`
+        });
+      }
+    } else {
+      // Other fees: same class, session, feeHead, distance
+      exists = await FeeStructure.findOne({
+        academicSession,
+        classId,
+        feeHeadId,
+        distance
+      }).lean();
+      if (exists) {
+        return res.status(400).json({
+          error: "Fee Structure already exists for same Session, Class, Fee Head and Distance"
+        });
+      }
     }
 
     const doc = new FeeStructure({
@@ -77,7 +94,8 @@ exports.createFeeStructure = async (req, res) => {
       className: classObj?.className || "",
       feeHeadName: feeHeadObj?.feeHeadName || "",
       distance,
-      amount
+      amount,
+      month: feeHeadObj?.feeHeadName.toLowerCase() === "tuition fee" ? month : undefined
     });
 
     await doc.save();
@@ -93,7 +111,7 @@ exports.createFeeStructure = async (req, res) => {
 exports.updateFeeStructure = async (req, res) => {
   try {
     const { id } = req.params;
-    const { classId, feeHeadId, routeId, amount, academicSession } = req.body;
+    const { classId, feeHeadId, routeId, amount, academicSession, month } = req.body;
 
     const payload = { academicSession, amount };
 
@@ -107,6 +125,12 @@ exports.updateFeeStructure = async (req, res) => {
       const feeHeadObj = await FeeHead.findOne({ feeHeadId }).lean();
       payload.feeHeadId = feeHeadId;
       payload.feeHeadName = feeHeadObj?.feeHeadName || "";
+
+      if (feeHeadObj?.feeHeadName.toLowerCase() === "tuition fee") {
+        payload.month = month;
+      } else {
+        payload.month = undefined;
+      }
     }
 
     if (routeId && payload.feeHeadName?.toLowerCase() === "transport") {
@@ -120,18 +144,36 @@ exports.updateFeeStructure = async (req, res) => {
       payload.distance = "";
     }
 
-    // ---- VALIDATION: prevent duplicate on update ----
-    const exists = await FeeStructure.findOne({
-      _id: { $ne: id },
-      academicSession: payload.academicSession,
-      classId: payload.classId,
-      feeHeadId: payload.feeHeadId,
-      distance: payload.distance
-    }).lean();
-    if (exists) {
-      return res.status(400).json({
-        error: "Fee Structure already exists for same Session, Class, Fee Head and Distance"
-      });
+    // ---- VALIDATION: prevent duplicate ----
+    let exists;
+    if (payload.feeHeadName?.toLowerCase() === "tuition fee") {
+      exists = await FeeStructure.findOne({
+        _id: { $ne: id },
+        academicSession: payload.academicSession,
+        classId: payload.classId,
+        feeHeadId: payload.feeHeadId,
+        month: payload.month
+      }).lean();
+
+      if (exists) {
+        return res.status(400).json({
+          error: `Tuition Fee already exists for Class "${payload.className}" in ${payload.month}, Session "${payload.academicSession}"`
+        });
+      }
+    } else {
+      exists = await FeeStructure.findOne({
+        _id: { $ne: id },
+        academicSession: payload.academicSession,
+        classId: payload.classId,
+        feeHeadId: payload.feeHeadId,
+        distance: payload.distance
+      }).lean();
+
+      if (exists) {
+        return res.status(400).json({
+          error: "Fee Structure already exists for same Session, Class, Fee Head and Distance"
+        });
+      }
     }
 
     const updated = await FeeStructure.findByIdAndUpdate(id, payload, { new: true });
@@ -143,6 +185,7 @@ exports.updateFeeStructure = async (req, res) => {
     res.status(500).json({ error: "Error saving Fee Structure" });
   }
 };
+
 
 // Delete Fee Structure
 exports.deleteFeeStructure = async (req, res) => {

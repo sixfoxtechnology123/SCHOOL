@@ -16,6 +16,9 @@ const FeeStructureMaster = () => {
     distance: "",
   });
 
+  const [month, setMonth] = useState(""); // NEW
+  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
   const [academicSessions, setAcademicSessions] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [classes, setClasses] = useState([]);
@@ -114,6 +117,7 @@ const FeeStructureMaster = () => {
           academicSession: savedSession || feeItem.academicSession || "",
           distance: feeItem.distance || "",
         });
+        setMonth(feeItem.month || ""); // NEW
       } else {
         fetchNextId();
       }
@@ -134,6 +138,7 @@ const FeeStructureMaster = () => {
   }, [feeData.academicSession]);
 
   const isTransportFee = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId)?.feeHeadName.toLowerCase() === "transport";
+  const isTuitionFee = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId)?.feeHeadName.toLowerCase().includes("tuition"); // FIXED
 
   useEffect(() => {
     if (isTransportFee) {
@@ -164,29 +169,22 @@ const FeeStructureMaster = () => {
     setFeeData(prev => ({ ...prev, [name]: value }));
 
     if (name === "academicSession") localStorage.setItem("selectedAcademicSession", value);
+    if (name === "feeHeadId") setMonth(""); // clear month if fee head changes
   };
 
-  // --- Activity Logging Function ---
   const saveActivity = (message) => {
-    const newActivity = {
-      id: Date.now(),
-      text: message,
-      timestamp: new Date(),
-    };
+    const newActivity = { id: Date.now(), text: message, timestamp: new Date() };
     const stored = JSON.parse(localStorage.getItem("activities") || "[]");
     const updated = [newActivity, ...stored];
     localStorage.setItem("activities", JSON.stringify(updated));
 
-    window.dispatchEvent(
-      new CustomEvent("newActivity", { detail: { action: message } })
-    );
+    window.dispatchEvent(new CustomEvent("newActivity", { detail: { action: message } }));
   };
-  // --------------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const payload = { ...feeData };
+      const payload = { ...feeData, month: isTuitionFee ? month : undefined };
 
       const classObj = classes.find(c => c.classId === feeData.classId);
       const feeHeadObj = feeHeads.find(f => f.feeHeadId === feeData.feeHeadId);
@@ -201,15 +199,11 @@ const FeeStructureMaster = () => {
       if (isEditMode) {
         await axios.put(`http://localhost:5000/api/fees/${feeData._id}`, payload);
         alert("Fee Structure updated!");
-
-        const message = `Updated Fee Structure: ${payload.className} - ${payload.feeHeadName}`;
-        saveActivity(message);
+        saveActivity(`Updated Fee Structure: ${payload.className} - ${payload.feeHeadName}`);
       } else {
         await axios.post("http://localhost:5000/api/fees", payload);
         alert("Fee Structure saved!");
-
-        const message = `Added Fee Structure: ${payload.className} - ${payload.feeHeadName}`;
-        saveActivity(message);
+        saveActivity(`Added Fee Structure: ${payload.className} - ${payload.feeHeadName}`);
       }
 
       navigate("/FeeStructureList", { replace: true });
@@ -264,6 +258,16 @@ const FeeStructureMaster = () => {
               <select name="routeId" value={feeData.routeId} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded" required>
                 <option value="">--Select Distance--</option>
                 {routes.map(r => <option key={r.routeId} value={r.routeId}>{r.distance}</option>)}
+              </select>
+            </div>
+          )}
+
+          {isTuitionFee && (
+            <div>
+              <label className="block font-medium">Month</label>
+              <select name="month" value={month} onChange={(e)=>setMonth(e.target.value)} className="w-full border border-gray-300 p-1 rounded" required>
+                <option value="">--Select Month--</option>
+                {months.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
           )}

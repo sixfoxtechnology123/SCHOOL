@@ -7,7 +7,8 @@ const feeStructureSchema = new mongoose.Schema(
     className: { type: String },              // store class name
     feeHeadId: { type: String, required: true },
     feeHeadName: { type: String },            // store fee head name
-    distance: { type: String },              // store route name
+    distance: { type: String },  
+    month: { type: String },            // store route name
     amount: { type: Number, required: true },
     academicSession: { type: String, required: true },
   },
