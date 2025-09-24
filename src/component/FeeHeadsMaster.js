@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
 import { useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const FeeHeadsMaster = () => {
   const [feeHeadData, setFeeHeadData] = useState({
@@ -77,7 +78,7 @@ const FeeHeadsMaster = () => {
         const message = `Updated Fee Head ${feeHeadData.feeHeadName}`;
         saveActivity(message);
         console.log(`Activity Event Fired: ${message}`);
-        alert("Fee Head updated successfully!");
+        toast.success("Fee Head updated successfully!");
       } else {
         // ADD NEW FEE HEAD
         await axios.post("http://localhost:5000/api/feeheads", feeHeadData);
@@ -85,14 +86,14 @@ const FeeHeadsMaster = () => {
         const message = `Added new Fee Head ${feeHeadData.feeHeadName}`;
         saveActivity(message);
         console.log(`Activity Event Fired: ${message}`);
-        alert("Fee Head saved successfully!");
+        toast.success("Fee Head saved successfully!");
       }
 
       navigate("/feeheadslist", { replace: true });
     } catch (err) {
       console.error("Save failed:", err);
       const message = err.response?.data?.error || "Error saving Fee Head";
-      alert(message);
+      toast.success(message);
     }
   };
 
@@ -144,6 +145,8 @@ const FeeHeadsMaster = () => {
                 "Sports & Annual Social",
                 "Electricity Charge",
                 "Miscellaneous Fee",
+                "TC",
+                "Migration"
               ].map((fh) => (
                 <option key={fh} value={fh}>
                   {fh}

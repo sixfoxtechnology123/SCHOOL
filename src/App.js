@@ -30,13 +30,14 @@ import TransportReport from "./reports/TransportReport";
 import ReportsDashboard from "./reports/ReportsDashboard";
 import IdCardForm from "./component/IdCardForm";
 import UdiseForm from "./component/UdiseForm";
-
+import { Toaster } from "react-hot-toast";
 
 
 
 
 function App() {
   return (
+    <>
     <Routes>
    
       <Route path="/HomePage" element={<HomePage/>} />
@@ -72,7 +73,15 @@ function App() {
       <Route path="/UdiseForm" element={<UdiseForm/>} />
 
     </Routes>
-  );
+    <Toaster
+      reverseOrder={false}
+      toastOptions={{
+      style: { fontWeight: 600 }
+      }}
+    />
+
+   </>
+    );
 }
 
 export default App;
