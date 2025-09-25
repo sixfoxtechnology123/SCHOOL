@@ -371,7 +371,7 @@ const handleSubmit = async (e) => {
                   
                 </label>
 
-              <label>Admission Date
+              <label>AdmissionSSSSSS Date
               <input
                 type="text"
                 name="admissionDate"
