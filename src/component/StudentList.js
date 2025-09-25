@@ -200,6 +200,10 @@ const generatePDF = async (student) => {
         <img src="${getImageSrc(student.childPhoto)}" style="height:100px; border:0.5px solid #555;"/>
         <strong>Child Photo</strong>
       </div>` : ""}
+      ${student.otherDocument ? `<div>
+        <img src="${getImageSrc(student.otherDocument)}" style="height:100px; border:0.5px solid #555;"/>
+        <strong>Other Document</strong>
+      </div>` : ""}
     </div>
   `;
 

@@ -110,6 +110,9 @@ export const createStudent = async (req, res) => {
       childPhoto: req.files?.childPhoto
         ? { data: req.files.childPhoto[0].buffer, contentType: req.files.childPhoto[0].mimetype }
         : null,
+      otherDocument: req.files?.otherDocument
+        ? { data: req.files.otherDocument[0].buffer, contentType: req.files.otherDocument[0].mimetype }
+        : null,
     });
 
     await newStudent.save();
@@ -129,7 +132,7 @@ export const updateStudent = async (req, res) => {
     if (!student) return res.status(404).json({ error: "Student not found" });
 
     Object.keys(payload).forEach((key) => {
-      if (key !== "fatherPhoto" && key !== "motherPhoto" && key !== "childPhoto") {
+      if (key !== "fatherPhoto" && key !== "motherPhoto" && key !== "childPhoto" && key !== "otherDocument") {
         student[key] = payload[key];
       }
     });
@@ -155,6 +158,12 @@ export const updateStudent = async (req, res) => {
         contentType: req.files.childPhoto[0].mimetype,
       };
     }
+    if (req.files?.otherDocument?.length) {
+      student.otherDocument = {
+        data: req.files.otherDocument[0].buffer,
+        contentType: req.files.otherDocument[0].mimetype,
+      };
+    }
 
     await student.save();
     res.json(student);
@@ -163,6 +172,7 @@ export const updateStudent = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to update student" });
   }
 };
+
 
 export const deleteStudent = async (req, res) => {
   try {

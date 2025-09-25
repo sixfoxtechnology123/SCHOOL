@@ -883,13 +883,13 @@ const handleSubmit = async (e) => {
                 e.preventDefault();
                 const formData = new FormData();
 
-                // Photos only required in NEW mode
-                if (!isEditMode) {
-                  if (!e.target.fatherPhoto.files[0] || !e.target.motherPhoto.files[0] || !e.target.childPhoto.files[0]) {
-                    alert("Please upload all 3 photos!");
-                    return;
-                  }
-                }
+                // // Photos only required in NEW mode
+                // if (!isEditMode) {
+                //   if (!e.target.fatherPhoto.files[0] || !e.target.motherPhoto.files[0] || !e.target.childPhoto.files[0]) {
+                //     alert("Please upload all 3 photos!");
+                //     return;
+                //   }
+                // }
 
                 if (e.target.fatherPhoto.files[0])
                   formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
@@ -897,6 +897,9 @@ const handleSubmit = async (e) => {
                   formData.append("motherPhoto", e.target.motherPhoto.files[0]);
                 if (e.target.childPhoto.files[0])
                   formData.append("childPhoto", e.target.childPhoto.files[0]);
+                if (e.target.otherDocument.files[0])
+                  formData.append("otherDocument", e.target.otherDocument.files[0]);
+
 
                 // Append studentData fields
                 Object.keys(studentData).forEach((key) => {
@@ -965,7 +968,7 @@ const handleSubmit = async (e) => {
                     name="fatherPhoto"
                     accept="image/*"
                     className="border bg-gray-100 p-1 rounded w-full"
-                    required={!isEditMode}
+                    // required={!isEditMode}
                   />
                 </label>
                 <label>
@@ -975,7 +978,7 @@ const handleSubmit = async (e) => {
                     name="motherPhoto"
                     accept="image/*"
                     className="border bg-gray-100 p-1 rounded w-full"
-                    required={!isEditMode}
+                    // required={!isEditMode}
                   />
                 </label>
                 <label>
@@ -985,7 +988,17 @@ const handleSubmit = async (e) => {
                     name="childPhoto"
                     accept="image/*"
                     className="border bg-gray-100 p-1 rounded w-full"
-                    required={!isEditMode}
+                    // required={!isEditMode}
+                  />
+                </label>
+
+                <label>
+                  Other Document
+                  <input
+                    type="file"
+                    name="otherDocument"
+                    accept=".pdf,.doc,.docx,.jpg,.png"  // any allowed file types
+                    className="border bg-gray-100 p-1 rounded w-full"
                   />
                 </label>
               </div>
@@ -1012,6 +1025,8 @@ const handleSubmit = async (e) => {
             </form>
           )}
         </div>
+
+
       </div>
     </div>
   );

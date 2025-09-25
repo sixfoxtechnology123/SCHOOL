@@ -56,6 +56,7 @@ router.post(
     { name: "fatherPhoto" },
     { name: "motherPhoto" },
     { name: "childPhoto" },
+    { name: "otherDocument" }, 
   ]),
   createStudent
 );
@@ -64,6 +65,7 @@ router.put("/:id", upload.fields([
   { name: "fatherPhoto" },
   { name: "motherPhoto" },
   { name: "childPhoto" },
+  { name: "otherDocument" },
 ]), updateStudent);
 
 router.delete("/:id", deleteStudent);
