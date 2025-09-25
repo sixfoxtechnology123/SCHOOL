@@ -174,7 +174,7 @@ const generatePDF = async (student) => {
       <div style="font-weight:bold; color:#0ea5e9; text-align:left; margin:0 0 6px 0; font-size:9pt; padding:4px;">
         ${title}
       </div>
-      <div style="padding:0 10px 5px 10px; border:1px solid #000;">
+      <div style="padding:0 10px 5px 10px; border:0.5px solid #555;">
         ${twoColRow("Vill", addr.vill, "PO", addr.po)}
         ${twoColRow("Block", addr.block, "PS", addr.ps)}
         ${twoColRow("Dist", addr.dist, "PIN", addr.pin)}
@@ -189,15 +189,15 @@ const generatePDF = async (student) => {
   const imagesHTML = `
     <div style="display:flex; justify-content:center; gap:40px; margin:5px 0; text-align:center;">
       ${student.fatherPhoto ? `<div>
-        <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; border:1px solid #000;"/>
+        <img src="${getImageSrc(student.fatherPhoto)}" style="height:100px; border:0.5px solid #555;"/>
         <strong>Father Photo</strong>
       </div>` : ""}
       ${student.motherPhoto ? `<div>
-        <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; border:1px solid #000;"/>
+        <img src="${getImageSrc(student.motherPhoto)}" style="height:100px; border:0.5px solid #555;"/>
         <strong>Mother Photo</strong>
       </div>` : ""}
       ${student.childPhoto ? `<div>
-        <img src="${getImageSrc(student.childPhoto)}" style="height:100px; border:1px solid #000;"/>
+        <img src="${getImageSrc(student.childPhoto)}" style="height:100px; border:0.5px solid #555;"/>
         <strong>Child Photo</strong>
       </div>` : ""}
     </div>
@@ -213,7 +213,7 @@ const generatePDF = async (student) => {
   admissionContainer.style.background = "#fff";
 
   admissionContainer.innerHTML = `
-    <div style="border:1px solid #000; padding:0 15px 15px 15px; position:relative; z-index:1;">
+    <div style="border:0.5px solid #555; padding:0 15px 15px 15px; position:relative; z-index:1;">
       <!-- Header -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin:0 0 12px 0;">
         <img src="/logo1.jpg" style="height:60px;" />
@@ -237,7 +237,7 @@ const generatePDF = async (student) => {
         style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
         A. Child Information
       </div>
-      <div style="padding:0 10px 5px 10px; border:1px solid #000;">
+      <div style="padding:0 10px 5px 10px; border:0.5px solid #555;">
         ${twoColRow("Student ID", student.studentId, "Academic Session", student.academicSession)}
         ${twoColRow("Name", getName(student), "Class", getClass(student))}
         ${twoColRow("Section", student.section, "Roll No", student.rollNo)}
@@ -260,7 +260,7 @@ const generatePDF = async (student) => {
         style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">
         B. Family Information
       </div>
-      <div style="padding:0 10px 5px 10px; border:1px solid #000;">
+      <div style="padding:0 10px 5px 10px; border:0.5px solid #555;">
         ${twoColRow("Father", student.fatherName, "Occupation", student.fatherOccupation)}
         ${twoColRow("Father's Phone", student.fatherPhone, "Father's Email", student.fatherEmail)}
         ${twoColRow("Father's Nationality", student.fatherNationality, "Father's Qualification", student.fatherQualification)}
@@ -288,11 +288,11 @@ const generatePDF = async (student) => {
 
   if (idCardInfo && Object.keys(idCardInfo).length > 0) {
     const idCardHtml = `
-      <div style="border:1px solid #000; padding:10px; margin-bottom:20px;">
+      <div style="border:0.5px solid #555; padding:10px; margin-bottom:20px;">
         <h2 style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">ID Card</h2>
         <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
           <div style="flex:1; padding-right:10px;">
-            <div style="border:1px solid #000; padding:10px;">
+            <div style="border:0.5px solid #555; padding:10px;">
               ${twoColRow("Student ID", idCardInfo.studentId, "Name", idCardInfo.studentName)}
               ${twoColRow("Class", idCardInfo.className, "DOB", formatDOB(idCardInfo.dob))}
               ${twoColRow("Father", idCardInfo.fatherName, "Mother", idCardInfo.motherName)}
@@ -301,7 +301,7 @@ const generatePDF = async (student) => {
             ${formatAddressBlock("Address", idCardInfo.permanentAddress)}
           </div>
           <div style="width:120px;">
-            <img src="${getImageSrc(idCardInfo.photo)}" style="width:100%; border:1px solid #000;" />
+            <img src="${getImageSrc(idCardInfo.photo)}" style="width:100%; border:0.5px solid #555;" />
           </div>
         </div>
       </div>
@@ -311,11 +311,11 @@ const generatePDF = async (student) => {
 
   if (udiseInfo && Object.keys(udiseInfo).length > 0) {
     const udiseHtml = `
-      <div style="border:1px solid #000; padding:10px;">
+      <div style="border:0.5px solid #555; padding:10px;">
         <h2 style="font-weight:bold; color:#1e40af; text-align:center; margin:0 0 6px 0; font-size:13pt; padding:4px;">UDISE Form</h2>
         <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
           <div style="flex:1; padding-right:10px;">
-            <div style="border:1px solid #000; padding:10px;">
+            <div style="border:0.5px solid #555; padding:10px;">
               ${twoColRow("Student ID", udiseInfo.studentId || "", "Name", udiseInfo.studentName || "")}
               ${twoColRow("Gender", udiseInfo.gender || "", "Height", udiseInfo.height || "")}
               ${twoColRow("Weight", udiseInfo.weight || "", "DOB", formatDOB(udiseInfo.dob))}
@@ -331,7 +331,7 @@ const generatePDF = async (student) => {
             ${formatAddressBlock("Address", udiseInfo.currentAddress || {})}
           </div>
           <div style="width:120px;">
-            <img src="${getImageSrc(udiseInfo.photo)}" style="width:100%; border:1px solid #000;" />
+            <img src="${getImageSrc(udiseInfo.photo)}" style="width:100%; border:0.5px solid #555;" />
           </div>
         </div>
       </div>
@@ -367,6 +367,100 @@ const generatePDF = async (student) => {
 };
 
 
+
+// -----------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------
+
+
+// --- Generate PDF for all filtered students ---
+const generateStudentsListPDF = async () => {
+  if (!filteredStudents.length) {
+    alert("No students to print.");
+    return;
+  }
+
+  const doc = new jsPDF("p", "pt", "a4");
+
+  // --- Header ---
+  const headerHTML = `
+    <div style="text-align:center; margin-bottom:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <img src="/logo1.jpg" style="height:60px;" />
+        <div style="flex:1; text-align:center;">
+          <h2 style="margin:2px 0; font-size:16pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
+          <p style="margin:2px 0; color:#004080;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
+          <h3 style="margin:2px 0; font-size:12pt; color:#1e40af;">STUDENTS LIST</h3>
+        </div>
+        <img src="/logo1.jpg" style="height:60px;" />
+      </div>
+      <hr style="border:1px solid #004080; margin-top:5px;"/>
+    </div>
+  `;
+
+// --- Table with all students ---
+const tableHeader = `
+  <thead>
+    <tr style="font-weight:bold; text-align:center;">
+      <th style="border:0.5px solid #555; padding:4px; vertical-align:middle;">Sl.No.</th>
+      <th style="border:0.5px solid #555; padding:4px; vertical-align:middle;">Session</th>
+      <th style="border:0.5px solid #555; padding:4px; vertical-align:middle;">Student ID</th>
+      <th style="border:0.5px solid #555; padding:4px; vertical-align:middle;">Name</th>
+      <th style="border:0.5px solid #555; padding:4px; vertical-align:middle;">Class</th>
+      <th style="border:0.5px solid #555; padding:4px; vertical-align:middle;">Section</th>
+      <th style="border:0.5px solid #555; padding:4px; vertical-align:middle;">Roll No</th>
+    </tr>
+  </thead>
+`;
+
+const tableRows = filteredStudents
+  .map(
+    (stu, i) => `
+    <tr style="height:30px;">
+      <td style="border:0.5px solid #555; padding:3px; text-align:center; vertical-align:middle;">${i + 1}</td>
+      <td style="border:0.5px solid #555; padding:3px; text-align:center; vertical-align:middle;">${stu.academicSession || ""}</td>
+      <td style="border:0.5px solid #555; padding:3px; text-align:center; vertical-align:middle;">${stu.studentId || ""}</td>
+      <td style="border:0.5px solid #555; padding:3px; text-align:center; vertical-align:middle;">${getName(stu)}</td>
+      <td style="border:0.5px solid #555; padding:3px; text-align:center; vertical-align:middle;">${getClass(stu)}</td>
+      <td style="border:0.5px solid #555; padding:3px; text-align:center; vertical-align:middle;">${stu.section || ""}</td>
+      <td style="border:0.5px solid #555; padding:3px; text-align:center; vertical-align:middle;">${stu.rollNo || ""}</td>
+    </tr>
+  `
+  )
+  .join("");
+
+
+  const container = document.createElement("div");
+  container.style.width = "800px";
+  container.style.padding = "20px";
+  container.style.fontFamily = "Arial, sans-serif";
+  container.style.fontSize = "11px";
+  container.style.color = "#000";
+  container.style.background = "#fff";
+
+  container.innerHTML = `
+    ${headerHTML}
+    <table style="width:100%; border-collapse:collapse; margin-top:10px;">
+      ${tableHeader}
+      <tbody>
+        ${tableRows}
+      </tbody>
+    </table>
+  `;
+
+  document.body.appendChild(container);
+  const canvas = await html2canvas(container, { scale: 2 });
+  const imgData = canvas.toDataURL("image/png");
+  const imgProps = doc.getImageProperties(imgData);
+  const pdfWidth = doc.internal.pageSize.getWidth();
+  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+  doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+  document.body.removeChild(container);
+
+  doc.save("students_list.pdf");
+};
+
+
    return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar />
@@ -376,33 +470,52 @@ const generatePDF = async (student) => {
           <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
               <h2 className="text-xl font-bold text-green-800">Students</h2>
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
-                <BackButton />
-                <input
-                  type="text"
-                  placeholder="Search by Student ID or Name Alphabet"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-                  className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
-                />
-                <select
-                  value={filterSession}
-                  onChange={(e) => setFilterSession(e.target.value)}
-                  className="border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
-                >
-                  <option value="">All Sessions</option>
-                  {sessions.map((s) => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
-                  ))}
-                </select>
+                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between w-full">
+                    {/* Top Row: Back + Filter (mobile: left & right) */}
+                    <div className="flex justify-between items-center gap-2 md:justify-start">
+                      <BackButton />
+                      <select
+                        value={filterSession}
+                        onChange={(e) => setFilterSession(e.target.value)}
+                        className="border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                      >
+                        <option value="">All Sessions</option>
+                        {sessions.map((s) => (
+                          <option key={s.id} value={s.name}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                <button
-                  onClick={() => navigate("/StudentMaster")}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
-                >
-                  New Register
-                </button>
-              </div>
+                    {/* Middle Row: Search (always centered, full width on mobile) */}
+                    <div className="w-full md:flex-1 md:px-4">
+                      <input
+                        type="text"
+                        placeholder="Search by Student ID or Name or Alphabet"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+                        className="w-full max-w-md border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                      />
+                    </div>
+
+                    {/* Bottom Row: Print + New Register (mobile: left & right) */}
+                    <div className="flex justify-between items-center gap-2 md:justify-end">
+                      <button
+                        onClick={generateStudentsListPDF}
+                        className="bg-green-600 text-white px-4 py-0 rounded hover:bg-green-700"
+                      >
+                        Print
+                      </button>
+                      <button
+                        onClick={() => navigate("/StudentMaster")}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-0 rounded font-semibold whitespace-nowrap"
+                      >
+                        New Register
+                      </button>
+                    </div>
+                  </div>
+
             </div>
           </div>
           <table className="w-full table-auto border border-green-500 text-sm">
