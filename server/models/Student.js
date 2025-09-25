@@ -1,6 +1,12 @@
 const mongoose = require("mongoose");
 
 const studentSchema = new mongoose.Schema({
+  admissionType: { 
+  type: String, 
+  enum: ["new admission", "re-admission"], 
+  default: "new admission" 
+},
+
   studentId: { type: String, required: true, unique: true }, // IMPORTANT
   academicSession: { type: String, required: true },
   admissionDate: {

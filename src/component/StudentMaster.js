@@ -68,6 +68,8 @@ const StudentMaster = () => {
   const location = useLocation();
   const studentItem = location.state?.studentItem;
   const [academicSessions, setAcademicSessions] = useState([]);
+ const [admissionType, setAdmissionType] = useState("new admission"); // "new" or "readmission"
+
 
   // --- Fetch academic sessions ---
   const fetchAcademicSessions = async () => {
@@ -121,6 +123,27 @@ const StudentMaster = () => {
       console.error("Error fetching sections:", err);
     }
   };
+
+useEffect(() => {
+  if (admissionType === "new admission") {
+    // Generate next studentId for new admission
+    const fetchNextStudentId = async () => {
+      try {
+        const res = await axios.get("http://localhost:5000/api/students/latest");
+        const nextId = res.data?.studentId || "G0101";
+        setStudentData(prev => ({ ...prev, studentId: nextId }));
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    fetchNextStudentId();
+  } else {
+    // For re-admission, clear the field so user can enter manually
+    setStudentData(prev => ({ ...prev, studentId: "" }));
+  }
+}, [admissionType]);
+
+
 
   // --- Initialize page ---
   useEffect(() => {
@@ -296,9 +319,39 @@ const handleSubmit = async (e) => {
             <form onSubmit={handleNext} className="grid grid-cols-1 gap-2">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
                 <label>
-                  Student ID
-                  <input name="studentId" value={studentData.studentId} readOnly className="border bg-gray-200 p-0 rounded w-full" />
-                </label>
+                    Admission Type
+                    <select
+                      name="admissionType"
+                      value={admissionType}
+                      onChange={(e) => setAdmissionType(e.target.value)}
+                      className="border bg-gray-100 p-0 rounded w-full"
+                    >
+                      <option value="new admission">New Admission</option>
+                      <option value="re-admission">Re-Admission</option>
+                    </select>
+
+                  </label>
+
+           <label>
+              Student ID
+            <input
+              name="studentId"
+              value={studentData.studentId}
+              readOnly={admissionType === "new admission"} // only read-only for new admission
+              onChange={(e) => {
+                if (admissionType === "re-admission") {
+                  setStudentData(prev => ({ ...prev, studentId: e.target.value.toUpperCase() }));
+                }
+              }}
+              className={`border p-0 rounded w-full ${
+                admissionType === "new admission" ? "bg-gray-200" : "bg-white"
+              }`}
+            />
+
+
+            </label>
+
+
              <label>
                   Academic Session
                   <select
@@ -1032,3 +1085,4 @@ const handleSubmit = async (e) => {
   );
 };
 export default StudentMaster;
+
