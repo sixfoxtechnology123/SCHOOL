@@ -92,33 +92,52 @@ export const getAllStudents = async (_req, res) => {
 
 export const createStudent = async (req, res) => {
   try {
-    const studentId = await generateNextStudentId();
-    const rollNo = await generateNextRollNo(req.body.admitClass, req.body.section);
+    const { admissionType, studentId, ...studentData } = req.body;
 
+    let finalStudentId = studentId;
+
+    if (admissionType === "new admission") {
+      //  Use the robust generator to avoid NaN
+      finalStudentId = await generateNextStudentId();
+    } else if (admissionType === "re-admission") {
+      // For re-admission, take studentId from frontend
+      if (!finalStudentId) {
+        return res.status(400).json({ message: "Student ID is required for re-admission" });
+      }
+    }
+
+    // Generate Roll No
+    let rollNo = await generateNextRollNo(req.body.admitClass, req.body.section);
+    rollNo = Number(rollNo); // Convert to Number
+
+    // Create new student with admissionType explicitly set
     const newStudent = new StudentMaster({
-      ...req.body,
-      studentId,
-      admissionDate: req.body.admissionDate || new Date(),
+      admissionType,       // Store exactly what was selected
+      studentId: finalStudentId,
       rollNo,
+      admissionDate: req.body.admissionDate || new Date(),
       languages: req.body.languages || [],
-      fatherPhoto: req.files?.fatherPhoto
+      ...studentData,
+      fatherPhoto: req.files?.fatherPhoto?.[0]
         ? { data: req.files.fatherPhoto[0].buffer, contentType: req.files.fatherPhoto[0].mimetype }
         : null,
-      motherPhoto: req.files?.motherPhoto
+      motherPhoto: req.files?.motherPhoto?.[0]
         ? { data: req.files.motherPhoto[0].buffer, contentType: req.files.motherPhoto[0].mimetype }
         : null,
-      childPhoto: req.files?.childPhoto
+      childPhoto: req.files?.childPhoto?.[0]
         ? { data: req.files.childPhoto[0].buffer, contentType: req.files.childPhoto[0].mimetype }
         : null,
-      otherDocument: req.files?.otherDocument
+      otherDocument: req.files?.otherDocument?.[0]
         ? { data: req.files.otherDocument[0].buffer, contentType: req.files.otherDocument[0].mimetype }
         : null,
     });
 
     await newStudent.save();
-    res.status(201).json(newStudent);
-  } catch (err) {
-    res.status(500).json({ error: err.message || "Failed to create student" });
+    res.status(201).json({ message: "Student saved successfully", student: newStudent });
+
+  } catch (error) {
+    console.error("Error saving student:", error);
+    res.status(500).json({ message: "Failed to save student", error: error.message });
   }
 };
 

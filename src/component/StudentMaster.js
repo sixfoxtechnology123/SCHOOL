@@ -931,86 +931,76 @@ const handleSubmit = async (e) => {
 
            {/* --------- STEP 3 --------- */}
           {step === 3 && (
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                const formData = new FormData();
+        <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              const formData = new FormData();
 
-                // // Photos only required in NEW mode
-                // if (!isEditMode) {
-                //   if (!e.target.fatherPhoto.files[0] || !e.target.motherPhoto.files[0] || !e.target.childPhoto.files[0]) {
-                //     alert("Please upload all 3 photos!");
-                //     return;
-                //   }
-                // }
+              // Merge admissionType into studentData
+              const dataToSend = { ...studentData, admissionType };
 
-                if (e.target.fatherPhoto.files[0])
-                  formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
-                if (e.target.motherPhoto.files[0])
-                  formData.append("motherPhoto", e.target.motherPhoto.files[0]);
-                if (e.target.childPhoto.files[0])
-                  formData.append("childPhoto", e.target.childPhoto.files[0]);
-                if (e.target.otherDocument.files[0])
-                  formData.append("otherDocument", e.target.otherDocument.files[0]);
+              // Append files if selected
+              if (e.target.fatherPhoto.files[0])
+                formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
+              if (e.target.motherPhoto.files[0])
+                formData.append("motherPhoto", e.target.motherPhoto.files[0]);
+              if (e.target.childPhoto.files[0])
+                formData.append("childPhoto", e.target.childPhoto.files[0]);
+              if (e.target.otherDocument.files[0])
+                formData.append("otherDocument", e.target.otherDocument.files[0]);
 
-
-                // Append studentData fields
-                Object.keys(studentData).forEach((key) => {
-                  if (key === "languages") {
-                    studentData.languages.forEach((lang) =>
-                      formData.append("languages[]", lang)
-                    );
-                  } else if (
-                    key === "permanentAddress" ||
-                    key === "currentAddress"
-                  ) {
-                    Object.keys(studentData[key]).forEach((sub) => {
-                      formData.append(`${key}[${sub}]`, studentData[key][sub]);
-                    });
-                  } else {
-                    formData.append(key, studentData[key]);
-                  }
-                });
-                const saveActivity = (action) => {
-                  const newActivity = {
-                    id: Date.now(),
-                    text: action,
-                    timestamp: new Date(),
-                  };
-
-                  const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-                  const updated = [newActivity, ...stored];
-                  localStorage.setItem("activities", JSON.stringify(updated));
-
-                  window.dispatchEvent(
-                    new CustomEvent("newActivity", { detail: { action } })
+              // Append all studentData fields to formData
+              Object.keys(dataToSend).forEach((key) => {
+                if (key === "languages") {
+                  dataToSend.languages.forEach((lang) =>
+                    formData.append("languages[]", lang)
                   );
+                } else if (key === "permanentAddress" || key === "currentAddress") {
+                  Object.keys(dataToSend[key]).forEach((sub) => {
+                    formData.append(`${key}[${sub}]`, dataToSend[key][sub]);
+                  });
+                } else {
+                  formData.append(key, dataToSend[key]);
+                }
+              });
+
+              // Activity logging
+              const saveActivity = (action) => {
+                const newActivity = {
+                  id: Date.now(),
+                  text: action,
+                  timestamp: new Date(),
                 };
-
-
-            try {
-              if (isEditMode) {
-                await axios.put(
-                  `http://localhost:5000/api/students/${studentData._id}`,
-                  formData,
-                  { headers: { "Content-Type": "multipart/form-data" } }
+                const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+                const updated = [newActivity, ...stored];
+                localStorage.setItem("activities", JSON.stringify(updated));
+                window.dispatchEvent(
+                  new CustomEvent("newActivity", { detail: { action } })
                 );
-                saveActivity(`Updated Student ${studentData.firstName} ${studentData.lastName}`);
-                alert("Student updated successfully!");
-              } else {
-                await axios.post("http://localhost:5000/api/students", formData, {
-                  headers: { "Content-Type": "multipart/form-data" },
-                });
-                saveActivity(`Added new Student ${studentData.firstName} ${studentData.lastName}`);
-                alert("Student and Photos saved successfully!");
-              }
-              navigate("/StudentList", { replace: true });
-            } catch (err) {
-              console.error("Error saving student with photos:", err);
-              alert("Failed to save student");
-            }
+              };
 
-              }}
+              try {
+                if (isEditMode) {
+                  await axios.put(
+                    `http://localhost:5000/api/students/${studentData._id}`,
+                    formData,
+                    { headers: { "Content-Type": "multipart/form-data" } }
+                  );
+                  saveActivity(`Updated Student ${studentData.firstName} ${studentData.lastName}`);
+                  alert("Student updated successfully!");
+                } else {
+                  await axios.post("http://localhost:5000/api/students", formData, {
+                    headers: { "Content-Type": "multipart/form-data" },
+                  });
+                  saveActivity(`Added new Student ${studentData.firstName} ${studentData.lastName}`);
+                  alert("Student and Photos saved successfully!");
+                }
+                navigate("/StudentList", { replace: true });
+              } catch (err) {
+                console.error("Error saving student with photos:", err);
+                alert("Failed to save student");
+              }
+            }}
               className="grid grid-cols-1 gap-4"
             >
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
