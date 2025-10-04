@@ -331,28 +331,7 @@ const handleSubmit = async (e) => {
                     </select>
 
                   </label>
-
-           <label>
-              Student ID
-            <input
-              name="studentId"
-              value={studentData.studentId}
-              readOnly={admissionType === "new admission"} // only read-only for new admission
-              onChange={(e) => {
-                if (admissionType === "re-admission") {
-                  setStudentData(prev => ({ ...prev, studentId: e.target.value.toUpperCase() }));
-                }
-              }}
-              className={`border p-0 rounded w-full ${
-                admissionType === "new admission" ? "bg-gray-200" : "bg-white"
-              }`}
-            />
-
-
-            </label>
-
-
-             <label>
+                               <label>
                   Academic Session
                   <select
                   className="border bg-gray-100 p-0 rounded w-full"
@@ -370,6 +349,22 @@ const handleSubmit = async (e) => {
                   </select>
                   
                 </label>
+                
+           <label>
+              Student ID
+            <input
+              name="studentId"
+              value={studentData.studentId}
+              readOnly={admissionType === "new admission"} // only read-only for new admission
+              onChange={(e) => {
+                if (admissionType === "re-admission") {
+                  setStudentData(prev => ({ ...prev, studentId: e.target.value.toUpperCase() }));
+                }
+              }}
+              className={`border p-0 rounded w-full ${
+                admissionType === "new admission" ? "bg-gray-200" : "bg-white"
+              }`}/>
+      </label>
 
               <label>Admission Date
               <input
