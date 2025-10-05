@@ -284,8 +284,8 @@ const handleSubmit = async (e) => {
                 : "Photo Upload"}
             </h2>
 
-            <div className="flex gap-2 ml-2">
-           {/* <Link
+            {/* <div className="flex gap-2 ml-2">
+            <Link
                 to="/IdCardForm"
                 // state={{ studentId: studentData.studentId }}
                 state={{ studentData }
@@ -295,7 +295,7 @@ const handleSubmit = async (e) => {
                 disabled={!studentData._id} // disables the button if student not saved
               >
                 ID Card
-              </Link> */}
+              </Link> 
               <Link
                 to="/IdCardForm"
                 state={{ studentData }} // send whole object
@@ -311,7 +311,7 @@ const handleSubmit = async (e) => {
             >
               UDISE
             </Link>
-          </div>
+          </div> */}
 
           </div>
 

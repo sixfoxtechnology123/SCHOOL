@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation ,Link} from "react-router-dom";
 import { FaTrash, FaEdit, FaEye, FaPrint } from "react-icons/fa";
 import BackButton from "../component/BackButton";
 import Sidebar from "../component/Sidebar";
@@ -16,6 +16,50 @@ const StudentsList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const today = new Date().toISOString().split("T")[0];
+    const [studentData, setStudentData] = useState({
+      studentId: "",
+      academicSession: "",
+      admissionDate: today,
+      admitClass: "",
+      transferFrom: "",
+      section: "",
+      rollNo: "",
+      firstName: "",
+      lastName: "",
+      gender: "",
+      socialCaste: "",
+      dob: "",
+      height: "",
+      weight: "",
+      bloodGroup: "",
+      brothers: "",
+      sisters: "",
+      nationality: "INDIAN",
+      languages: [],
+      permanentAddress: { vill: "", po: "", block: "", pin: "", ps: "", dist: "" },
+      currentAddress: { vill: "", po: "", block: "", pin: "", ps: "", dist: "" },
+      transportRequired: "No",
+      distanceFromSchool: "",
+      emergencyContact: "",
+      emergencyPerson: "",
+      fatherName: "",
+      fatherOccupation: "",
+      fatherPhone: "",
+      fatherEmail: "",
+      fatherNationality: "INDIAN",
+      fatherQualification: "",
+      motherName: "",
+      motherOccupation: "",
+      motherPhone: "",
+      motherEmail: "",
+      motherNationality: "INDIAN",
+      motherQualification: "",
+      bpl: "No",
+      bplNo: "",
+      familyIncome: "",
+    });
+
 
   const fetchStudents = async () => {
     try {
@@ -70,6 +114,8 @@ const saveActivity = (message) => {
   );
 };
 // --------------------------------------------------------
+
+
 
 const deleteStudent = async (id, name) => {
   if (!window.confirm("Are you sure you want to delete this student?")) return;
@@ -554,38 +600,56 @@ const tableRows = filteredStudents
                     <td className="border border-green-500 px-2 py-1">{stu.fatherName || ""}</td>
                     <td className="border border-green-500 px-2 py-1">{stu.motherName || ""}</td>
                     <td className="border border-green-500 px-2 py-1">{getPhone(stu)}</td>
-                    <td className="border border-green-500 px-2 py-1">
-                      <div className="flex justify-center items-center gap-2">
-                        <button
-                          onClick={() =>
-                            navigate("/StudentMaster", { state: { studentItem: stu } })
-                          }
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          onClick={() => deleteStudent(stu._id, getName(stu))}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <FaTrash />
-                        </button>
-                        <button
-                          onClick={() => generatePDF(stu)}
-                          className="text-green-600 hover:text-green-800"
-                          title="Print / View PDF"
-                        >
-                          <FaPrint />
-                        </button>
-                        {/* <button
-                          onClick={() => generatePDF(stu)}
-                          className="text-purple-600 hover:text-purple-800"
-                          title="View PDF"
-                        >
-                          <FaEye />
-                        </button> */}
-                      </div>
-                    </td>
+                   <td className="border border-green-500 px-2 py-1">
+                  <div className="flex justify-center items-center gap-2">
+                    {/* Edit */}
+                    <button
+                      onClick={() =>
+                        navigate("/StudentMaster", { state: { studentItem: stu } })
+                      }
+                      className="text-blue-600 hover:text-blue-800"
+                      title="Edit Student"
+                    >
+                      <FaEdit />
+                    </button>
+
+                    {/* Delete */}
+                    <button
+                      onClick={() => deleteStudent(stu._id, getName(stu))}
+                      className="text-red-600 hover:text-red-800"
+                      title="Delete Student"
+                    >
+                      <FaTrash />
+                    </button>
+
+                    {/* Print */}
+                    <button
+                      onClick={() => generatePDF(stu)}
+                      className="text-green-600 hover:text-green-800"
+                      title="Print / View PDF"
+                    >
+                      <FaPrint />
+                    </button>
+
+                    {/* New ID Card Link */}
+                    <Link
+                      to="/IdCardForm"
+                      state={{ studentData: stu }}
+                      className="text-indigo-600 font-bold hover:text-indigo-800"
+                    >
+                      ID
+                    </Link>
+
+                    {/* New UDISE Link */}
+                    <Link
+                      to="/UdiseForm"
+                      state={{ studentData: stu }}
+                      className="text-purple-600 font-bold hover:text-purple-800"
+                    >
+                      UDISE
+                    </Link>
+                  </div>
+                </td>
                   </tr>
                 ))
               ) : (
