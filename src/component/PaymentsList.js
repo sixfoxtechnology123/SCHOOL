@@ -57,7 +57,7 @@ const getStudentName = (studentId) => {
 };
 
 
-// 🟢 Activity saving logic
+//  Activity saving logic
 const saveActivity = (action) => {
   const newActivity = {
     id: Date.now(),
@@ -81,7 +81,7 @@ const deletePayment = async (id) => {
     await axios.delete(`http://localhost:5000/api/payments/${id}`);
     setPayments((prev) => prev.filter((p) => p._id !== id));
 
-    // 🟢 Log delete activity with student name
+    //  Log delete activity with student name
     if (payment) {
       const studentName = getStudentName(payment.student);
       saveActivity(`Deleted Payment Receipt ${payment.paymentId} of ${studentName}`);
@@ -242,7 +242,10 @@ const deletePayment = async (id) => {
       </tr>
     </table>
 
-
+          <!-- ===== Note Section ===== -->
+      <div style="text-align:center; margin-top:4px; font-size:9px; font-style:italic;">
+        This is a computer-generated receipt and does not require a signature.
+      </div>
         <!-- ===== Signature Section 
         <div style="display:flex; justify-content:space-between; font-size:13px; margin-top:40px;">
           <div style="display:flex; flex-direction: column; align-items:center; line-height:1;">
