@@ -1,54 +1,43 @@
-const Udise = require("../models/Udise");
 const StudentMaster = require("../models/Student");
 
-// Get UDISE by studentId
+// Get UDISE by studentId (prefill from StudentMaster)
 exports.getUdiseByStudentId = async (req, res) => {
   try {
-    const studentId = req.params.studentId;
+    const { studentId } = req.params;
     if (!studentId) return res.status(400).json({ error: "Student ID is required" });
 
-    let udise = await Udise.findOne({ studentId });
+    const student = await StudentMaster.findOne({ studentId }).lean();
+    if (!student) return res.status(404).json({ error: "Student not found" });
 
-    if (!udise) {
-      // fallback from StudentMaster
-      const student = await StudentMaster.findOne({ studentId });
-      if (!student) return res.status(404).json({ error: "Student not found" });
-
-      udise = {
-        _id: null,
-        studentId: student.studentId,
-        studentName: student.studentName || "",
-        gender: student.gender || "",
-        dob: student.dob || "",
-        className: student.className || "",
-        admitClass: student.admitClass || "",
-        fatherName: student.fatherName || "",
-        motherName: student.motherName || "",
-        guardianName: student.fatherName || "",
-        guardianQualification: student.fatherQualification || "",
-        fatherQualification: student.fatherQualification || "",
-        motherTongue: "",
-        socialCaste: "",  
-        religion: student.religion || "",
-        nationality: "INDIAN",
-        bpl: student.bpl || "No",
-        bplNo: "",
-        ews: "",            
-        familyIncome: student.familyIncome || "",
-        contactNo: student.contactNo || "",
-        cwsn: "",
-        currentAddress: {
-          vill: "",
-          po: "",
-          block: "",
-          pin: "",
-          ps: "",
-          dist: "",
-        },
-        panchayat: "",
-        photo: null,
-      };
-    }
+    // Prepare UDISE info from StudentMaster
+    const udise = {
+      _id: student._id,
+      studentId: student.studentId,
+      studentName: (student.firstName || "") + " " + (student.lastName || ""),
+      gender: student.gender || "",
+      dob: student.dob || "",
+      admitClass: student.admitClass || "",
+      fatherName: student.fatherName || "",
+      motherName: student.motherName || "",
+      guardianName: student.fatherName || "",
+      guardianQualification: student.fatherQualification || "",
+      fatherQualification: student.fatherQualification || "",
+      motherTongue: student.motherTongue || "",
+      socialCaste: student.socialCaste || "",
+      religion: student.religion || "",
+      nationality: student.nationality || "INDIAN",
+      bpl: student.bpl || "No",
+      bplNo: student.bplNo || "",
+      ews: student.ews || "",
+      familyIncome: student.familyIncome || "",
+      contactNo: student.contactNo || "",
+      cwsn: student.cwsn || "",
+      panchayat: student.panchayat || "",
+      currentAddress: student.currentAddress || {
+        vill: "", po: "", block: "", pin: "", ps: "", dist: ""
+      },
+      udisePhoto: student.udisePhoto || null,
+    };
 
     res.json(udise);
   } catch (err) {
@@ -57,67 +46,52 @@ exports.getUdiseByStudentId = async (req, res) => {
   }
 };
 
-// Save UDISE
+// Save or update UDISE data in StudentMaster
 exports.saveUdise = async (req, res) => {
   try {
-    const studentId = req.params.studentId || req.body.studentId;
+    const { studentId } = req.body;
     if (!studentId) return res.status(400).json({ error: "Student ID is required" });
 
-    let currentAddress = {};
-    if (req.body.currentAddress) {
-      if (typeof req.body.currentAddress === "string") {
-        currentAddress = JSON.parse(req.body.currentAddress);
-      } else {
-        currentAddress = req.body.currentAddress;
-      }
+    const student = await StudentMaster.findOne({ studentId });
+    if (!student) return res.status(404).json({ error: "Student not found" });
+
+    // Update UDISE-related fields
+    student.motherTongue = req.body.motherTongue || student.motherTongue;
+    student.socialCaste = req.body.socialCaste || student.socialCaste;
+    student.religion = req.body.religion || student.religion;
+    student.ews = req.body.ews || student.ews;
+    student.contactNo = req.body.contactNo || student.contactNo;
+    student.cwsn = req.body.cwsn || student.cwsn;
+    student.panchayat = req.body.panchayat || student.panchayat;
+    student.familyIncome = req.body.familyIncome || student.familyIncome;
+    student.currentAddress = req.body.currentAddress || student.currentAddress;
+
+    if (req.file) {
+      student.udisePhoto = { data: req.file.buffer, contentType: req.file.mimetype };
     }
 
-    const photo = req.file
-      ? { data: req.file.buffer, contentType: req.file.mimetype }
-      : undefined;
+    await student.save();
 
-    const udiseData = {
-      studentName: req.body.studentName || "",
-      gender: req.body.gender || "",
-      height: req.body.height || "",
-      weight: req.body.weight || "",
-      dob: req.body.dob || "",
-      className: req.body.className || "",
-      admitClass: req.body.admitClass || "",
-      motherTongue: req.body.motherTongue || "",
-      socialCaste: req.body.socialCaste || "",
-      fatherName: req.body.fatherName || "",
-      motherName: req.body.motherName || "",
-      guardianName: req.body.fatherName || "",
-      guardianQualification: req.body.fatherQualification || "",
-      fatherQualification: req.body.fatherQualification || "",
-      religion: req.body.religion || "",
-      nationality: req.body.nationality || "INDIAN",
-      bpl: req.body.bpl || "No",
-      bplNo: req.body.bplNo || "",
-      ews: req.body.ews || "",  
-      familyIncome: req.body.familyIncome || "",
-      contactNo: req.body.contactNo || "",
-      cwsn: req.body.cwsn || "",
-      panchayat: req.body.panchayat || "",
-      currentAddress,
-    };
-
-    if (photo) udiseData.photo = photo;
-
-    let udise = await Udise.findOne({ studentId });
-
-    if (udise) {
-      Object.assign(udise, udiseData);
-      await udise.save();
-      return res.json({ message: "UDISE updated successfully", udise });
-    } else {
-      udise = new Udise({ studentId, ...udiseData });
-      await udise.save();
-      return res.json({ message: "UDISE created successfully", udise });
-    }
+    res.json({
+      message: "UDISE info saved successfully",
+      student: {
+        _id: student._id,
+        studentId: student.studentId,
+        studentName: (student.firstName || "") + " " + (student.lastName || ""),
+        motherTongue: student.motherTongue || "",
+        socialCaste: student.socialCaste || "",
+        religion: student.religion || "",
+        ews: student.ews || "",
+        contactNo: student.contactNo || "",
+        cwsn: student.cwsn || "",
+        panchayat: student.panchayat || "",
+        familyIncome: student.familyIncome || "",
+        currentAddress: student.currentAddress || {},
+        udisePhoto: student.udisePhoto || null,
+      },
+    });
   } catch (err) {
-    console.error("Error saving UDISE:", err);
+    console.error(err);
     res.status(500).json({ error: "Failed to save UDISE" });
   }
 };

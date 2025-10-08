@@ -13,6 +13,7 @@ const IdCardForm = ({ studentId }) => {
   const studentData = location.state?.studentData;
 
   const [formData, setFormData] = useState({
+    studentId: "",
     studentName: "",
     dob: "",
     admitClass: "",
@@ -29,78 +30,63 @@ const IdCardForm = ({ studentId }) => {
       ps: "",
       dist: "",
     },
-    photo: null,
+    idCardPhoto: null,
   });
 
   const [photoPreview, setPhotoPreview] = useState(null);
   const [isAlreadyFilled, setIsAlreadyFilled] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [idCardId, setIdCardId] = useState(null);
 
+  // ===== Fetch student ID card info =====
   useEffect(() => {
-    const fetchIdCard = async () => {
+    const fetchStudentData = async () => {
       try {
-        let idCardRes = null;
+        let studentIdToFetch = studentData?.studentId || studentId;
+        if (!studentIdToFetch) return;
 
-        if (studentData?.studentId) {
-          idCardRes = await axios.get(
-            `http://localhost:5000/api/idcards/${studentData.studentId}`
-          );
-        } else if (studentId) {
-          idCardRes = await axios.get(
-            `http://localhost:5000/api/idcards/${studentId}`
-          );
-        }
+        const res = await axios.get(
+          `http://localhost:5000/api/students/${studentIdToFetch}/idcard-udise`
+        );
 
-        if (idCardRes?.data && idCardRes.data._id) {
-          const data = idCardRes.data;
+        if (res.data) {
+          const data = res.data.idCardInfo || {};
           setFormData((prev) => ({
             ...prev,
-            ...data,
-            dob: data.dob ? data.dob.split("T")[0] : "",
-            photo: null,
+            studentId: studentIdToFetch,
+            studentName: studentData?.studentName || studentData?.firstName + " " + studentData?.lastName || "",
+            dob: studentData?.dob ? studentData.dob.split("T")[0] : "",
+            admitClass: studentData?.admitClass || "",
+            bloodGroup: studentData?.bloodGroup || "",
+            fatherName: studentData?.fatherName || "",
+            motherName: studentData?.motherName || "",
+            fatherPhone: studentData?.fatherPhone || "",
+            whatsappNo: data.whatsappNo || "",
+            permanentAddress: data.permanentAddress || {},
+            idCardPhoto: data.idCardPhoto || null,
           }));
 
-          if (data.photo && data.photo.data) {
-            const blob = new Blob([new Uint8Array(data.photo.data.data)], {
-              type: data.photo.contentType,
-            });
-            setPhotoPreview(URL.createObjectURL(blob));
-          }
+      if (data.idCardPhoto?.data) {
+        setPhotoPreview(`data:${data.idCardPhoto.contentType};base64,${data.idCardPhoto.data}`);
+      }
 
-          setIdCardId(data._id);
-          setIsAlreadyFilled(true);
-        } else if (studentData) {
-          // Combine firstName + lastName into full name
-          const fullName = [studentData.firstName, studentData.lastName]
-            .filter(Boolean)
-            .join(" ");
-          setFormData((prev) => ({
-            ...prev,
-            ...studentData,
-            studentName: studentData.studentName || fullName,
-            dob: studentData.dob ? studentData.dob.split("T")[0] : "",
-          }));
+
+       setIsAlreadyFilled(
+        !!(
+          (data.whatsappNo && data.whatsappNo.trim() !== "") ||
+          (data.idCardPhoto && data.idCardPhoto.data)
+        )
+      );
+
         }
       } catch (err) {
-        if (studentData) {
-          const fullName = [studentData.firstName, studentData.lastName]
-            .filter(Boolean)
-            .join(" ");
-          setFormData((prev) => ({
-            ...prev,
-            ...studentData,
-            studentName: studentData.studentName || fullName,
-            dob: studentData.dob ? studentData.dob.split("T")[0] : "",
-          }));
-        }
-        console.log("No existing ID card found", err);
+        console.error("Failed to fetch ID Card data", err);
       }
     };
 
-    fetchIdCard();
+    fetchStudentData();
   }, [studentData, studentId]);
 
+  // ===== Handle input changes =====
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (files) {
@@ -119,132 +105,102 @@ const IdCardForm = ({ studentId }) => {
     }));
   };
 
+  // ===== Submit/Update ID Card =====
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = new FormData();
-    data.append("studentName", formData.studentName);
-    data.append("dob", formData.dob);
-    data.append("className", formData.admitClass);
-    data.append("bloodGroup", formData.bloodGroup);
-    data.append("fatherName", formData.fatherName);
-    data.append("motherName", formData.motherName);
-    data.append("contactNo", formData.fatherPhone);
-    data.append("whatsappNo", formData.whatsappNo);
-    data.append("permanentAddress", JSON.stringify(formData.permanentAddress));
-    if (formData.photo) data.append("photo", formData.photo);
-
-    if (studentData?.studentId) {
-      data.append("studentId", studentData.studentId);
-    } else if (studentId) {
-      data.append("studentId", studentId);
-    }
-
     try {
-      if (isAlreadyFilled && isEditMode) {
-        await axios.put(
-          `http://localhost:5000/api/idcards/${studentData?.studentId || studentId}`,
-          data,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-        alert("ID Card updated!");
-      } else {
-        await axios.post(
-          `http://localhost:5000/api/idcards/${studentData?.studentId || studentId}`,
-          data,
-          { headers: { "Content-Type": "multipart/form-data" } }
-        );
-        alert("ID Card saved!");
+      const form = new FormData();
+      form.append("whatsappNo", formData.whatsappNo);
+      form.append("permanentAddress", JSON.stringify(formData.permanentAddress));
+
+      if (formData.idCardPhoto) {
+        form.append("idCardPhoto", formData.idCardPhoto);
       }
 
+      await axios.put(
+        `http://localhost:5000/api/students/${formData.studentId}`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      alert(isAlreadyFilled ? "ID Card updated!" : "ID Card saved!");
       navigate("/StudentList");
     } catch (err) {
+      console.error("Error saving ID Card:", err);
       alert(
-        "Failed to save ID card: " +
-          (err.response?.data?.message || err.message)
+        "Failed to save ID card: " + (err.response?.data?.message || err.message)
       );
     }
   };
 
+  // ===== PDF Generation =====
+  const handleView = async () => {
+    const container = document.createElement("div");
+    container.style.padding = "25px";
+    container.style.background = "#fff";
+    container.style.fontFamily = "Arial, sans-serif";
+    container.style.fontSize = "14px";
+    container.style.color = "#000";
 
-// --- FIXED: PDF VIEW WITH PERFECT ALIGNMENT ---
-const handleView = async () => {
-  const container = document.createElement("div");
-  container.style.padding = "25px";
-  container.style.background = "#fff";
-  container.style.fontFamily = "Arial, sans-serif";
-  container.style.fontSize = "14px";
-  container.style.color = "#000";
-
-  // Helper to render two-column row with aligned labels
-      const twoColRow = (label1, value1, label2, value2) => `
-          <div style="display:flex; padding:2px 0; font-size:14pt;">
-            <div style="flex:1; display:flex;">
-              <div style="min-width:150px;"><strong>${label1}</strong></div>
-              <div>: ${value1 || ""}</div>
-            </div>
-            ${label2 ? `<div style="flex:1; display:flex;">
-              <div style="min-width:150px;"><strong>${label2}</strong></div>
-              <div>: ${value2 || ""}</div>
-            </div>` : ""}
-          </div>
-        `;
-
-
-  // Header HTML
-  const headerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <img src="/logo1.jpg" style="height:80px;" />
-      <div style="text-align:center; flex:1; margin:0 20px;">
-        <h2 style="margin:0; font-size:22pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
-        <p style="margin:4px 0; font-size:16pt; color:#004080;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
-        <h3 style="margin:0; font-size:18pt; font-weight:bold; color:#1d4ed8;">ID CARD</h3>
+    const twoColRow = (label1, value1, label2, value2) => `
+      <div style="display:flex; padding:2px 0; font-size:14pt;">
+        <div style="flex:1; display:flex;">
+          <div style="min-width:150px;"><strong>${label1}</strong></div>
+          <div>: ${value1 || ""}</div>
+        </div>
+        ${label2 ? `<div style="flex:1; display:flex;">
+          <div style="min-width:150px;"><strong>${label2}</strong></div>
+          <div>: ${value2 || ""}</div>
+        </div>` : ""}
       </div>
-      <img src="/logo1.jpg" style="height:80px;" />
-    </div>
-    <hr style="border:2px solid #004080; margin-bottom:12px;" />
-  `;
+    `;
 
-  // ID Card HTML
-  const idCardHTML = `
-    <div style="border:1px solid #000; padding:12px; display:flex; justify-content:space-between;">
-      <div style="flex:1; padding-right:12px;">
-        <!-- Child Details -->
-        ${twoColRow("Student ID", formData.studentId, "Name", formData.studentName)}
-        ${twoColRow("Class", formData.admitClass, "DOB", formData.dob)}
-        ${twoColRow("Father", formData.fatherName, "Mother", formData.motherName)}
-        ${twoColRow("Contact No", formData.fatherPhone || "", "Whatsapp No", formData.whatsappNo || "")}
-
-        <hr style="margin:10px 0; border:1px solid #000;" />
-         <h3 style="margin:4px 0; color:#1e40af;  font-size:14pt;">ADDRESS</h3>
-        <!-- Address as two-column rows -->
-        ${twoColRow("VILL", formData.permanentAddress?.vill, "PO", formData.permanentAddress?.po)}
-        ${twoColRow("PS", formData.permanentAddress?.ps, "BLOCK", formData.permanentAddress?.block)}
-        ${twoColRow("DIST", formData.permanentAddress?.dist, "PIN", formData.permanentAddress?.pin)}
+    const headerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <img src="/logo1.jpg" style="height:80px;" />
+        <div style="text-align:center; flex:1; margin:0 20px;">
+          <h2 style="margin:0; font-size:22pt; color:#004080;">CENTRAL PUBLIC SCHOOL</h2>
+          <p style="margin:4px 0; font-size:16pt; color:#004080;">Affiliated to CISCE Board, New Delhi (ICSE & ISC)</p>
+          <h3 style="margin:0; font-size:18pt; font-weight:bold; color:#1d4ed8;">ID CARD</h3>
+        </div>
+        <img src="/logo1.jpg" style="height:80px;" />
       </div>
+      <hr style="border:2px solid #004080; margin-bottom:12px;" />
+    `;
 
-      <div style="width:150px;"> <!-- Photo -->
-        ${photoPreview ? `<img src="${photoPreview}" style="width:100%; border:1px solid #000;" />` : ""}
+    const idCardHTML = `
+      <div style="border:1px solid #000; padding:12px; display:flex; justify-content:space-between;">
+        <div style="flex:1; padding-right:12px;">
+          ${twoColRow("Student ID", formData.studentId, "Name", formData.studentName)}
+          ${twoColRow("Class", formData.admitClass, "DOB", formData.dob)}
+          ${twoColRow("Father", formData.fatherName, "Mother", formData.motherName)}
+          ${twoColRow("Contact No", formData.fatherPhone || "", "Whatsapp No", formData.whatsappNo || "")}
+          <hr style="margin:10px 0; border:1px solid #000;" />
+          <h3 style="margin:4px 0; color:#1e40af;  font-size:14pt;">ADDRESS</h3>
+          ${twoColRow("VILL", formData.permanentAddress?.vill, "PO", formData.permanentAddress?.po)}
+          ${twoColRow("PS", formData.permanentAddress?.ps, "BLOCK", formData.permanentAddress?.block)}
+          ${twoColRow("DIST", formData.permanentAddress?.dist, "PIN", formData.permanentAddress?.pin)}
+        </div>
+        <div style="width:150px;">
+          ${photoPreview ? `<img src="${photoPreview}" style="width:100%; border:1px solid #000;" />` : ""}
+        </div>
       </div>
-    </div>
-  `;
+    `;
 
-  container.innerHTML = headerHTML + idCardHTML;
-  document.body.appendChild(container);
+    container.innerHTML = headerHTML + idCardHTML;
+    document.body.appendChild(container);
 
-  // Convert to PDF
-  const canvas = await html2canvas(container, { scale: 2 });
-  const imgData = canvas.toDataURL("image/png");
-  const pdf = new jsPDF("p", "pt", "a4");
-  const imgProps = pdf.getImageProperties(imgData);
-  const pdfWidth = pdf.internal.pageSize.getWidth();
-  const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    const canvas = await html2canvas(container, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "pt", "a4");
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
 
-  pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-  pdf.save(`${formData.studentName || "ID_Card"}.pdf`);
-
-  document.body.removeChild(container);
-};
-
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    pdf.save(`${formData.studentName || "ID_Card"}.pdf`);
+    document.body.removeChild(container);
+  };
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -266,179 +222,89 @@ const handleView = async () => {
             onSubmit={handleSubmit}
             className="grid grid-cols-1 sm:grid-cols-4 gap-3"
           >
+            {/* Student Info */}
             <label>
               Student’s Name
-              <input
-                type="text"
-                name="studentName"
-                value={formData.studentName}
-                disabled
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="studentName" value={formData.studentName} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
             </label>
 
             <label>
               DOB
-              <input
-                type="date"
-                name="dob"
-                value={formData.dob}
-                disabled
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="date" name="dob" value={formData.dob} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
             </label>
 
             <label>
               Class
-              <input
-                type="text"
-                name="admitClass"
-                value={formData.admitClass}
-                disabled
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="admitClass" value={formData.admitClass} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
             </label>
 
             <label>
               Blood Group
-              <input
-                type="text"
-                name="bloodGroup"
-                value={formData.bloodGroup}
-                disabled
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="bloodGroup" value={formData.bloodGroup} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
             </label>
 
             <label>
               Father’s Name
-              <input
-                type="text"
-                name="fatherName"
-                value={formData.fatherName}
-                disabled
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="fatherName" value={formData.fatherName} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
             </label>
 
             <label>
               Mother’s Name
-              <input
-                type="text"
-                name="motherName"
-                value={formData.motherName}
-                disabled
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="motherName" value={formData.motherName} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
             </label>
 
             <label>
               Contact No
-              <input
-                type="text"
-                name="fatherPhone"
-                value={formData.fatherPhone}
-                disabled
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-              />
+              <input type="text" name="fatherPhone" value={formData.fatherPhone} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
             </label>
 
             <label>
               Whatsapp No
-              <input
-                type="text"
-                name="whatsappNo"
-                value={formData.whatsappNo}
-                onChange={handleChange}
-                disabled={isAlreadyFilled && !isEditMode}
-                className={`border p-0 rounded w-full ${
-                  isAlreadyFilled && !isEditMode ? "bg-gray-100" : ""
-                }`}
-              />
+              <input type="text" name="whatsappNo" value={formData.whatsappNo} onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={`border p-0 rounded w-full ${isAlreadyFilled && !isEditMode ? "bg-gray-100" : ""}`}/>
             </label>
 
+            {/* Address */}
             <div className="col-span-full">
-              <p className="pl-2 font-bold mb-1 text-white bg-gray-800 py-1 rounded">
-                Address
-              </p>
+              <p className="pl-2 font-bold mb-1 text-white bg-gray-800 py-1 rounded">Address</p>
               <div className="grid grid-cols-1 sm:grid-cols-6 gap-2">
                 {["vill", "po", "block", "pin", "ps", "dist"].map((field) => (
                   <div key={field} className="flex flex-col">
                     <label>{field.toUpperCase()}</label>
-                    <input
-                      name={field}
-                      value={formData.permanentAddress[field]}
-                      onChange={handleAddressChange}
-                      disabled
-                      className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
-                    />
+                    <input name={field} value={formData.permanentAddress[field]} onChange={handleAddressChange} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
                   </div>
                 ))}
               </div>
             </div>
 
+            {/* Photo */}
             <label className="col-span-1">
-              <span className="font-bold">Upload Child Photo</span>
-              <input
-                type="file"
-                name="photo"
-                onChange={handleChange}
-                disabled={isAlreadyFilled && !isEditMode}
-                className={`border p-1 rounded w-full ${
-                  isAlreadyFilled && !isEditMode ? "bg-gray-100" : ""
-                }`}
-              />
+              <span className="font-bold">Upload ID Card Photo</span>
+              <input type="file" name="idCardPhoto" onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={`border p-1 rounded w-full ${isAlreadyFilled && !isEditMode ? "bg-gray-100" : ""}`} />
             </label>
 
-            {photoPreview && (
-              <img
-                src={photoPreview}
-                alt="Preview"
-                className="col-span-full max-w-xs mt-2 rounded"
-              />
-            )}
+           {photoPreview && <img src={photoPreview} alt="Preview" className="col-span-full max-w-xs mt-2 rounded" />}
+
+
+            {/* Buttons */}
             <div className="col-span-full flex justify-between items-center gap-2">
               <BackButton />
 
               {isAlreadyFilled && !isEditMode && (
-                <button
-                  type="button"
-                  className="px-4 py-0  bg-blue-600 hover:bg-blue-700 text-white rounded"
-                  onClick={handleView}
-                >
-                  View
-                </button>
+                <button type="button" onClick={handleView} className="px-4 py-0 bg-blue-600 hover:bg-blue-700 text-white rounded">View</button>
               )}
 
               {!isAlreadyFilled && (
-                <button
-                  type="submit"
-                  className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded"
-                >
-                  Save
-                </button>
+                <button type="submit" className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded">Save</button>
               )}
 
               {isAlreadyFilled && !isEditMode && (
-                <button
-                  type="button"
-                  className="px-4 py-0 bg-blue-600 hover:bg-blue-700 text-white rounded"
-                  onClick={() => setIsEditMode(true)}
-                >
-                  Edit
-                </button>
+                <button type="button" onClick={() => setIsEditMode(true)} className="px-4 py-0 bg-blue-600 hover:bg-blue-700 text-white rounded">Edit</button>
               )}
 
               {isAlreadyFilled && isEditMode && (
-                <button
-                  type="submit"
-                  className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded"
-                >
-                  Update
-                </button>
+                <button type="submit" className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded">Update</button>
               )}
             </div>
-
           </form>
         </div>
       </div>

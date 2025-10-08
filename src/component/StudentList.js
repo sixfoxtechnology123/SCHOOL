@@ -186,7 +186,8 @@ const generatePDF = async (student) => {
 
   const doc = new jsPDF("p", "pt", "a4");
 
-  const res = await axios.get(`http://localhost:5000/api/students/${student._id}/full`);
+   const res = await axios.get(`http://localhost:5000/api/students/${student.studentId}/fullinfo`);
+
   const { childInfo, idCardInfo, udiseInfo } = res.data;
 
   const getImageSrc = (photoObj) => {

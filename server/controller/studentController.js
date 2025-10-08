@@ -1,14 +1,12 @@
 import StudentMaster from "../models/Student.js";
 import ClassMaster from "../models/Class.js";
-import IdCardInfo from "../models/IdCard.js";
-import UdiseInfo from "../models/Udise.js";
 import AcademicSession from "../models/AcademicSession.js";
-
 
 const PREFIX = "G";
 const PAD = 4;
 const START_NUM = 101;
 
+// ===== Generate Next Student ID =====
 async function generateNextStudentId() {
   const lastStudent = await StudentMaster.aggregate([
     { $match: { studentId: { $regex: `^${PREFIX}\\d+$` } } },
@@ -29,6 +27,7 @@ async function generateNextStudentId() {
   return `${PREFIX}${String(nextNum).padStart(PAD, "0")}`;
 }
 
+// ===== Generate Next Roll No =====
 async function generateNextRollNo(admitClass, section) {
   const last = await StudentMaster.find({ admitClass, section })
     .sort({ rollNo: -1 })
@@ -36,13 +35,11 @@ async function generateNextRollNo(admitClass, section) {
     .lean();
 
   let nextRoll = 1;
-  if (last.length) {
-    nextRoll = parseInt(last[0].rollNo, 10) + 1;
-  }
-
+  if (last.length) nextRoll = parseInt(last[0].rollNo, 10) + 1;
   return String(nextRoll).padStart(2, "0");
 }
 
+// ===== Get Latest Student ID =====
 export const getLatestStudentId = async (_req, res) => {
   try {
     const nextId = await generateNextStudentId();
@@ -52,6 +49,7 @@ export const getLatestStudentId = async (_req, res) => {
   }
 };
 
+// ===== Get Next Roll No =====
 export const getNextRollNo = async (req, res) => {
   try {
     const { className, section } = req.params;
@@ -61,9 +59,7 @@ export const getNextRollNo = async (req, res) => {
       .limit(1);
 
     let nextRoll = 1;
-    if (lastStudent.length) {
-      nextRoll = parseInt(lastStudent[0].rollNo, 10) + 1;
-    }
+    if (lastStudent.length) nextRoll = parseInt(lastStudent[0].rollNo, 10) + 1;
 
     res.json({ rollNo: String(nextRoll).padStart(2, "0") });
   } catch (err) {
@@ -71,6 +67,7 @@ export const getNextRollNo = async (req, res) => {
   }
 };
 
+// ===== Get All Students =====
 export const getAllStudents = async (_req, res) => {
   try {
     const students = await StudentMaster.find().lean();
@@ -90,6 +87,7 @@ export const getAllStudents = async (_req, res) => {
   }
 };
 
+// ===== Create Student =====
 export const createStudent = async (req, res) => {
   try {
     const { admissionType, studentId, ...studentData } = req.body;
@@ -97,27 +95,24 @@ export const createStudent = async (req, res) => {
     let finalStudentId = studentId;
 
     if (admissionType === "new admission") {
-      //  Use the robust generator to avoid NaN
       finalStudentId = await generateNextStudentId();
     } else if (admissionType === "re-admission") {
-      // For re-admission, take studentId from frontend
       if (!finalStudentId) {
         return res.status(400).json({ message: "Student ID is required for re-admission" });
       }
     }
 
-    // Generate Roll No
     let rollNo = await generateNextRollNo(req.body.admitClass, req.body.section);
-    rollNo = Number(rollNo); // Convert to Number
+    rollNo = Number(rollNo);
 
-    // Create new student with admissionType explicitly set
     const newStudent = new StudentMaster({
-      admissionType,       // Store exactly what was selected
+      admissionType,
       studentId: finalStudentId,
       rollNo,
       admissionDate: req.body.admissionDate || new Date(),
       languages: req.body.languages || [],
       ...studentData,
+
       fatherPhoto: req.files?.fatherPhoto?.[0]
         ? { data: req.files.fatherPhoto[0].buffer, contentType: req.files.fatherPhoto[0].mimetype }
         : null,
@@ -129,6 +124,12 @@ export const createStudent = async (req, res) => {
         : null,
       otherDocument: req.files?.otherDocument?.[0]
         ? { data: req.files.otherDocument[0].buffer, contentType: req.files.otherDocument[0].mimetype }
+        : null,
+      idCardPhoto: req.files?.idCardPhoto?.[0]
+        ? { data: req.files.idCardPhoto[0].buffer, contentType: req.files.idCardPhoto[0].mimetype }
+        : null,
+      udisePhoto: req.files?.udisePhoto?.[0]
+        ? { data: req.files.udisePhoto[0].buffer, contentType: req.files.udisePhoto[0].mimetype }
         : null,
     });
 
@@ -143,49 +144,36 @@ export const createStudent = async (req, res) => {
 
 export const updateStudent = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.params; // studentId
     const payload = { ...req.body };
-    delete payload.studentId;
 
-    const student = await StudentMaster.findById(id);
-    if (!student) return res.status(404).json({ error: "Student not found" });
-
-    Object.keys(payload).forEach((key) => {
-      if (key !== "fatherPhoto" && key !== "motherPhoto" && key !== "childPhoto" && key !== "otherDocument") {
-        student[key] = payload[key];
+    // Only allow updating these fields
+    const allowedFields = ["motherTongue", "religion", "ews", "contactNo", "cwsn", "panchayat"];
+    allowedFields.forEach((key) => {
+      if (payload[key] !== undefined) {
+        req.body[key] = payload[key];
       }
     });
 
-    student.languages = payload.languages || student.languages || [];
-    student.markModified("languages");
+    // Find student by studentId
+    const student = await StudentMaster.findOne({ studentId: id });
+    if (!student) return res.status(404).json({ error: "Student not found" });
 
-    if (req.files?.fatherPhoto?.length) {
-      student.fatherPhoto = {
-        data: req.files.fatherPhoto[0].buffer,
-        contentType: req.files.fatherPhoto[0].mimetype,
-      };
-    }
-    if (req.files?.motherPhoto?.length) {
-      student.motherPhoto = {
-        data: req.files.motherPhoto[0].buffer,
-        contentType: req.files.motherPhoto[0].mimetype,
-      };
-    }
-    if (req.files?.childPhoto?.length) {
-      student.childPhoto = {
-        data: req.files.childPhoto[0].buffer,
-        contentType: req.files.childPhoto[0].mimetype,
-      };
-    }
-    if (req.files?.otherDocument?.length) {
-      student.otherDocument = {
-        data: req.files.otherDocument[0].buffer,
-        contentType: req.files.otherDocument[0].mimetype,
+    // Update allowed fields
+    allowedFields.forEach((key) => {
+      if (payload[key] !== undefined) student[key] = payload[key];
+    });
+
+    // Handle UDISE photo only
+    if (req.files?.udisePhoto?.length) {
+      student.udisePhoto = {
+        data: req.files.udisePhoto[0].buffer,
+        contentType: req.files.udisePhoto[0].mimetype,
       };
     }
 
     await student.save();
-    res.json(student);
+    res.json({ message: "Student updated successfully", student });
   } catch (err) {
     console.error("Error updating student:", err);
     res.status(500).json({ error: err.message || "Failed to update student" });
@@ -193,10 +181,11 @@ export const updateStudent = async (req, res) => {
 };
 
 
+// ===== Delete Student =====
 export const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await StudentMaster.findByIdAndDelete(id);
+    const deleted = await StudentMaster.findOneAndDelete({ studentId: id }); 
     if (!deleted) return res.status(404).json({ error: "Student not found" });
     res.json({ message: "Student deleted successfully" });
   } catch (err) {
@@ -204,40 +193,39 @@ export const deleteStudent = async (req, res) => {
   }
 };
 
-//  New function to fetch ID Card + UDISE for frontend PDF or other calls
-export const getIdCardAndUdise = async (studentId) => {
-  try {
-    const idCardInfo = await IdCardInfo.findOne({ studentId }).lean();
-    const udiseInfo = await UdiseInfo.findOne({ studentId }).lean();
-    return { idCardInfo: idCardInfo || {}, udiseInfo: udiseInfo || {} };
-  } catch (err) {
-    console.error("Error fetching ID Card & UDISE:", err);
-    return { idCardInfo: {}, udiseInfo: {} };
-  }
-};
-
-
-
-// Get full student info with ID Card and UDISE
+// ===== Get Full Student Info (All merged fields) =====
 export const getFullStudentInfo = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // fetch student basic data
-    const student = await StudentMaster.findById(id).lean();
+    const student = await StudentMaster.findOne({ studentId: id }).lean();
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }
 
-    // fetch idCard & udise info linked by studentId
-    const idCardInfo = await IdCardInfo.findOne({ studentId: student.studentId }).lean();
-    const udiseInfo = await UdiseInfo.findOne({ studentId: student.studentId }).lean();
-
-    // return all combined
     res.json({
       childInfo: {
-        ...student,
-        languages: student.languages || []
+        studentId: student.studentId,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        dob: student.dob,
+        gender: student.gender,
+        admitClass: student.admitClass,
+        section: student.section,
+        rollNo: student.rollNo,
+        bloodGroup: student.bloodGroup,
+        height: student.height,
+        weight: student.weight,
+        nationality: student.nationality,
+        languages: student.languages || [],
+        permanentAddress: student.permanentAddress || {},
+        currentAddress: student.currentAddress || {},
+        whatsappNo: student.whatsappNo || "",
+        contactNo: student.contactNo || "",
+        admissionType: student.admissionType,
+        academicSession: student.academicSession,
+        admissionDate: student.admissionDate,
+        socialCaste: student.socialCaste,
       },
       familyInfo: {
         fatherName: student.fatherName,
@@ -254,16 +242,66 @@ export const getFullStudentInfo = async (req, res) => {
         motherQualification: student.motherQualification,
         bpl: student.bpl,
         bplNo: student.bplNo,
-        familyIncome: student.familyIncome
+        familyIncome: student.familyIncome,
       },
-      idCardInfo: idCardInfo || {},   //  Whatsapp number & ID card fields will be here
-      udiseInfo: udiseInfo || {}      // UDISE form fields here
+      idCardInfo: student.idCardPhoto
+        ? {
+            studentId: student.studentId,
+            studentName: `${student.firstName || ""} ${student.lastName || ""}`.trim(),
+            className: student.admitClass,
+            dob: student.dob,
+            fatherName: student.fatherName,
+            motherName: student.motherName,
+            contactNo: student.contactNo || student.fatherPhone || "",
+            whatsappNo: student.whatsappNo || "",
+            permanentAddress: student.permanentAddress || {},
+            photo: student.idCardPhoto,
+          }
+        : {},
+      udiseInfo: student.udisePhoto
+        ? {
+            studentId: student.studentId,
+            studentName: `${student.firstName || ""} ${student.lastName || ""}`.trim(),
+            dob: student.dob,
+            gender: student.gender,
+            admitClass: student.admitClass,
+            height:student.height,
+            weight:student.weight,
+            motherTongue: student.motherTongue,
+            fatherName: student.fatherName,
+            motherName: student.motherName,
+            guardianName: student.fatherName || "",
+            guardianQualification: student.fatherQualification || "",
+            religion: student.religion,
+            nationality: student.nationality,
+            bpl: student.bpl,
+            bplNo: student.bplNo,
+            ews: student.ews,
+            familyIncome: student.familyIncome,
+            contactNo: student.contactNo || "",
+            cwsn: student.cwsn || "",
+            socialCaste: student.socialCaste,
+            panchayat: student.panchayat || "",
+            currentAddress: student.currentAddress || {},
+            photo: student.udisePhoto,
+          }
+        : {},
+      extraInfo: {
+        motherTongue: student.motherTongue,
+        religion: student.religion,
+        ews: student.ews,
+        cwsn: student.cwsn,
+        panchayat: student.panchayat,
+      },
     });
   } catch (err) {
+    console.error("Error fetching full student info:", err);
     res.status(500).json({ error: err.message || "Failed to fetch full student info" });
   }
 };
-// --- Academic Sessions ---
+
+
+// ===== Get All Academic Sessions =====
 export const getAllAcademicSessions = async (_req, res) => {
   try {
     const sessions = await AcademicSession.find().lean();
@@ -271,5 +309,26 @@ export const getAllAcademicSessions = async (_req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch academic sessions" });
+  }
+};
+
+// ===== Check if UDISE data exists for a student =====
+export const checkUdiseExists = async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const student = await StudentMaster.findOne({ studentId }).lean();
+    if (!student) return res.status(404).json({ exists: false });
+
+    const exists =
+      student.udiseCode ||
+      student.udiseSchoolName ||
+      student.udisePhoto;
+
+    res.json({
+      exists: !!exists,
+      udiseData: exists ? student : null,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message || "Failed to check UDISE data" });
   }
 };
