@@ -41,7 +41,7 @@ const IdCardForm = ({ studentId }) => {
   useEffect(() => {
     const fetchStudentData = async () => {
       try {
-        let studentIdToFetch = studentData?.studentId || studentId;
+        const studentIdToFetch = studentData?.studentId || studentId;
         if (!studentIdToFetch) return;
 
         const res = await axios.get(
@@ -50,10 +50,13 @@ const IdCardForm = ({ studentId }) => {
 
         if (res.data) {
           const data = res.data.idCardInfo || {};
+
           setFormData((prev) => ({
             ...prev,
             studentId: studentIdToFetch,
-            studentName: studentData?.studentName || studentData?.firstName + " " + studentData?.lastName || "",
+            studentName:
+              studentData?.studentName ||
+              `${studentData?.firstName || ""} ${studentData?.lastName || ""}`.trim(),
             dob: studentData?.dob ? studentData.dob.split("T")[0] : "",
             admitClass: studentData?.admitClass || "",
             bloodGroup: studentData?.bloodGroup || "",
@@ -65,18 +68,11 @@ const IdCardForm = ({ studentId }) => {
             idCardPhoto: data.idCardPhoto || null,
           }));
 
-      if (data.idCardPhoto?.data) {
-        setPhotoPreview(`data:${data.idCardPhoto.contentType};base64,${data.idCardPhoto.data}`);
-      }
+          // Set photo preview
+          setPhotoPreview(data.idCardPhoto || null);
 
-
-       setIsAlreadyFilled(
-        !!(
-          (data.whatsappNo && data.whatsappNo.trim() !== "") ||
-          (data.idCardPhoto && data.idCardPhoto.data)
-        )
-      );
-
+          // Check if ID card already filled
+          setIsAlreadyFilled(!!(data.whatsappNo?.trim() || data.idCardPhoto));
         }
       } catch (err) {
         console.error("Failed to fetch ID Card data", err);
@@ -127,9 +123,7 @@ const IdCardForm = ({ studentId }) => {
       navigate("/StudentList");
     } catch (err) {
       console.error("Error saving ID Card:", err);
-      alert(
-        "Failed to save ID card: " + (err.response?.data?.message || err.message)
-      );
+      alert("Failed to save ID card: " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -148,10 +142,14 @@ const IdCardForm = ({ studentId }) => {
           <div style="min-width:150px;"><strong>${label1}</strong></div>
           <div>: ${value1 || ""}</div>
         </div>
-        ${label2 ? `<div style="flex:1; display:flex;">
-          <div style="min-width:150px;"><strong>${label2}</strong></div>
-          <div>: ${value2 || ""}</div>
-        </div>` : ""}
+        ${
+          label2
+            ? `<div style="flex:1; display:flex;">
+                <div style="min-width:150px;"><strong>${label2}</strong></div>
+                <div>: ${value2 || ""}</div>
+              </div>`
+            : ""
+        }
       </div>
     `;
 
@@ -182,7 +180,11 @@ const IdCardForm = ({ studentId }) => {
           ${twoColRow("DIST", formData.permanentAddress?.dist, "PIN", formData.permanentAddress?.pin)}
         </div>
         <div style="width:150px;">
-          ${photoPreview ? `<img src="${photoPreview}" style="width:100%; border:1px solid #000;" />` : ""}
+          ${
+            photoPreview
+              ? `<img src="${photoPreview}" style="width:100%; border:1px solid #000;" />`
+              : ""
+          }
         </div>
       </div>
     `;
@@ -225,42 +227,93 @@ const IdCardForm = ({ studentId }) => {
             {/* Student Info */}
             <label>
               Student’s Name
-              <input type="text" name="studentName" value={formData.studentName} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
+              <input
+                type="text"
+                name="studentName"
+                value={formData.studentName}
+                disabled
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+              />
             </label>
 
             <label>
               DOB
-              <input type="date" name="dob" value={formData.dob} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
+              <input
+                type="date"
+                name="dob"
+                value={formData.dob}
+                disabled
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+              />
             </label>
 
             <label>
               Class
-              <input type="text" name="admitClass" value={formData.admitClass} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
+              <input
+                type="text"
+                name="admitClass"
+                value={formData.admitClass}
+                disabled
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+              />
             </label>
 
             <label>
               Blood Group
-              <input type="text" name="bloodGroup" value={formData.bloodGroup} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
+              <input
+                type="text"
+                name="bloodGroup"
+                value={formData.bloodGroup}
+                disabled
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+              />
             </label>
 
             <label>
               Father’s Name
-              <input type="text" name="fatherName" value={formData.fatherName} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
+              <input
+                type="text"
+                name="fatherName"
+                value={formData.fatherName}
+                disabled
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+              />
             </label>
 
             <label>
               Mother’s Name
-              <input type="text" name="motherName" value={formData.motherName} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
+              <input
+                type="text"
+                name="motherName"
+                value={formData.motherName}
+                disabled
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+              />
             </label>
 
             <label>
               Contact No
-              <input type="text" name="fatherPhone" value={formData.fatherPhone} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
+              <input
+                type="text"
+                name="fatherPhone"
+                value={formData.fatherPhone}
+                disabled
+                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+              />
             </label>
 
             <label>
               Whatsapp No
-              <input type="text" name="whatsappNo" value={formData.whatsappNo} onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={`border p-0 rounded w-full ${isAlreadyFilled && !isEditMode ? "bg-gray-100" : ""}`}/>
+              <input
+                type="text"
+                name="whatsappNo"
+                value={formData.whatsappNo}
+                onChange={handleChange}
+                disabled={isAlreadyFilled && !isEditMode}
+                className={`border p-0 rounded w-full ${
+                  isAlreadyFilled && !isEditMode ? "bg-gray-100" : ""
+                }`}
+              />
             </label>
 
             {/* Address */}
@@ -270,7 +323,13 @@ const IdCardForm = ({ studentId }) => {
                 {["vill", "po", "block", "pin", "ps", "dist"].map((field) => (
                   <div key={field} className="flex flex-col">
                     <label>{field.toUpperCase()}</label>
-                    <input name={field} value={formData.permanentAddress[field]} onChange={handleAddressChange} disabled className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"/>
+                    <input
+                      name={field}
+                      value={formData.permanentAddress[field]}
+                      onChange={handleAddressChange}
+                      disabled
+                      className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                    />
                   </div>
                 ))}
               </div>
@@ -279,30 +338,65 @@ const IdCardForm = ({ studentId }) => {
             {/* Photo */}
             <label className="col-span-1">
               <span className="font-bold">Upload ID Card Photo</span>
-              <input type="file" name="idCardPhoto" onChange={handleChange} disabled={isAlreadyFilled && !isEditMode} className={`border p-1 rounded w-full ${isAlreadyFilled && !isEditMode ? "bg-gray-100" : ""}`} />
+              <input
+                type="file"
+                name="idCardPhoto"
+                onChange={handleChange}
+                disabled={isAlreadyFilled && !isEditMode}
+                className={`border p-1 rounded w-full ${
+                  isAlreadyFilled && !isEditMode ? "bg-gray-100" : ""
+                }`}
+              />
             </label>
 
-           {photoPreview && <img src={photoPreview} alt="Preview" className="col-span-full max-w-xs mt-2 rounded" />}
-
+            {photoPreview && (
+              <img
+                src={photoPreview}
+                alt="Preview"
+                className="col-span-full max-w-xs mt-2 rounded"
+              />
+            )}
 
             {/* Buttons */}
             <div className="col-span-full flex justify-between items-center gap-2">
               <BackButton />
 
               {isAlreadyFilled && !isEditMode && (
-                <button type="button" onClick={handleView} className="px-4 py-0 bg-blue-600 hover:bg-blue-700 text-white rounded">View</button>
+                <button
+                  type="button"
+                  onClick={handleView}
+                  className="px-4 py-0 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                >
+                  View
+                </button>
               )}
 
               {!isAlreadyFilled && (
-                <button type="submit" className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded">Save</button>
+                <button
+                  type="submit"
+                  className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded"
+                >
+                  Save
+                </button>
               )}
 
               {isAlreadyFilled && !isEditMode && (
-                <button type="button" onClick={() => setIsEditMode(true)} className="px-4 py-0 bg-blue-600 hover:bg-blue-700 text-white rounded">Edit</button>
+                <button
+                  type="button"
+                  onClick={() => setIsEditMode(true)}
+                  className="px-4 py-0 bg-indigo-600 hover:bg-indigo-700 text-white rounded"
+                >
+                  Edit
+                </button>
               )}
 
               {isAlreadyFilled && isEditMode && (
-                <button type="submit" className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded">Update</button>
+                <button
+                  type="submit"
+                  className="px-4 py-0 bg-green-600 hover:bg-green-700 text-white rounded"
+                >
+                  Update
+                </button>
               )}
             </div>
           </form>

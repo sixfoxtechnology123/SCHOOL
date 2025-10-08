@@ -224,7 +224,7 @@ const generatePDF = async (student) => {
       <div style="padding:0 10px 5px 10px; border:0.5px solid #555;">
         ${twoColRow("Vill", addr.vill, "PO", addr.po)}
         ${twoColRow("Block", addr.block, "PS", addr.ps)}
-        ${twoColRow("Dist", addr.dist, "PIN", addr.pin)}
+        ${twoColRow("District", addr.dist, "PIN", addr.pin)}
       </div>
     `;
   };
@@ -352,7 +352,7 @@ const generatePDF = async (student) => {
             ${formatAddressBlock("Address", idCardInfo.permanentAddress)}
           </div>
           <div style="width:120px;">
-            <img src="${getImageSrc(idCardInfo.photo)}" style="width:100%; border:0.5px solid #555;" />
+            <img src="${getImageSrc(student.idCardPhoto)}" style="width:100%; border:0.5px solid #555;" />
           </div>
         </div>
       </div>
@@ -382,7 +382,7 @@ const generatePDF = async (student) => {
             ${formatAddressBlock("Address", udiseInfo.currentAddress || {})}
           </div>
           <div style="width:120px;">
-            <img src="${getImageSrc(udiseInfo.photo)}" style="width:100%; border:0.5px solid #555;" />
+            <img src="${getImageSrc(student.udisePhoto)}" style="width:100%; border:0.5px solid #555;" />
           </div>
         </div>
       </div>

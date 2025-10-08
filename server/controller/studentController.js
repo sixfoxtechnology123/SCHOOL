@@ -145,26 +145,30 @@ export const createStudent = async (req, res) => {
 export const updateStudent = async (req, res) => {
   try {
     const { id } = req.params; // studentId
-    const payload = { ...req.body };
 
-    // Only allow updating these fields
-    const allowedFields = ["motherTongue", "religion", "ews", "contactNo", "cwsn", "panchayat"];
-    allowedFields.forEach((key) => {
-      if (payload[key] !== undefined) {
-        req.body[key] = payload[key];
-      }
-    });
-
-    // Find student by studentId
     const student = await StudentMaster.findOne({ studentId: id });
     if (!student) return res.status(404).json({ error: "Student not found" });
 
+    // Update whatsappNo if present
+    if (req.body.whatsappNo !== undefined) {
+      student.whatsappNo = req.body.whatsappNo;
+    }
+
     // Update allowed fields
+    const allowedFields = ["motherTongue", "religion", "ews", "contactNo", "cwsn", "panchayat"];
     allowedFields.forEach((key) => {
-      if (payload[key] !== undefined) student[key] = payload[key];
+      if (req.body[key] !== undefined) student[key] = req.body[key];
     });
 
-    // Handle UDISE photo only
+    // Update ID Card photo if uploaded
+    if (req.files?.idCardPhoto?.length) {
+      student.idCardPhoto = {
+        data: req.files.idCardPhoto[0].buffer,
+        contentType: req.files.idCardPhoto[0].mimetype,
+      };
+    }
+
+    // Update UDISE photo if uploaded
     if (req.files?.udisePhoto?.length) {
       student.udisePhoto = {
         data: req.files.udisePhoto[0].buffer,
@@ -179,6 +183,7 @@ export const updateStudent = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to update student" });
   }
 };
+
 
 
 // ===== Delete Student =====
@@ -255,7 +260,10 @@ export const getFullStudentInfo = async (req, res) => {
             contactNo: student.contactNo || student.fatherPhone || "",
             whatsappNo: student.whatsappNo || "",
             permanentAddress: student.permanentAddress || {},
-            photo: student.idCardPhoto,
+            photo: student.idCardPhoto
+  ? `data:${student.idCardPhoto.contentType};base64,${Buffer.from(student.idCardPhoto.data).toString('base64')}`
+  : null,
+
           }
         : {},
       udiseInfo: student.udisePhoto
@@ -283,7 +291,10 @@ export const getFullStudentInfo = async (req, res) => {
             socialCaste: student.socialCaste,
             panchayat: student.panchayat || "",
             currentAddress: student.currentAddress || {},
-            photo: student.udisePhoto,
+            photo: student.udisePhoto
+  ? `data:${student.udisePhoto.contentType};base64,${Buffer.from(student.udisePhoto.data).toString('base64')}`
+  : null,
+
           }
         : {},
       extraInfo: {

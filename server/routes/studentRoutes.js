@@ -22,7 +22,8 @@ router.get("/check-udise/:studentId", checkUdiseExists);
 // Serve student photos
 router.get("/students/:id/photo/:type", async (req, res) => {
   try {
-    const student = await StudentMaster.findById(req.params.id);
+   const student = await StudentMaster.findOne({ studentId: req.params.id });
+
     const type = req.params.type;
     if (!student || !student[type]) return res.status(404).send("Image not found");
 
@@ -44,10 +45,14 @@ router.get("/:studentId/idcard-udise", async (req, res) => {
       idCardInfo: {
         whatsappNo: student.whatsappNo || "",
         permanentAddress: student.permanentAddress || {},
-        idCardPhoto: student.idCardPhoto || null,
+        idCardPhoto: student.idCardPhoto
+  ? `data:${student.idCardPhoto.contentType};base64,${student.idCardPhoto.data.toString('base64')}`
+  : null,
       },
       udiseInfo: {
-        udisePhoto: student.udisePhoto || null,
+       udisePhoto: student.udisePhoto
+  ? `data:${student.udisePhoto.contentType};base64,${student.udisePhoto.data.toString('base64')}`
+  : null,
       },
     });
   } catch (err) {
@@ -70,6 +75,8 @@ router.post(
     { name: "motherPhoto" },
     { name: "childPhoto" },
     { name: "otherDocument" },
+    { name: "idCardPhoto" }, 
+    { name: "udisePhoto" } 
   ]),
   createStudent
 );
