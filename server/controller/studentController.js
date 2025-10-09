@@ -96,6 +96,17 @@ export const createStudent = async (req, res) => {
     studentData.remarksOfOtherPhoto = req.body.remarksOfOtherPhoto || "";
 
 
+// ===== Generate admissionNo (per studentId) =====
+let nextAdmissionNo = "AD1";
+const lastAdmission = await StudentMaster.find({ studentId })
+  .sort({ _id: -1 })
+  .limit(1);
+
+if (lastAdmission.length > 0 && lastAdmission[0].admissionNo) {
+  const lastNo = parseInt(lastAdmission[0].admissionNo.replace("AD", "")) || 0;
+  nextAdmissionNo = "AD" + (lastNo + 1);
+}
+
     let finalStudentId = studentId;
 
     if (admissionType === "new admission") {
@@ -110,6 +121,7 @@ export const createStudent = async (req, res) => {
     rollNo = Number(rollNo);
 
     const newStudent = new StudentMaster({
+      admissionNo: nextAdmissionNo,
       admissionType,
       studentId: finalStudentId,
       rollNo,
@@ -346,3 +358,38 @@ export const checkUdiseExists = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to check UDISE data" });
   }
 };
+export const getStudentByStudentId = async (req, res) => {
+  try {
+    const studentId = req.params.studentId.toUpperCase(); // convert to uppercase
+    const student = await StudentMaster.findOne({ studentId });  // <-- FIXED
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    res.json(student);
+  } catch (err) {
+    console.error("Error fetching student:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+// ===== Generate Next Admission Number =====
+export const getLatestAdmissionNo = async (req, res) => {
+  try {
+    const lastStudent = await StudentMaster.findOne().sort({ createdAt: -1 }); // last inserted
+    let nextNo = "ADM1";
+
+    if (lastStudent?.admissionNo) {
+      const lastNum = parseInt(lastStudent.admissionNo.replace("ADM", "")) + 1;
+      nextNo = "ADM" + lastNum; // no padding
+    }
+
+    res.json({ admissionNo: nextNo });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error generating admission number" });
+  }
+};
+
+

@@ -8,6 +8,8 @@ const studentSchema = new mongoose.Schema({
 },
 
   studentId: { type: String, required: true, unique: true }, // IMPORTANT
+  admissionNo: { type: String, required: true, unique: true },
+
   academicSession: { type: String, required: true },
   admissionDate: {
     type: String,

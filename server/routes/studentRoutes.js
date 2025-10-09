@@ -9,7 +9,9 @@ import {
   getFullStudentInfo,
   getAllAcademicSessions,
   checkUdiseExists,
-  deleteStudentController
+  deleteStudentController,
+  getStudentByStudentId,
+  getLatestAdmissionNo,
 } from "../controller/studentController.js";
 import StudentMaster from "../models/Student.js";
 
@@ -18,7 +20,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 router.get("/check-udise/:studentId", checkUdiseExists);
-
+router.get("/by-studentId/:studentId", getStudentByStudentId);
 // Serve student photos
 router.get("/students/:id/photo/:type", async (req, res) => {
   try {
@@ -95,6 +97,7 @@ router.put(
 );
 // DELETE /api/students/:id
 router.delete("/:id", deleteStudentController);
+router.get("/latest-admission", getLatestAdmissionNo);
 
 router.get("/academic-sessions", getAllAcademicSessions);
 
