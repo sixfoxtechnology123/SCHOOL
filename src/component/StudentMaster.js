@@ -295,7 +295,7 @@ const handleSubmit = async (e) => {
           <div className="flex justify-between items-center mb-2 ">
             <h2 className="text-xl sm:text-xl font-bold text-center text-white bg-gray-800 py-1 px-3 rounded flex-1">
               {step === 1
-                ? "Child Information"
+                ? "Student Information"
                 : step === 2
                 ? "Family Information"
                 : "Photo Upload"}
@@ -699,6 +699,25 @@ const handleSubmit = async (e) => {
 
             </div>
 
+                <label>
+                    Scholarship(Admission Fee)
+                    <input
+                      name="scholarshipForAdmissionFee"
+                      value={studentData.scholarshipForAdmissionFee}
+                      onChange={handleChange}
+                      className="border bg-gray-100 p-0 rounded w-full"
+                    />
+                  </label>
+
+                  <label>
+                    Scholarship(Session Fee)
+                    <input
+                      name="scholarshipForSessionFee"
+                      value={studentData.scholarshipForSessionFee}
+                      onChange={handleChange}
+                      className="border bg-gray-100 p-0 rounded w-full"
+                    />
+                  </label>
             </div>
 
           {/* Permanent Address */}
@@ -787,7 +806,7 @@ const handleSubmit = async (e) => {
                   />
                 </label>
                 <label>
-                  Name of Person
+                  Emgy Contact Person Name
                   <input
                     name="emergencyPerson"
                     value={studentData.emergencyPerson}
@@ -795,27 +814,6 @@ const handleSubmit = async (e) => {
                     className="border bg-gray-100 p-0 rounded w-full"
                   />
                 </label>
-
-                <label>
-                    Scholarship(Admission Fee)
-                    <input
-                      name="scholarshipForAdmissionFee"
-                      value={studentData.scholarshipForAdmissionFee}
-                      onChange={handleChange}
-                      className="border bg-gray-100 p-0 rounded w-full"
-                    />
-                  </label>
-
-                  <label>
-                    Scholarship(Session Fee)
-                    <input
-                      name="scholarshipForSessionFee"
-                      value={studentData.scholarshipForSessionFee}
-                      onChange={handleChange}
-                      className="border bg-gray-100 p-0 rounded w-full"
-                    />
-                  </label>
-
               </div>
 
               <div className="col-span-full flex justify-between mt-4">
