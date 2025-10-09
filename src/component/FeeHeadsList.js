@@ -6,6 +6,7 @@ import { FaTrash, FaEdit } from "react-icons/fa";
 import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
+import toast from "react-hot-toast";
 
 const FeeHeadsList = () => {
   const [feeHeads, setFeeHeads] = useState([]);
@@ -23,13 +24,6 @@ const FeeHeadsList = () => {
 
   useEffect(() => {
     fetchFeeHeads();
-
-    const handleActivity = (e) => {
-      console.log("Activity Event Fired:", e.detail?.action);
-    };
-
-    window.addEventListener("newActivity", handleActivity);
-    return () => window.removeEventListener("newActivity", handleActivity);
   }, [location.key]);
 
   const deleteFeeHead = async (id, feeHeadName) => {
@@ -37,22 +31,7 @@ const FeeHeadsList = () => {
     try {
       await axios.delete(`http://localhost:5000/api/feeheads/${id}`);
       setFeeHeads((prev) => prev.filter((f) => f._id !== id));
-
-      // Save activity in localStorage
-      const newActivity = {
-        id: Date.now(),
-        text: `Deleted Fee Head ${feeHeadName}`,
-        timestamp: new Date(),
-      };
-      const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-      const updated = [newActivity, ...stored];
-      localStorage.setItem("activities", JSON.stringify(updated));
-
-      // Dispatch event for Layout
-      window.dispatchEvent(
-        new CustomEvent("newActivity", { detail: { action: newActivity.text } })
-      );
-
+      toast.success(`Fee Head "${feeHeadName}" deleted successfully!`);
     } catch (err) {
       console.error("Failed to delete Fee Head:", err);
     }

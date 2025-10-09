@@ -1,6 +1,7 @@
 // controllers/feeHeadController.js
 const mongoose = require("mongoose");
 const FeeHead = require("../models/FeeHead");
+const logActivity = require("../utils/logActivity");
 
 const PREFIX = "F";
 const PAD = 2; // F01, F02, etc.
@@ -42,10 +43,12 @@ exports.createFeeHead = async (req, res) => {
     if (!feeHeadName) {
       return res.status(400).json({ error: "feeHeadName is required" });
     }
-    const exists=await FeeHead.findOne({feeHeadName});
-    if(exists){
-      return res.status(400).json({error:`${exists.feeHeadName} already exists`})
+
+    const exists = await FeeHead.findOne({ feeHeadName });
+    if (exists) {
+      return res.status(400).json({ error: `${exists.feeHeadName} already exists` });
     }
+
     const feeHeadId = await generateNextFeeHeadId();
 
     const doc = new FeeHead({
@@ -55,6 +58,7 @@ exports.createFeeHead = async (req, res) => {
     });
 
     await doc.save();
+    await logActivity(`Added Fee Head: ${feeHeadName}`); // Activity logged
     res.status(201).json(doc);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to create fee head" });
@@ -67,11 +71,12 @@ exports.updateFeeHead = async (req, res) => {
     const { id } = req.params;
     const payload = { ...req.body };
 
-    if (payload.feeHeadId) delete payload.feeHeadId; // Don't allow changing ID
+    if (payload.feeHeadId) delete payload.feeHeadId; // ID cannot change
 
     const updated = await FeeHead.findByIdAndUpdate(id, payload, { new: true });
     if (!updated) return res.status(404).json({ error: "Fee Head not found" });
 
+    await logActivity(`Updated Fee Head: ${updated.feeHeadName}`); // Activity logged
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to update fee head" });
@@ -85,6 +90,7 @@ exports.deleteFeeHead = async (req, res) => {
     const deleted = await FeeHead.findByIdAndDelete(id);
     if (!deleted) return res.status(404).json({ error: "Fee Head not found" });
 
+    await logActivity(`Deleted Fee Head: ${deleted.feeHeadName}`); // Activity logged
     res.json({ message: "Fee Head deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to delete fee head" });

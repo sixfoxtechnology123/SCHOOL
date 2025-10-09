@@ -49,43 +49,22 @@ const FeeHeadsMaster = () => {
     setFeeHeadData({ ...feeHeadData, [name]: value });
   };
 
-  // Save activity to localStorage and dispatch event
-  const saveActivity = (message) => {
-    const newActivity = {
-      id: Date.now(),
-      text: message,
-      timestamp: new Date(),
-    };
-    const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-    const updated = [newActivity, ...stored];
-    localStorage.setItem("activities", JSON.stringify(updated));
 
-    window.dispatchEvent(
-      new CustomEvent("newActivity", { detail: { action: message } })
-    );
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (isEditMode) {
-        // UPDATE FEE HEAD
+  
         await axios.put(
           `http://localhost:5000/api/feeheads/${feeHeadData._id}`,
           feeHeadData
         );
 
-        const message = `Updated Fee Head ${feeHeadData.feeHeadName}`;
-        saveActivity(message);
-        console.log(`Activity Event Fired: ${message}`);
         toast.success("Fee Head updated successfully!");
       } else {
-        // ADD NEW FEE HEAD
+      
         await axios.post("http://localhost:5000/api/feeheads", feeHeadData);
-
-        const message = `Added new Fee Head ${feeHeadData.feeHeadName}`;
-        saveActivity(message);
-        console.log(`Activity Event Fired: ${message}`);
         toast.success("Fee Head saved successfully!");
       }
 
