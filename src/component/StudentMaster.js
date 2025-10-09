@@ -58,6 +58,10 @@ const StudentMaster = () => {
     bpl: "No",
     bplNo: "",
     familyIncome: "",
+    scholarshipForAdmissionFee: "",
+    scholarshipForSessionFee: "",
+    remarksOfOtherPhoto: "",
+
   });
 
   const [classList, setClassList] = useState([]);
@@ -737,6 +741,27 @@ const handleSubmit = async (e) => {
                     className="border bg-gray-100 p-0 rounded w-full"
                   />
                 </label>
+
+                <label>
+                    Scholarship(Admission Fee)
+                    <input
+                      name="scholarshipForAdmissionFee"
+                      value={studentData.scholarshipForAdmissionFee}
+                      onChange={handleChange}
+                      className="border bg-gray-100 p-0 rounded w-full"
+                    />
+                  </label>
+
+                  <label>
+                    Scholarship(Session Fee)
+                    <input
+                      name="scholarshipForSessionFee"
+                      value={studentData.scholarshipForSessionFee}
+                      onChange={handleChange}
+                      className="border bg-gray-100 p-0 rounded w-full"
+                    />
+                  </label>
+
               </div>
 
               <div className="col-span-full flex justify-between mt-4">
@@ -1039,6 +1064,16 @@ const handleSubmit = async (e) => {
                     className="border bg-gray-100 p-1 rounded w-full"
                   />
                 </label>
+                <label>
+                    Remarks of Other Photo
+                    <input
+                      name="remarksOfOtherPhoto"
+                      value={studentData.remarksOfOtherPhoto}
+                      onChange={handleChange}
+                      className="border bg-gray-100 p-1 rounded w-full"
+                    />
+                  </label>
+
               </div>
 
               <div className="flex justify-between mt-4">

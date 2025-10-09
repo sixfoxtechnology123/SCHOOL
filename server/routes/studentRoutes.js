@@ -5,11 +5,11 @@ import {
   getLatestStudentId,
   createStudent,
   updateStudent,
-  deleteStudent,
   getNextRollNo,
   getFullStudentInfo,
   getAllAcademicSessions,
   checkUdiseExists,
+  deleteStudentController
 } from "../controller/studentController.js";
 import StudentMaster from "../models/Student.js";
 
@@ -93,8 +93,9 @@ router.put(
   ]),
   updateStudent
 );
+// DELETE /api/students/:id
+router.delete("/:id", deleteStudentController);
 
-router.delete("/:id", deleteStudent);
 router.get("/academic-sessions", getAllAcademicSessions);
 
 export default router;

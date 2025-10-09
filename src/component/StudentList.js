@@ -118,15 +118,26 @@ const saveActivity = (message) => {
 
 
 const deleteStudent = async (id, name) => {
-  if (!window.confirm("Are you sure you want to delete this student?")) return;
-  try {
-    await axios.delete(`http://localhost:5000/api/students/${id}`);
-    setStudents((prev) => prev.filter((s) => s._id !== id));
+  if (!window.confirm(`Are you sure you want to delete student "${name}"?`)) return;
 
-    const message = `Deleted Student ${name}`;
-    saveActivity(message);
+  try {
+    const res = await axios.delete(`http://localhost:5000/api/students/${id}`);
+    
+    if (res.status === 200 || res.status === 204) {
+      // Remove student from state so table updates immediately
+      setStudents(prev => prev.filter(s => s._id !== id));
+
+      // Save activity
+      const message = `Deleted Student ${name}`;
+      saveActivity(message);
+
+      // alert(`Student "${name}" deleted successfully!`);
+    } else {
+      alert("Failed to delete student. Server responded with status: " + res.status);
+    }
   } catch (err) {
-    console.error("Failed to delete student:", err);
+    console.error("Error deleting student:", err);
+    alert("Failed to delete student. Check console for details.");
   }
 };
 

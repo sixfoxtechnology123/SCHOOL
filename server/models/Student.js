@@ -49,6 +49,8 @@ const studentSchema = new mongoose.Schema({
   distanceFromSchool: String,
   emergencyContact: String,
   emergencyPerson: String,
+  scholarshipForAdmissionFee: String,
+  scholarshipForSessionFee: String, 
   fatherName: String,
   fatherOccupation: String,
   fatherPhone: String,
@@ -68,6 +70,7 @@ const studentSchema = new mongoose.Schema({
   motherPhoto: { data: Buffer, contentType: String },
   childPhoto: { data: Buffer, contentType: String },
   otherDocument: { data: Buffer, contentType: String },
+  remarksOfOtherPhoto:String,
 
    // ====== New Fields from IdCard ======
   whatsappNo: String,

@@ -91,6 +91,10 @@ export const getAllStudents = async (_req, res) => {
 export const createStudent = async (req, res) => {
   try {
     const { admissionType, studentId, ...studentData } = req.body;
+    studentData.scholarshipForAdmissionFee = req.body.scholarshipForAdmissionFee || "";
+    studentData.scholarshipForSessionFee = req.body.scholarshipForSessionFee || "";
+    studentData.remarksOfOtherPhoto = req.body.remarksOfOtherPhoto || "";
+
 
     let finalStudentId = studentId;
 
@@ -186,15 +190,14 @@ export const updateStudent = async (req, res) => {
 
 
 
-// ===== Delete Student =====
-export const deleteStudent = async (req, res) => {
+export const deleteStudentController = async (req, res) => {
   try {
-    const { id } = req.params;
-    const deleted = await StudentMaster.findOneAndDelete({ studentId: id }); 
-    if (!deleted) return res.status(404).json({ error: "Student not found" });
-    res.json({ message: "Student deleted successfully" });
+    const deleted = await StudentMaster.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ message: "Student not found" });
+    res.status(200).json({ message: "Student deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message || "Failed to delete student" });
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
