@@ -6,6 +6,7 @@ import { FaTrash, FaEdit } from "react-icons/fa";
 import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
+import toast from "react-hot-toast";
 
 const AcademicSessionList = () => {
   const [sessions, setSessions] = useState([]);
@@ -25,21 +26,7 @@ const AcademicSessionList = () => {
     fetchSessions();
   }, [location.key]);
 
-  // --- Save activity to localStorage and dispatch event ---
-  const saveActivity = (message) => {
-    const newActivity = {
-      id: Date.now(),
-      text: message,
-      timestamp: new Date(),
-    };
-    const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-    const updated = [newActivity, ...stored];
-    localStorage.setItem("activities", JSON.stringify(updated));
-
-    window.dispatchEvent(
-      new CustomEvent("newActivity", { detail: { action: message } })
-    );
-  };
+  
   // --------------------------------------------------------
 
   const deleteSession = async (id, year) => {
@@ -47,10 +34,7 @@ const AcademicSessionList = () => {
     try {
       await axios.delete(`http://localhost:5000/api/sessions/${id}`);
       setSessions((prev) => prev.filter((s) => s._id !== id));
-
-      const message = `Deleted Academic Session ${year}`;
-      saveActivity(message);
-
+      toast.success(`Academic Session "${year}" deleted successfully!`);
     } catch (err) {
       console.error("Failed to delete session:", err);
     }

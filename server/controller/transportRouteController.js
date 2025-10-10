@@ -1,4 +1,5 @@
 const TransportRoute = require("../models/TransportRoute");
+const logActivity = require("../utils/logActivity");
 
 const PREFIX = "TRANSPORT";
 const PAD = 3; // TRANSPORT001
@@ -52,6 +53,7 @@ exports.createRoute = async (req, res) => {
     const routeId = await generateNextRouteId();
     const doc = new TransportRoute({ routeId, distance, vanCharge, academicSession });
     await doc.save();
+    await logActivity(`Added New Transport route: ${distance}, Vancharge : ${vanCharge}, Session :${academicSession}`);
     res.status(201).json(doc);
   } catch (err) {
     console.error("Failed to create route:", err);
@@ -81,7 +83,7 @@ exports.updateRoute = async (req, res) => {
 
     const updated = await TransportRoute.findByIdAndUpdate(id, payload, { new: true });
     if (!updated) return res.status(404).json({ error: "Route not found" });
-
+    await logActivity(`Updated Transport route: ${updated.distance}, Vancharge : ${updated.vanCharge}, Session :${updated.academicSession} `);
     res.json(updated);
   } catch (err) {
     console.error("Failed to update route:", err);
@@ -96,6 +98,7 @@ exports.deleteRoute = async (req, res) => {
     const { id } = req.params;
     const deleted = await TransportRoute.findByIdAndDelete(id);
     if (!deleted) return res.status(404).json({ error: "Route not found" });
+    await logActivity(`Deleted Transport route: ${deleted.distance}, Vancharge : ${deleted.vanCharge}, Session :${deleted.academicSession}`);
 
     res.json({ message: "Route deleted successfully" });
   } catch (err) {

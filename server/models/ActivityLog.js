@@ -13,7 +13,7 @@ function formatDateTime(date) {
   hours = hours % 12 || 12; // convert 0-23 to 1-12
   const hh = String(hours).padStart(2, "0");
 
-  return `${day}-${month}-${year} ${hh}.${minutes}.${seconds} ${ampm}`;
+  return `${day}/${month}/${year} ${hh}.${minutes}.${seconds} ${ampm}`;
 }
 
 const activitySchema = new mongoose.Schema({

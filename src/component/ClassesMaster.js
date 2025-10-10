@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
 import { useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const ClassesMaster = () => {
   const [classData, setClassData] = useState({
@@ -50,21 +51,6 @@ const ClassesMaster = () => {
     setClassData({ ...classData, [name]: value });
   };
 
-  // --- Save activity to localStorage and dispatch event ---
-  const saveActivity = (message) => {
-    const newActivity = {
-      id: Date.now(),
-      text: message,
-      timestamp: new Date(),
-    };
-    const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-    const updated = [newActivity, ...stored];
-    localStorage.setItem("activities", JSON.stringify(updated));
-
-    window.dispatchEvent(
-      new CustomEvent("newActivity", { detail: { action: message } })
-    );
-  };
   // --------------------------------------------------------
 
   const handleSubmit = async (e) => {
@@ -82,7 +68,7 @@ const ClassesMaster = () => {
       );
 
       if (duplicate) {
-        alert("This Class + Section already exists!");
+        toast.success("This Class + Section already exists!");
         return;
       }
 
@@ -92,20 +78,12 @@ const ClassesMaster = () => {
           classData
         );
 
-        const message = `Updated Class ${classData.className} - Section ${classData.section}`;
-        saveActivity(message);
-        console.log(`Activity Event Fired: ${message}`);
-
-        alert("Class updated successfully!");
+        toast.success("Class updated successfully!");
         navigate("/ClassesList", { replace: true });
       } else {
         await axios.post("http://localhost:5000/api/classes", classData);
 
-        const message = `Added new Class ${classData.className} - Section ${classData.section}`;
-        saveActivity(message);
-        console.log(`Activity Event Fired: ${message}`);
-
-        alert("Class saved successfully!");
+        toast.success("Class saved successfully!");
         const resNext = await axios.get("http://localhost:5000/api/classes/latest");
         setClassData({
           classId: resNext.data?.classId || "C01",
@@ -116,7 +94,7 @@ const ClassesMaster = () => {
       }
     } catch (err) {
       console.error("Save failed:", err);
-      alert("Error saving class");
+      toast.success("Error saving class");
     }
   };
 

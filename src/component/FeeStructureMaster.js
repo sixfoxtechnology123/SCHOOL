@@ -213,7 +213,7 @@ const FeeStructureMaster = () => {
     }
   };
 
-  if (loading) return <div className="text-center mt-10">Loading...</div>;
+  // if (loading) return <div className="text-center mt-10">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-zinc-300 flex items-center justify-center">

@@ -5,6 +5,7 @@ import { FaTrash, FaEdit } from "react-icons/fa";
 import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
+import toast from "react-hot-toast";
 
 const TransportRoutesList = () => {
   const [routes, setRoutes] = useState([]);
@@ -53,33 +54,18 @@ const TransportRoutesList = () => {
     };
   }, []);
 
-  // Delete route
-  const deleteRoute = async (id, routeId) => {
-    if (!window.confirm("Are you sure you want to delete this route?")) return;
+ const deleteRoute = async (id, distance) => {
+  if (!window.confirm("Are you sure you want to delete this route?")) return;
 
-    try {
-      await axios.delete(`http://localhost:5000/api/transportroutes/${id}`);
-      setRoutes((prev) => prev.filter((r) => r._id !== id));
+  try {
+    await axios.delete(`http://localhost:5000/api/transportroutes/${id}`);
+    setRoutes((prev) => prev.filter((r) => r._id !== id));
+    toast.success(`Transport Route Range "${distance}" Km deleted successfully!`);
+  } catch (err) {
+    console.error("Failed to delete route:", err);
+  }
+};
 
-      //  Save activity in localStorage for Layout
-      const newActivity = {
-        id: Date.now(),
-        text: `Deleted transport route ${routeId}`,
-        timestamp: new Date(),
-      };
-      const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-      const updated = [newActivity, ...stored];
-      localStorage.setItem("activities", JSON.stringify(updated));
-
-      // Fire event for Layout
-      window.dispatchEvent(
-        new CustomEvent("newActivity", { detail: { action: newActivity.text } })
-      );
-
-    } catch (err) {
-      console.error("Failed to delete route:", err);
-    }
-  };
 
   // Filter routes by selected session
   const filteredRoutes = routes.filter(r => filterSession ? r.academicSession === filterSession : true);
@@ -158,7 +144,7 @@ const TransportRoutesList = () => {
                           <FaEdit />
                         </button>
                         <button
-                          onClick={() => deleteRoute(r._id, r.routeId)}
+                          onClick={() => deleteRoute(r._id, r.distance)}
                           className="text-red-600 hover:text-red-800"
                         >
                           <FaTrash />

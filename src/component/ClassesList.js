@@ -6,6 +6,7 @@ import { FaTrash, FaEdit } from "react-icons/fa";
 import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
+import toast from "react-hot-toast";
 
 const ClassesList = () => {
   const [classes, setClasses] = useState([]);
@@ -38,21 +39,7 @@ const ClassesList = () => {
     try {
       await axios.delete(`http://localhost:5000/api/classes/${id}`);
       setClasses((prev) => prev.filter((c) => c._id !== id));
-
-      // Save activity in localStorage
-      const newActivity = {
-        id: Date.now(),
-        text: `Deleted Class: ${className} - Section ${section}`,
-        timestamp: new Date(),
-      };
-      const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-      const updated = [newActivity, ...stored];
-      localStorage.setItem("activities", JSON.stringify(updated));
-
-      // Dispatch event for layout
-      window.dispatchEvent(
-        new CustomEvent("newActivity", { detail: { action: newActivity.text } })
-      );
+       toast.success(`Class: "${className} and section:  ${section}"  deleted successfully!`);
     } catch (err) {
       console.error("Failed to delete class:", err);
     }

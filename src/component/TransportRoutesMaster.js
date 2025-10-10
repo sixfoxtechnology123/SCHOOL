@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
 import { useLocation, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const TransportRoutesMaster = () => {
   const [routeData, setRouteData] = useState({
@@ -71,22 +72,6 @@ const TransportRoutesMaster = () => {
     }
   };
 
-  const saveActivity = (message) => {
-    // Save activity in localStorage
-    const newActivity = {
-      id: Date.now(),
-      text: message,
-      timestamp: new Date(),
-    };
-    const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-    const updated = [newActivity, ...stored];
-    localStorage.setItem("activities", JSON.stringify(updated));
-
-    // Dispatch event for Layout to catch
-    window.dispatchEvent(
-      new CustomEvent("newActivity", { detail: { action: message } })
-    );
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -96,23 +81,20 @@ const TransportRoutesMaster = () => {
           `http://localhost:5000/api/transportroutes/${routeData._id}`,
           routeData
         );
-        const message = `Updated transport route ${routeData.routeId}`;
-        saveActivity(message);
-        console.log(`Activity Event Fired: ${message}`);
-        alert("Route updated successfully!");
+        
+        toast.success("Route updated successfully!");
       } else {
         await axios.post("http://localhost:5000/api/transportroutes", routeData);
         const message = `Added new transport route ${routeData.routeId}`;
-        saveActivity(message);
-        console.log(`Activity Event Fired: ${message}`);
-        alert("Route saved successfully!");
+       
+        toast.success("Route saved successfully!");
       }
 
       navigate("/TransportRoutesList", { replace: true });
     } catch (err) {
       console.error("Save failed:", err);
       const message = err.response?.data?.error || "Error saving route";
-      alert(message);
+      toast.success(message);
     }
   };
 

@@ -1,5 +1,6 @@
 // controllers/academicSessionController.js
 const AcademicSession = require("../models/AcademicSession");
+const logActivity = require("../utils/logActivity");
 
 const PREFIX = "ACDSESS";
 const PAD = 3; // ACDSESS001, ACDSESS002...
@@ -58,6 +59,7 @@ exports.createSession = async (req, res) => {
     });
 
     await doc.save();
+    await logActivity(`Added New Academic Session: ${year}`);
     res.status(201).json(doc);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to create session" });
@@ -74,7 +76,7 @@ exports.updateSession = async (req, res) => {
 
     const updated = await AcademicSession.findByIdAndUpdate(id, payload, { new: true });
     if (!updated) return res.status(404).json({ error: "Session not found" });
-
+    await logActivity(`Updated Academic Session: ${updated.year}`);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to update session" });
@@ -87,7 +89,7 @@ exports.deleteSession = async (req, res) => {
     const { id } = req.params;
     const deleted = await AcademicSession.findByIdAndDelete(id);
     if (!deleted) return res.status(404).json({ error: "Session not found" });
-
+    await logActivity(`Deleted Academic Session: ${deleted.year}`);
     res.json({ message: "Session deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to delete session" });

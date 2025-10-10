@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const ClassMaster = require("../models/Class");
+const logActivity = require("../utils/logActivity");
 
 const PREFIX = "C";
 const PAD = 2; // C01, C02, etc.
@@ -79,6 +80,8 @@ exports.createClass = async (req, res) => {
     });
 
     await doc.save();
+    await logActivity(`Added New Class: ${className} and section : ${section}`);
+
     res.status(201).json(doc);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to create class" });
@@ -95,6 +98,7 @@ exports.updateClass = async (req, res) => {
 
     const updated = await ClassMaster.findByIdAndUpdate(id, payload, { new: true });
     if (!updated) return res.status(404).json({ error: "Class not found" });
+    await logActivity(`Updated Class: ${updated.className} and section : ${updated.section}`);
 
     res.json(updated);
   } catch (err) {
@@ -108,7 +112,7 @@ exports.deleteClass = async (req, res) => {
     const { id } = req.params;
     const deleted = await ClassMaster.findByIdAndDelete(id);
     if (!deleted) return res.status(404).json({ error: "Class not found" });
-
+    await logActivity(`Deleted Class: ${deleted.className} and section : ${deleted.section}`);
     res.json({ message: "Class deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to delete class" });
