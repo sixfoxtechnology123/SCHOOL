@@ -7,6 +7,7 @@ import Sidebar from "../component/Sidebar";
 import Header from "../component/Header";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import toast from "react-hot-toast";
 
 const StudentsList = () => {
   const [sessions, setSessions] = useState([]);
@@ -98,22 +99,6 @@ const StudentsList = () => {
     }
   }, [location.state]);
 
-// --- Save activity to localStorage and dispatch event ---
-const saveActivity = (message) => {
-  const newActivity = {
-    id: Date.now(),
-    text: message,
-    timestamp: new Date(),
-  };
-  const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-  const updated = [newActivity, ...stored];
-  localStorage.setItem("activities", JSON.stringify(updated));
-
-  window.dispatchEvent(
-    new CustomEvent("newActivity", { detail: { action: message } })
-  );
-};
-// --------------------------------------------------------
 
 
 
@@ -127,17 +112,14 @@ const deleteStudent = async (id, name) => {
       // Remove student from state so table updates immediately
       setStudents(prev => prev.filter(s => s._id !== id));
 
-      // Save activity
-      const message = `Deleted Student ${name}`;
-      saveActivity(message);
 
-      // alert(`Student "${name}" deleted successfully!`);
+       toast.success(`Student "${name}" deleted successfully!`);
     } else {
-      alert("Failed to delete student. Server responded with status: " + res.status);
+      toast.success("Failed to delete student. Server responded with status: " + res.status);
     }
   } catch (err) {
     console.error("Error deleting student:", err);
-    alert("Failed to delete student. Check console for details.");
+    toast.success("Failed to delete student. Check console for details.");
   }
 };
 
@@ -437,7 +419,7 @@ const generatePDF = async (student) => {
 // --- Generate PDF for all filtered students ---
 const generateStudentsListPDF = async () => {
   if (!filteredStudents.length) {
-    alert("No students to print.");
+    toast.success("No students to print.");
     return;
   }
 

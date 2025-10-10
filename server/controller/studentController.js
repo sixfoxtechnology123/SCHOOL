@@ -2,8 +2,6 @@ import StudentMaster from "../models/Student.js";
 import ClassMaster from "../models/Class.js";
 import AcademicSession from "../models/AcademicSession.js";
 
-
-
 const PREFIX = "G";
 const PAD = 4;
 const START_NUM = 101;
@@ -175,7 +173,6 @@ const nextAdmissionNo = await generateNextAdmissionNo();
     });
 
     await newStudent.save();
-     await logActivity(req.user?.id || "SYSTEM", "Created student", `StudentID: ${newStudent.studentId}`);
     res.status(201).json({ message: "Student saved successfully", student: newStudent });
 
   } catch (error) {

@@ -4,7 +4,7 @@ import BackButton from "../component/BackButton";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import Sidebar from "../component/Sidebar";
 import Header from "./Header";
-
+import toast from "react-hot-toast";
 
 const formatDate = (date) => {
   const d = new Date(date);
@@ -249,22 +249,6 @@ useEffect(() => {
     setStep(2);
   };
 
-//  Activity saving logic (same as AcademicSessionMaster)
-const saveActivity = (action) => {
-  const newActivity = {
-    id: Date.now(),
-    text: action,
-    timestamp: new Date(),
-  };
-
-  const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-  const updated = [newActivity, ...stored];
-  localStorage.setItem("activities", JSON.stringify(updated));
-
-  window.dispatchEvent(
-    new CustomEvent("newActivity", { detail: { action } })
-  );
-};
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -275,12 +259,10 @@ const handleSubmit = async (e) => {
         `http://localhost:5000/api/students/${studentData._id}`,
         studentData
       );
-      saveActivity(`Updated Student ${studentData.firstName} ${studentData.lastName}`);
     } else {
       await axios.post("http://localhost:5000/api/students", studentData);
-      saveActivity(`Added new Student ${studentData.firstName} ${studentData.lastName}`);
     }
-    navigate("/student-list");
+    navigate("/StudentList");
   } catch (error) {
     console.error("Error saving student:", error);
   }
@@ -397,17 +379,17 @@ const handleSubmit = async (e) => {
                               setStudentData(res.data); // populate form
                               if (res.data.admitClass) fetchSections(res.data.admitClass);
                               setIsEditMode(true);
-                              alert("Student data fetched successfully!");
+                              toast.success("Student data fetched successfully!");
                             } else {
-                              alert(`Student ID "${id}" does not exist. Please try another ID.`);
+                              toast.success(`Student ID "${id}" does not exist. Please try another ID.`);
                             }
                           } catch (err) {
                             // Check if backend returned 404
                             if (err.response?.status === 404) {
-                              alert(`Student ID "${id}" does not exist. Please try another ID.`);
+                              toast.success(`Student ID "${id}" does not exist. Please try another ID.`);
                             } else {
                               console.error("Error fetching student:", err.response || err);
-                              alert("Failed to fetch student data.");
+                              toast.success("Failed to fetch student data.");
                             }
                           }
                         }
@@ -478,20 +460,21 @@ const handleSubmit = async (e) => {
                 </select>
               </label>
 
-              {/* Transfer From: only if class is not Class - I */}
-              {studentData.admitClass !== "Class - I" && (
-                <label>
-                  Transfer From
-                  <input
-                    type="text"
-                    name="transferFrom"
-                    placeholder="Previous School Name"
-                    value={studentData.transferFrom}
-                    onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
-                  />
-                </label>
-              )}
+      {/* Transfer From: hide if Class - I OR Re-Admission */}
+          {studentData.admitClass !== "Class - I" && admissionType !== "re-admission" && (
+            <label>
+              Transfer From
+              <input
+                type="text"
+                name="transferFrom"
+                placeholder="Previous School Name"
+                value={studentData.transferFrom}
+                onChange={handleChange}
+                className="border bg-gray-100 p-0 rounded w-full"
+              />
+            </label>
+          )}
+
 
               {/* Section */}
               <label>
@@ -1036,20 +1019,7 @@ const handleSubmit = async (e) => {
                 }
               });
 
-              // Activity logging
-              const saveActivity = (action) => {
-                const newActivity = {
-                  id: Date.now(),
-                  text: action,
-                  timestamp: new Date(),
-                };
-                const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-                const updated = [newActivity, ...stored];
-                localStorage.setItem("activities", JSON.stringify(updated));
-                window.dispatchEvent(
-                  new CustomEvent("newActivity", { detail: { action } })
-                );
-              };
+            
 
               try {
                 if (isEditMode) {
@@ -1058,19 +1028,18 @@ const handleSubmit = async (e) => {
                     formData,
                     { headers: { "Content-Type": "multipart/form-data" } }
                   );
-                  saveActivity(`Updated Student ${studentData.firstName} ${studentData.lastName}`);
-                  alert("Student updated successfully!");
+
+                  toast.success("Student updated successfully!");
                 } else {
                   await axios.post("http://localhost:5000/api/students", formData, {
                     headers: { "Content-Type": "multipart/form-data" },
                   });
-                  saveActivity(`Added new Student ${studentData.firstName} ${studentData.lastName}`);
-                  alert("Student and Photos saved successfully!");
+                  toast.success("Student and Photos saved successfully!");
                 }
                 navigate("/StudentList", { replace: true });
               } catch (err) {
                 console.error("Error saving student with photos:", err);
-                alert("Failed to save student");
+                toast.success("Failed to save student");
               }
             }}
               className="grid grid-cols-1 gap-4"
