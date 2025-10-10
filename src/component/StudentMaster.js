@@ -74,8 +74,25 @@ const StudentMaster = () => {
   const studentItem = location.state?.studentItem;
   const [academicSessions, setAcademicSessions] = useState([]);
  const [admissionType, setAdmissionType] = useState("new admission"); // "new" or "readmission"
+const [previewChild, setPreviewChild] = useState("");
+const [previewFather, setPreviewFather] = useState("");
+const [previewMother, setPreviewMother] = useState("");
+const [previewOther, setPreviewOther] = useState("");
 
-
+//Handle file preview
+const handleFileChange = (e, type) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (type === "child") setPreviewChild(reader.result);
+      if (type === "father") setPreviewFather(reader.result);
+      if (type === "mother") setPreviewMother(reader.result);
+      if (type === "other") setPreviewOther(reader.result);
+    };
+    reader.readAsDataURL(file);
+  }
+};
 
  const fetchNextAdmissionNo = async () => {
   try {
@@ -139,6 +156,44 @@ const StudentMaster = () => {
       console.error("Error fetching sections:", err);
     }
   };
+useEffect(() => {
+  if (studentItem) {
+    const normalizedLanguages = (studentItem.languages || []).map((l) => l.toUpperCase());
+    const savedSession = localStorage.getItem("selectedAcademicSession") || studentItem.academicSession || "";
+
+    setStudentData({
+      ...studentItem,
+      languages: normalizedLanguages,
+      academicSession: savedSession,
+      transferFrom: studentItem.admitClass === "Class - I" ? "" : studentItem.transferFrom || "",
+    });
+
+    //  Fetch photos from backend (since they are Binary data in DB)
+    const fetchPhoto = async (type, setPreview) => {
+      try {
+        const res = await fetch(`http://localhost:5000/api/students/students/${studentItem.studentId}/photo/${type}`);
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          setPreview(url);
+        }
+      } catch (error) {
+        console.error(`Failed to load ${type}:`, error);
+      }
+    };
+
+    fetchPhoto("childPhoto", setPreviewChild);
+    fetchPhoto("fatherPhoto", setPreviewFather);
+    fetchPhoto("motherPhoto", setPreviewMother);
+    fetchPhoto("otherDocument", setPreviewOther);
+
+    setIsEditMode(true);
+    if (studentItem.admitClass) {
+      fetchSections(studentItem.admitClass);
+    }
+  }
+}, [studentItem]);
+
 
 useEffect(() => {
   if (admissionType === "new admission") {
@@ -381,15 +436,15 @@ const handleSubmit = async (e) => {
                               setIsEditMode(true);
                               toast.success("Student data fetched successfully!");
                             } else {
-                              toast.success(`Student ID "${id}" does not exist. Please try another ID.`);
+                              toast.error(`Student ID "${id}" does not exist. Please try another ID.`);
                             }
                           } catch (err) {
                             // Check if backend returned 404
                             if (err.response?.status === 404) {
-                              toast.success(`Student ID "${id}" does not exist. Please try another ID.`);
+                              toast.error(`Student ID "${id}" does not exist. Please try another ID.`);
                             } else {
                               console.error("Error fetching student:", err.response || err);
-                              toast.success("Failed to fetch student data.");
+                              toast.error("Failed to fetch student data.");
                             }
                           }
                         }
@@ -1039,53 +1094,90 @@ const handleSubmit = async (e) => {
                 navigate("/StudentList", { replace: true });
               } catch (err) {
                 console.error("Error saving student with photos:", err);
-                toast.success("Failed to save student");
+                toast.error("Failed to save student");
               }
             }}
               className="grid grid-cols-1 gap-4"
             >
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <label>
-                  Affix Photo of Father
-                  <input
-                    type="file"
-                    name="fatherPhoto"
-                    accept="image/*"
-                    className="border bg-gray-100 p-1 rounded w-full"
-                    // required={!isEditMode}
-                  />
-                </label>
-                <label>
-                  Affix Photo of Mother
-                  <input
-                    type="file"
-                    name="motherPhoto"
-                    accept="image/*"
-                    className="border bg-gray-100 p-1 rounded w-full"
-                    // required={!isEditMode}
-                  />
-                </label>
-                <label>
-                  Affix Photo of Child
-                  <input
-                    type="file"
-                    name="childPhoto"
-                    accept="image/*"
-                    className="border bg-gray-100 p-1 rounded w-full"
-                    // required={!isEditMode}
-                  />
-                </label>
+                  {/* Father Photo */}
+                  <label className="flex flex-col">
+                    Affix Photo of Father
+                    <input
+                      type="file"
+                      name="fatherPhoto"
+                      accept="image/*"
+                      className="border bg-gray-100 p-1 rounded w-full"
+                      onChange={(e) => handleFileChange(e, "father")}
+                    />
+                    {previewFather && (
+                      <img
+                        src={previewFather}
+                        alt="Father Preview"
+                        className="mt-2 w-24 h-24 object-cover border rounded"
+                      />
+                    )}
+                  </label>
 
-                <label>
-                  Other Document
-                  <input
-                    type="file"
-                    name="otherDocument"
-                    accept=".pdf,.doc,.docx,.jpg,.png"  // any allowed file types
-                    className="border bg-gray-100 p-1 rounded w-full"
-                  />
-                </label>
-                <label>
+                  {/* Mother Photo */}
+                  <label className="flex flex-col">
+                    Affix Photo of Mother
+                    <input
+                      type="file"
+                      name="motherPhoto"
+                      accept="image/*"
+                      className="border bg-gray-100 p-1 rounded w-full"
+                      onChange={(e) => handleFileChange(e, "mother")}
+                    />
+                    {previewMother && (
+                      <img
+                        src={previewMother}
+                        alt="Mother Preview"
+                        className="mt-2 w-24 h-24 object-cover border rounded"
+                      />
+                    )}
+                  </label>
+
+                  {/* Child Photo */}
+                  <label className="flex flex-col">
+                    Affix Photo of Child
+                    <input
+                      type="file"
+                      name="childPhoto"
+                      accept="image/*"
+                      className="border bg-gray-100 p-1 rounded w-full"
+                      onChange={(e) => handleFileChange(e, "child")}
+                    />
+                    {previewChild && (
+                      <img
+                        src={previewChild}
+                        alt="Child Preview"
+                        className="mt-2 w-24 h-24 object-cover border rounded"
+                      />
+                    )}
+                  </label>
+
+                  {/* Other Document */}
+                  <label className="flex flex-col">
+                    Other Document
+                    <input
+                      type="file"
+                      name="otherDocument"
+                      accept=".pdf,.doc,.docx,.jpg,.png"
+                      className="border bg-gray-100 p-1 rounded w-full"
+                      onChange={(e) => handleFileChange(e, "other")}
+                    />
+                    {previewOther && (
+                      <img
+                        src={previewOther}
+                        alt="Other Document Preview"
+                        className="mt-2 w-24 h-24 object-cover border rounded"
+                      />
+                    )}
+                  </label>
+
+                  {/* Remarks of Other Photo */}
+                  <label className="flex flex-col">
                     Remarks of Other Photo
                     <input
                       name="remarksOfOtherPhoto"
@@ -1094,8 +1186,8 @@ const handleSubmit = async (e) => {
                       className="border bg-gray-100 p-1 rounded w-full"
                     />
                   </label>
+                </div>
 
-              </div>
 
               <div className="flex justify-between mt-4">
                 <button

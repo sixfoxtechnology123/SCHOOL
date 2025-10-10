@@ -183,45 +183,49 @@ const nextAdmissionNo = await generateNextAdmissionNo();
 
 export const updateStudent = async (req, res) => {
   try {
-    const { id } = req.params; // studentId
+    const { id } = req.params; // This is Mongo _id, not studentId
 
-    const student = await StudentMaster.findOne({ studentId: id });
+    const student = await StudentMaster.findById(id); // <-- use findById
     if (!student) return res.status(404).json({ error: "Student not found" });
 
-    // Update whatsappNo if present
-    if (req.body.whatsappNo !== undefined) {
-      student.whatsappNo = req.body.whatsappNo;
-    }
+    // Update all allowed text fields dynamically
+    const allowedFields = [
+      "firstName","lastName","dob","gender","admitClass","section","rollNo",
+      "fatherName","motherName","contactNo","whatsappNo","admissionType",
+      "scholarshipForAdmissionFee","scholarshipForSessionFee","remarksOfOtherPhoto",
+      "languages","fatherOccupation","motherOccupation","fatherPhone","motherPhone",
+      "fatherEmail","motherEmail","fatherQualification","motherQualification",
+      "motherTongue","religion","ews","cwsn","panchayat","bpl","bplNo","familyIncome",
+      "height","weight","bloodGroup","nationality","permanentAddress","currentAddress",
+      "academicSession","socialCaste"
+    ];
 
-    // Update allowed fields
-    const allowedFields = ["motherTongue", "religion", "ews", "contactNo", "cwsn", "panchayat"];
     allowedFields.forEach((key) => {
       if (req.body[key] !== undefined) student[key] = req.body[key];
     });
 
-    // Update ID Card photo if uploaded
-    if (req.files?.idCardPhoto?.length) {
-      student.idCardPhoto = {
-        data: req.files.idCardPhoto[0].buffer,
-        contentType: req.files.idCardPhoto[0].mimetype,
-      };
-    }
-
-    // Update UDISE photo if uploaded
-    if (req.files?.udisePhoto?.length) {
-      student.udisePhoto = {
-        data: req.files.udisePhoto[0].buffer,
-        contentType: req.files.udisePhoto[0].mimetype,
-      };
-    }
+    // Update files if uploaded
+    const fileFields = ["fatherPhoto","motherPhoto","childPhoto","otherDocument","idCardPhoto","udisePhoto"];
+    fileFields.forEach((field) => {
+      if (req.files?.[field]?.length) {
+        student[field] = {
+          data: req.files[field][0].buffer,
+          contentType: req.files[field][0].mimetype
+        };
+      }
+    });
 
     await student.save();
     res.json({ message: "Student updated successfully", student });
+
   } catch (err) {
     console.error("Error updating student:", err);
     res.status(500).json({ error: err.message || "Failed to update student" });
   }
 };
+
+
+
 
 
 

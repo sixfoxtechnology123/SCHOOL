@@ -73,12 +73,21 @@ function App() {
       <Route path="/UdiseForm" element={<UdiseForm/>} />
 
     </Routes>
-    <Toaster
-      reverseOrder={false}
-      toastOptions={{
-      style: { fontWeight: 600 }
-      }}
-    />
+        <Toaster
+          reverseOrder={false}
+          toastOptions={{
+            style: { fontWeight: 600 },
+            success: {
+              icon: "✅",
+              style: { background: "#d1fae5", color: "#065f46" }, // green background
+            },
+            error: {
+              icon: "❌",
+              style: { background: "#fee2e2", color: "#991b1b" }, // red background
+            },
+          }}
+        />
+
 
    </>
     );
