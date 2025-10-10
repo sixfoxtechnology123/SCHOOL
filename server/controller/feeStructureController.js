@@ -3,6 +3,7 @@ const TransportRoute = require("../models/TransportRoute");
 const AcademicSession = require("../models/AcademicSession");
 const ClassMaster = require("../models/Class");
 const FeeHead = require("../models/FeeHead");
+const logActivity = require("../utils/logActivity");
 
 const PREFIX = "FEES";
 const PAD = 3;
@@ -99,6 +100,9 @@ exports.createFeeStructure = async (req, res) => {
     });
 
     await doc.save();
+    await logActivity(
+        `Added New Fee Structure : ${doc.className}, Session:${doc.academicSession}, Fee Head:${doc.feeHeadName}, Amount:${doc.amount}`
+      );
     res.status(201).json(doc);
 
   } catch (err) {
@@ -178,7 +182,9 @@ exports.updateFeeStructure = async (req, res) => {
 
     const updated = await FeeStructure.findByIdAndUpdate(id, payload, { new: true });
     if (!updated) return res.status(404).json({ error: "Fee Structure not found" });
-
+    await logActivity(
+      `Updated Fee Structure : ${updated.className}, Session:${updated.academicSession}, Fee Head:${updated.feeHeadName}, Amount:${updated.amount}`
+    );
     res.json(updated);
   } catch (err) {
     console.error(err);
@@ -193,6 +199,9 @@ exports.deleteFeeStructure = async (req, res) => {
     const { id } = req.params;
     const deleted = await FeeStructure.findByIdAndDelete(id);
     if (!deleted) return res.status(404).json({ error: "Fee Structure not found" });
+    await logActivity(
+      `Deleted Fee Structure : ${deleted.className}, Session:${deleted.academicSession}, Fee Head:${deleted.feeHeadName}, Amount:${deleted.amount}`
+    );
     res.json({ message: "Fee Structure deleted successfully" });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete Fee Structure" });
