@@ -2,9 +2,42 @@ import StudentMaster from "../models/Student.js";
 import ClassMaster from "../models/Class.js";
 import AcademicSession from "../models/AcademicSession.js";
 
+
+
 const PREFIX = "G";
 const PAD = 4;
 const START_NUM = 101;
+
+// ===== Generate Next Admission Number =====
+async function generateNextAdmissionNo() {
+  try {
+    const lastStudent = await StudentMaster.aggregate([
+      {
+        $match: { admissionNo: { $regex: /^ADM\d+$/ } } // only admissionNo like ADM1, ADM2...
+      },
+      {
+        $addFields: {
+          num: { $toInt: { $substr: ["$admissionNo", 3, -1] } } // convert number part
+        }
+      },
+      { $sort: { num: -1 } }, // sort descending by number
+      { $limit: 1 }
+    ]);
+
+    let nextNo = "ADM1";
+
+    if (lastStudent.length > 0) {
+      nextNo = "ADM" + (lastStudent[0].num + 1);
+    }
+
+    return nextNo;
+  } catch (err) {
+    console.error("Error generating admission number:", err);
+    return "ADM1";
+  }
+}
+
+
 
 // ===== Generate Next Student ID =====
 async function generateNextStudentId() {
@@ -96,16 +129,8 @@ export const createStudent = async (req, res) => {
     studentData.remarksOfOtherPhoto = req.body.remarksOfOtherPhoto || "";
 
 
-// ===== Generate admissionNo (per studentId) =====
-let nextAdmissionNo = "AD1";
-const lastAdmission = await StudentMaster.find({ studentId })
-  .sort({ _id: -1 })
-  .limit(1);
+const nextAdmissionNo = await generateNextAdmissionNo();
 
-if (lastAdmission.length > 0 && lastAdmission[0].admissionNo) {
-  const lastNo = parseInt(lastAdmission[0].admissionNo.replace("AD", "")) || 0;
-  nextAdmissionNo = "AD" + (lastNo + 1);
-}
 
     let finalStudentId = studentId;
 
@@ -150,6 +175,7 @@ if (lastAdmission.length > 0 && lastAdmission[0].admissionNo) {
     });
 
     await newStudent.save();
+     await logActivity(req.user?.id || "SYSTEM", "Created student", `StudentID: ${newStudent.studentId}`);
     res.status(201).json({ message: "Student saved successfully", student: newStudent });
 
   } catch (error) {
@@ -374,15 +400,20 @@ export const getStudentByStudentId = async (req, res) => {
   }
 };
 
-// ===== Generate Next Admission Number =====
 export const getLatestAdmissionNo = async (req, res) => {
   try {
-    const lastStudent = await StudentMaster.findOne().sort({ createdAt: -1 }); // last inserted
-    let nextNo = "ADM1";
+    const lastStudent = await StudentMaster.aggregate([
+      { $match: { admissionNo: { $regex: /^ADM\d+$/ } } },
+      { $addFields: { num: { $toInt: { $substr: ["$admissionNo", 3, -1] } } } },
+      { $sort: { num: -1 } },
+      { $limit: 1 },
+    ]);
 
-    if (lastStudent?.admissionNo) {
-      const lastNum = parseInt(lastStudent.admissionNo.replace("ADM", "")) + 1;
-      nextNo = "ADM" + lastNum; // no padding
+    let nextNo = "ADM1"; // default
+
+    if (lastStudent.length > 0) {
+      const nextNum = lastStudent[0].num + 1;
+      nextNo = "ADM" + String(nextNum);
     }
 
     res.json({ admissionNo: nextNo });
@@ -391,5 +422,4 @@ export const getLatestAdmissionNo = async (req, res) => {
     res.status(500).json({ message: "Error generating admission number" });
   }
 };
-
 
