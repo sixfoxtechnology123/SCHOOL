@@ -122,6 +122,9 @@ export const getAllStudents = async (_req, res) => {
 export const createStudent = async (req, res) => {
   try {
     const { admissionType, studentId, ...studentData } = req.body;
+          // Ensure no duplicate MongoDB _id comes from frontend
+      if (studentData._id) delete studentData._id;
+
     studentData.scholarshipForAdmissionFee = req.body.scholarshipForAdmissionFee || "";
     studentData.scholarshipForSessionFee = req.body.scholarshipForSessionFee || "";
     studentData.remarksOfOtherPhoto = req.body.remarksOfOtherPhoto || "";
@@ -181,51 +184,61 @@ const nextAdmissionNo = await generateNextAdmissionNo();
   }
 };
 
+
+
 export const updateStudent = async (req, res) => {
   try {
-    const { id } = req.params; // This is Mongo _id, not studentId
+    const admissionNo = req.params.admissionNo.toUpperCase().trim(); // find using Admission No
+    const student = await StudentMaster.findOne({ admissionNo });
 
-    const student = await StudentMaster.findById(id); // <-- use findById
-    if (!student) return res.status(404).json({ error: "Student not found" });
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
 
-    // Update all allowed text fields dynamically
-    const allowedFields = [
-      "firstName","lastName","dob","gender","admitClass","section","rollNo",
-      "fatherName","motherName","contactNo","whatsappNo","admissionType",
-      "scholarshipForAdmissionFee","scholarshipForSessionFee","remarksOfOtherPhoto",
-      "languages","fatherOccupation","motherOccupation","fatherPhone","motherPhone",
-      "fatherEmail","motherEmail","fatherQualification","motherQualification",
-      "motherTongue","religion","ews","cwsn","panchayat","bpl","bplNo","familyIncome",
-      "height","weight","bloodGroup","nationality","permanentAddress","currentAddress",
-      "academicSession","socialCaste"
+    // --- Step 1: Clean null/undefined photo fields ---
+    const photoFields = [
+      "fatherPhoto",
+      "motherPhoto",
+      "childPhoto",
+      "otherDocument",
+      "idCardPhoto",
+      "udisePhoto",
     ];
 
-    allowedFields.forEach((key) => {
-      if (req.body[key] !== undefined) student[key] = req.body[key];
+    // remove invalid photo fields (avoid casting error)
+    photoFields.forEach((field) => {
+      const val = req.body[field];
+      if (val === null || val === "null" || val === undefined || val === "") {
+        delete req.body[field];
+      }
     });
 
-    // Update files if uploaded
-    const fileFields = ["fatherPhoto","motherPhoto","childPhoto","otherDocument","idCardPhoto","udisePhoto"];
-    fileFields.forEach((field) => {
+    // --- Step 2: Dynamically update other fields ---
+    Object.keys(req.body).forEach((key) => {
+      if (req.body[key] !== undefined) {
+        student[key] = req.body[key];
+      }
+    });
+
+    // --- Step 3: Handle uploaded photos (if new ones provided) ---
+    photoFields.forEach((field) => {
       if (req.files?.[field]?.length) {
         student[field] = {
           data: req.files[field][0].buffer,
-          contentType: req.files[field][0].mimetype
+          contentType: req.files[field][0].mimetype,
         };
       }
     });
 
-    await student.save();
-    res.json({ message: "Student updated successfully", student });
+    // --- Step 4: Save updated record ---
+    await student.save({ validateBeforeSave: false });
 
+    res.json({ message: "Student updated successfully", student });
   } catch (err) {
     console.error("Error updating student:", err);
     res.status(500).json({ error: err.message || "Failed to update student" });
   }
 };
-
-
-
 
 
 
@@ -385,21 +398,24 @@ export const checkUdiseExists = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to check UDISE data" });
   }
 };
+
+
 export const getStudentByStudentId = async (req, res) => {
   try {
-    const studentId = req.params.studentId.toUpperCase(); // convert to uppercase
-    const student = await StudentMaster.findOne({ studentId });  // <-- FIXED
+    const studentId = req.params.studentId.toUpperCase();
+    const student = await StudentMaster.findOne({ studentId });
 
     if (!student) {
       return res.status(404).json({ message: "Student not found" });
     }
 
-    res.json(student);
+    res.json(student); // sends full saved data
   } catch (err) {
-    console.error("Error fetching student:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
+
+
 
 export const getLatestAdmissionNo = async (req, res) => {
   try {

@@ -20,7 +20,9 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 router.get("/check-udise/:studentId", checkUdiseExists);
+// get student by studentId
 router.get("/by-studentId/:studentId", getStudentByStudentId);
+
 // Serve student photos
 router.get("/students/:id/photo/:type", async (req, res) => {
   try {
@@ -83,18 +85,21 @@ router.post(
   createStudent
 );
 
+// Update student by admissionNo
 router.put(
-  "/:id",
+  "/update/:admissionNo",
   upload.fields([
     { name: "fatherPhoto" },
     { name: "motherPhoto" },
     { name: "childPhoto" },
     { name: "otherDocument" },
-    { name: "idCardPhoto" }, // allow ID Card photo here
+    { name: "idCardPhoto" },
     { name: "udisePhoto" },
   ]),
   updateStudent
 );
+
+
 // DELETE /api/students/:id
 router.delete("/:id", deleteStudentController);
 router.get("/latest-admission", getLatestAdmissionNo);

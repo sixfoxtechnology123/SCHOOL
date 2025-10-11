@@ -106,6 +106,7 @@ const IdCardForm = ({ studentId }) => {
     e.preventDefault();
     try {
       const form = new FormData();
+      form.append("studentId", formData.studentId);
       form.append("whatsappNo", formData.whatsappNo);
       form.append("permanentAddress", JSON.stringify(formData.permanentAddress));
 

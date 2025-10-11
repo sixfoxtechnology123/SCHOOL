@@ -567,15 +567,16 @@ const tableRows = filteredStudents
               <tr>
                 <th className="border border-green-500 px-2 py-1">Student ID</th>
                 <th className="border border-green-500 px-2 py-1">Session</th>
+                <th className="border border-green-500 px-2 py-1">ADM No.</th>
                 <th className="border border-green-500 px-2 py-1">Name</th>
                 <th className="border border-green-500 px-2 py-1">Admission Type</th>
                 <th className="border border-green-500 px-2 py-1">Class</th>
-                <th className="border border-green-500 px-2 py-1">Section</th>
-                <th className="border border-green-500 px-2 py-1">Roll No</th>
+                <th className="border border-green-500 px-2 py-1">Sec</th>
+                <th className="border border-green-500 px-2 py-1">Roll</th>
                 {/* <th className="border border-green-500 px-2 py-1">DOB</th> */}
                 <th className="border border-green-500 px-2 py-1">Father</th>
                 <th className="border border-green-500 px-2 py-1">Mother</th>
-                <th className="border border-green-500 px-2 py-1">Phone No</th>
+                {/* <th className="border border-green-500 px-2 py-1">Phone No</th> */}
                 <th className="border border-green-500 px-2 py-1">Action</th>
               </tr>
             </thead>
@@ -585,6 +586,7 @@ const tableRows = filteredStudents
                   <tr key={stu._id} className="hover:bg-gray-100 transition">
                     <td className="border border-green-500 px-2 py-1">{stu.studentId}</td>
                     <td className="border border-green-500 px-2 py-1">{stu.academicSession}</td>
+                    <td className="border border-green-500 px-2 py-1">{stu.admissionNo}</td>
                     <td className="border border-green-500 px-2 py-1">{getName(stu)}</td>
                      <td className="border border-green-500 px-2 py-1">{stu.admissionType || ""}</td>
                     <td className="border border-green-500 px-2 py-1">{getClass(stu)}</td>
@@ -593,7 +595,7 @@ const tableRows = filteredStudents
                     {/* <td className="border border-green-500 px-2 py-1">{formatDOB(stu.dob)}</td> */}
                     <td className="border border-green-500 px-2 py-1">{stu.fatherName || ""}</td>
                     <td className="border border-green-500 px-2 py-1">{stu.motherName || ""}</td>
-                    <td className="border border-green-500 px-2 py-1">{getPhone(stu)}</td>
+                    {/* <td className="border border-green-500 px-2 py-1">{getPhone(stu)}</td> */}
                    <td className="border border-green-500 px-2 py-1">
                   <div className="flex justify-center items-center gap-2">
                     {/* Edit */}
@@ -625,8 +627,8 @@ const tableRows = filteredStudents
                       <FaPrint />
                     </button>
 
-                    {/* New ID Card Link */}
-                    <Link
+                   
+                    {/* <Link
                       to="/IdCardForm"
                       state={{ studentData: stu }}
                       className="text-indigo-600 font-bold hover:text-indigo-800"
@@ -634,14 +636,14 @@ const tableRows = filteredStudents
                       ID
                     </Link>
 
-                    {/* New UDISE Link */}
+                   
                     <Link
                       to="/UdiseForm"
                       state={{ studentData: stu }}
                       className="text-purple-600 font-bold hover:text-purple-800"
                     >
                       UDISE
-                    </Link>
+                    </Link> */}
                   </div>
                 </td>
                   </tr>

@@ -7,7 +7,12 @@ const studentSchema = new mongoose.Schema({
   default: "new admission" 
 },
 
-  studentId: { type: String, required: true, unique: true }, // IMPORTANT
+  studentId: {
+  type: String,
+  required: true,
+  index: true  // just make it searchable, not unique
+},
+
   admissionNo: { type: String, required: true, unique: true },
 
   academicSession: { type: String, required: true },
