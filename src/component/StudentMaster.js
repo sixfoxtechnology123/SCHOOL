@@ -500,13 +500,13 @@ const handleSubmit = async (e) => {
                     </label>
 
                     {/* Student ID */}
-                    <label>
-                      Student ID
-                  <input
+               <label>
+                    Student ID
+                    <input
                       name="studentId"
-                      className="border bg-gray-100 p-0 rounded w-full"
                       value={studentData.studentId}
-                      readOnly={admissionType === "new admission"} // read-only for new admission
+                      readOnly={admissionType === "new admission"} // read-only only for new admission
+                      className={`border p-0 rounded w-full ${admissionType === "new admission" ? 'bg-gray-200 cursor-not-allowed' : 'bg-white'}`}
                       onChange={(e) => {
                         if (admissionType === "re-admission") {
                           setStudentData(prev => ({ ...prev, studentId: e.target.value.toUpperCase() }));
@@ -1162,68 +1162,87 @@ const handleSubmit = async (e) => {
             </form>
           )}
 
-           {/* --------- STEP 3 --------- */}
-          {step === 3 && (
-        <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (studentData._id) delete studentData._id;
+          {/* --------- STEP 3 --------- */}
+            {step === 3 && (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (studentData._id) delete studentData._id;
 
-              const formData = new FormData();
+                  const formData = new FormData();
 
-              // Merge admissionType into studentData
-              const dataToSend = { ...studentData, admissionType };
+                  // Merge admissionType into studentData
+                  const dataToSend = { ...studentData, admissionType };
 
-              // Append files if selected
-              if (e.target.fatherPhoto.files[0])
-                formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
-              if (e.target.motherPhoto.files[0])
-                formData.append("motherPhoto", e.target.motherPhoto.files[0]);
-              if (e.target.childPhoto.files[0])
-                formData.append("childPhoto", e.target.childPhoto.files[0]);
-              if (e.target.otherDocument.files[0])
-                formData.append("otherDocument", e.target.otherDocument.files[0]);
+                  // Append new files if selected
+                  if (e.target.fatherPhoto.files[0])
+                    formData.append("fatherPhoto", e.target.fatherPhoto.files[0]);
+                  if (e.target.motherPhoto.files[0])
+                    formData.append("motherPhoto", e.target.motherPhoto.files[0]);
+                  if (e.target.childPhoto.files[0])
+                    formData.append("childPhoto", e.target.childPhoto.files[0]);
+                  if (e.target.otherDocument.files[0])
+                    formData.append("otherDocument", e.target.otherDocument.files[0]);
 
-              // Append all studentData fields to formData
-              Object.keys(dataToSend).forEach((key) => {
-                if (key === "languages") {
-                  dataToSend.languages.forEach((lang) =>
-                    formData.append("languages[]", lang)
-                  );
-                } else if (key === "permanentAddress" || key === "currentAddress") {
-                  Object.keys(dataToSend[key]).forEach((sub) => {
-                    formData.append(`${key}[${sub}]`, dataToSend[key][sub]);
+                  // Append existing images if no new file selected
+                  const appendExistingImages = async () => {
+                    if (previewChild && !e.target.childPhoto.files[0]) {
+                      const blob = await (await fetch(previewChild)).blob();
+                      formData.append("childPhoto", blob, "childPhoto.jpg");
+                    }
+                    if (previewFather && !e.target.fatherPhoto.files[0]) {
+                      const blob = await (await fetch(previewFather)).blob();
+                      formData.append("fatherPhoto", blob, "fatherPhoto.jpg");
+                    }
+                    if (previewMother && !e.target.motherPhoto.files[0]) {
+                      const blob = await (await fetch(previewMother)).blob();
+                      formData.append("motherPhoto", blob, "motherPhoto.jpg");
+                    }
+                    if (previewOther && !e.target.otherDocument.files[0]) {
+                      const blob = await (await fetch(previewOther)).blob();
+                      formData.append("otherDocument", blob, "otherDocument.jpg");
+                    }
+                  };
+
+                  await appendExistingImages();
+
+                  // Append all other studentData fields to formData
+                  Object.keys(dataToSend).forEach((key) => {
+                    if (key === "languages") {
+                      dataToSend.languages.forEach((lang) =>
+                        formData.append("languages[]", lang)
+                      );
+                    } else if (key === "permanentAddress" || key === "currentAddress") {
+                      Object.keys(dataToSend[key]).forEach((sub) => {
+                        formData.append(`${key}[${sub}]`, dataToSend[key][sub]);
+                      });
+                    } else {
+                      formData.append(key, dataToSend[key]);
+                    }
                   });
-                } else {
-                  formData.append(key, dataToSend[key]);
-                }
-              });
 
-            
-try {
-  if (isEditMode) {
-    await axios.put(
-      `http://localhost:5000/api/students/update/${studentData.admissionNo}`, // <-- use admissionNo
-      formData,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
-
-    toast.success("Student updated successfully!");
-  } else {
-    await axios.post("http://localhost:5000/api/students", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
-    toast.success("Student and Photos saved successfully!");
-  }
-  navigate("/StudentList", { replace: true });
-} catch (err) {
-  console.error("Error saving student with photos:", err);
-  toast.error("Failed to save student");
-}
-
-            }}
-              className="grid grid-cols-1 gap-4"
-            >
+                  try {
+                    if (isEditMode) {
+                      await axios.put(
+                        `http://localhost:5000/api/students/update/${studentData.admissionNo}`,
+                        formData,
+                        { headers: { "Content-Type": "multipart/form-data" } }
+                      );
+                      toast.success("Student updated successfully!");
+                    } else {
+                      await axios.post("http://localhost:5000/api/students", formData, {
+                        headers: { "Content-Type": "multipart/form-data" },
+                      });
+                      toast.success("Student and Photos saved successfully!");
+                    }
+                    navigate("/StudentList", { replace: true });
+                  } catch (err) {
+                    console.error("Error saving student with photos:", err);
+                    toast.error("Failed to save student");
+                  }
+                }}
+                className="grid grid-cols-1 gap-4"
+              >
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* Father Photo */}
                   <label className="flex flex-col">
