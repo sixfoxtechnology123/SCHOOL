@@ -61,6 +61,29 @@ const StudentsList = () => {
       familyIncome: "",
     });
 
+    const [classes, setClasses] = useState([]);
+const [sections, setSections] = useState([]);
+const [filterClass, setFilterClass] = useState("");
+const [filterSection, setFilterSection] = useState("");
+
+useEffect(() => {
+  // Fetch unique classes
+  axios.get("http://localhost:5000/api/classes/unique/classes")
+    .then(res => setClasses(res.data || []))
+    .catch(err => console.log(err));
+}, []);
+
+useEffect(() => {
+  if (filterClass) {
+    // Fetch sections for selected class
+    axios.get(`http://localhost:5000/api/classes/sections/${filterClass}`)
+      .then(res => setSections(res.data || []))
+      .catch(err => console.log(err));
+  } else {
+    setSections([]);
+    setFilterSection("");
+  }
+}, [filterClass]);
 
   const fetchStudents = async () => {
     try {
@@ -160,15 +183,23 @@ const deleteStudent = async (id, name) => {
 const searchTermLower = searchTerm.trim().toLowerCase();
 
 const filteredStudents = students.filter((s) => {
-  const id = (s.studentId || "").toString().toLowerCase();
-  const firstName = getName(s).split(" ")[0].toLowerCase(); // only first name
+  const studentId = (s.studentId || "").toLowerCase();
+  const admissionNo = (s.admissionNo || "").toLowerCase();
+  const name = getName(s).toLowerCase();
+
   const sessionMatch = filterSession ? s.academicSession === filterSession : true;
+  const classMatch = filterClass ? s.admitClass === filterClass : true;
+  const sectionMatch = filterSection ? s.section === filterSection : true;
+
   const searchMatch =
     !searchTermLower ||
-    id.includes(searchTermLower) ||      // match Student ID
-    firstName.startsWith(searchTermLower); // match first name only
-  return sessionMatch && searchMatch;
+    studentId.includes(searchTermLower) ||
+    admissionNo.includes(searchTermLower) ||
+    name.includes(searchTermLower);
+
+  return sessionMatch && classMatch && sectionMatch && searchMatch;
 });
+
 
 
 
@@ -512,56 +543,101 @@ const tableRows = filteredStudents
         <Header />
         <div className="p-2 bg-white shadow-md rounded-md">
           <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
+            
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                 {/* Left: Back Button */}
+            <div className="flex items-center gap-2">
+                  <BackButton />
+                </div>
               <h2 className="text-xl font-bold text-green-800">Students</h2>
-                <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between w-full">
-                    {/* Top Row: Back + Filter (mobile: left & right) */}
-                    <div className="flex justify-between items-center gap-2 md:justify-start">
-                      <BackButton />
-                      <select
-                        value={filterSession}
-                        onChange={(e) => setFilterSession(e.target.value)}
-                        className="border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
-                      >
-                        <option value="">All Sessions</option>
-                        {sessions.map((s) => (
-                          <option key={s.id} value={s.name}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 w-full">
+                {/* Center & Right: Filters + Clear Icon in a row */}
+                <div className="flex items-center gap-1 md:gap-2 w-full md:w-auto">
 
-                    {/* Middle Row: Search (always centered, full width on mobile) */}
-                    <div className="w-full md:flex-1 md:px-4">
-                      <input
-                        type="text"
-                        placeholder="Search by Student ID or Name or Alphabet"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-                        className="w-full max-w-md border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
-                      />
-                    </div>
+                  {/* Session Filter */}
+                  <select
+                    value={filterSession}
+                    onChange={(e) => setFilterSession(e.target.value)}
+                    className="border border-green-500 rounded-l px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                  >
+                    <option value="">All Sessions</option>
+                    {sessions.map((s) => (
+                      <option key={s.id} value={s.name}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
 
-                    {/* Bottom Row: Print + New Register (mobile: left & right) */}
-                    <div className="flex justify-between items-center gap-2 md:justify-end">
-                      <button
-                        onClick={generateStudentsListPDF}
-                        className="bg-green-600 text-white px-4 py-0 rounded hover:bg-green-700"
-                      >
-                        Print
-                      </button>
-                      <button
-                        onClick={() => navigate("/StudentMaster")}
-                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-0 rounded font-semibold whitespace-nowrap"
-                      >
-                        New Register
-                      </button>
-                    </div>
-                  </div>
+                  {/* Class Filter */}
+                  <select
+                    value={filterClass}
+                    onChange={(e) => setFilterClass(e.target.value)}
+                    className="border border-green-500 px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                  >
+                    <option value="">All Classes</option>
+                    {classes.map((cls) => (
+                      <option key={cls} value={cls}>{cls}</option>
+                    ))}
+                  </select>
 
+                  {/* Section Filter */}
+                  <select
+                    value={filterSection}
+                    onChange={(e) => setFilterSection(e.target.value)}
+                    disabled={!filterClass || sections.length === 0}
+                    className="border border-green-500 rounded-r px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                  >
+                    <option value="">All Sections</option>
+                    {sections.map((sec) => (
+                      <option key={sec} value={sec}>{sec}</option>
+                    ))}
+                  </select>
+
+                  {/* Clear Filters Button */}
+                  <button
+                    onClick={() => {
+                      setFilterSession("");
+                      setFilterClass("");
+                      setFilterSection("");
+                    }}
+                    title="Clear Filters"
+                    className="border border-red-500 text-red-500 hover:bg-red-500 hover:text-white px-1 py-0 rounded text-sm"
+                  >
+                    ✕
+                  </button>
+
+                  {/* Search Input */}
+                  <input
+                    type="text"
+                    placeholder="Search by Student ID, ADM No or Name"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+                    className="w-60 border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+
+                  {/* Print Button */}
+                  <button
+                    onClick={generateStudentsListPDF}
+                    className="bg-green-600 text-white px-4 py-0 rounded hover:bg-green-700"
+                  >
+                    Print
+                  </button>
+
+                  {/* New Register Button */}
+                  <button
+                    onClick={() => navigate("/StudentMaster")}
+                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-0 rounded font-semibold whitespace-nowrap"
+                  >
+                    New Register
+                  </button>
+                  
+                </div>
+              </div>
             </div>
           </div>
+
+
+
           <table className="w-full table-auto border border-green-500 text-sm">
             <thead className="bg-green-100">
               <tr>
