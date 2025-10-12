@@ -541,8 +541,8 @@ const tableRows = filteredStudents
       <Sidebar />
       <div className="flex-1 overflow-y-auto p-3">
         <Header />
-        <div className="p-2 bg-white shadow-md rounded-md">
-          <div className="bg-green-50 border border-green-300 rounded-lg shadow-md p-2 mb-4">
+        <div className="p-2 bg-white  shadow-md rounded-md">
+          <div className="bg-green-50  border border-green-300 rounded-lg shadow-md p-2 mb-4">
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                  {/* Left: Back Button */}
@@ -612,7 +612,7 @@ const tableRows = filteredStudents
                     placeholder="Search by Student ID, ADM No or Name"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-                    className="w-60 border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="w-full border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
                   />
 
                   {/* Print Button */}
