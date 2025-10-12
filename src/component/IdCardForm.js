@@ -114,11 +114,12 @@ const IdCardForm = ({ studentId }) => {
         form.append("idCardPhoto", formData.idCardPhoto);
       }
 
-      await axios.put(
-        `http://localhost:5000/api/students/${formData.studentId}`,
-        form,
-        { headers: { "Content-Type": "multipart/form-data" } }
-      );
+ await axios.put(
+  `http://localhost:5000/api/students/update/${studentData.admissionNo}`,
+  form,
+  { headers: { "Content-Type": "multipart/form-data" } }
+);
+
 
       alert(isAlreadyFilled ? "ID Card updated!" : "ID Card saved!");
       navigate("/StudentList");

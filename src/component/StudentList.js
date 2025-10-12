@@ -711,7 +711,7 @@ const tableRows = filteredStudents
                     </button>
 
                    
-                    {/* <Link
+                    <Link
                       to="/IdCardForm"
                       state={{ studentData: stu }}
                       className="text-indigo-600 font-bold hover:text-indigo-800"
@@ -719,14 +719,14 @@ const tableRows = filteredStudents
                       ID
                     </Link>
 
-                   
+                 
                     <Link
                       to="/UdiseForm"
                       state={{ studentData: stu }}
                       className="text-purple-600 font-bold hover:text-purple-800"
                     >
                       UDISE
-                    </Link> */}
+                    </Link> 
                   </div>
                 </td>
                   </tr>

@@ -165,9 +165,12 @@ useEffect(() => {
     if (formData.udisePhoto) data.append("udisePhoto", formData.udisePhoto);
 
     try {
-      await axios.put(`http://localhost:5000/api/students/${id}`, data, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+   await axios.put(
+  `http://localhost:5000/api/students/update/${studentData.admissionNo}`,
+  data,
+  { headers: { "Content-Type": "multipart/form-data" } }
+);
+
 
       alert(isAlreadyFilled && isEditMode ? "UDISE record updated!" : "UDISE record saved!");
       navigate("/StudentList");
