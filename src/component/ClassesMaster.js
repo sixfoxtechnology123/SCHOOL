@@ -56,7 +56,7 @@ const ClassesMaster = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // 🔍 Validation: prevent same class + same section
+      //  Validation: prevent same class + same section
       const res = await axios.get("http://localhost:5000/api/classes");
       const allClasses = res.data || [];
 
@@ -68,7 +68,7 @@ const ClassesMaster = () => {
       );
 
       if (duplicate) {
-        toast.success("This Class + Section already exists!");
+        toast.error("This Class + Section already exists!");
         return;
       }
 
@@ -94,7 +94,7 @@ const ClassesMaster = () => {
       }
     } catch (err) {
       console.error("Save failed:", err);
-      toast.success("Error saving class");
+      toast.error("Error saving class");
     }
   };
 

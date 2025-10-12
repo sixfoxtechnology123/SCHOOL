@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import BackButton from "../component/BackButton";
 import { useNavigate, useLocation } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const FeeStructureMaster = () => {
   const [feeData, setFeeData] = useState({
@@ -172,14 +173,14 @@ const FeeStructureMaster = () => {
     if (name === "feeHeadId") setMonth(""); // clear month if fee head changes
   };
 
-  const saveActivity = (message) => {
-    const newActivity = { id: Date.now(), text: message, timestamp: new Date() };
-    const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-    const updated = [newActivity, ...stored];
-    localStorage.setItem("activities", JSON.stringify(updated));
+  // const saveActivity = (message) => {
+  //   const newActivity = { id: Date.now(), text: message, timestamp: new Date() };
+  //   const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+  //   const updated = [newActivity, ...stored];
+  //   localStorage.setItem("activities", JSON.stringify(updated));
 
-    window.dispatchEvent(new CustomEvent("newActivity", { detail: { action: message } }));
-  };
+  //   window.dispatchEvent(new CustomEvent("newActivity", { detail: { action: message } }));
+  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -198,18 +199,18 @@ const FeeStructureMaster = () => {
 
       if (isEditMode) {
         await axios.put(`http://localhost:5000/api/fees/${feeData._id}`, payload);
-        alert("Fee Structure updated!");
-        saveActivity(`Updated Fee Structure: ${payload.className} - ${payload.feeHeadName}`);
+        toast.success("Fee Structure updated!");
+        // saveActivity(`Updated Fee Structure: ${payload.className} - ${payload.feeHeadName}`);
       } else {
         await axios.post("http://localhost:5000/api/fees", payload);
-        alert("Fee Structure saved!");
-        saveActivity(`Added Fee Structure: ${payload.className} - ${payload.feeHeadName}`);
+        toast.success("Fee Structure saved!");
+        // saveActivity(`Added Fee Structure: ${payload.className} - ${payload.feeHeadName}`);
       }
 
       navigate("/FeeStructureList", { replace: true });
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.error || "Error saving Fee Structure");
+      toast.error(err.response?.data?.error || "Error saving Fee Structure");
     }
   };
 

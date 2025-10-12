@@ -72,7 +72,7 @@ const FeeHeadsMaster = () => {
     } catch (err) {
       console.error("Save failed:", err);
       const message = err.response?.data?.error || "Error saving Fee Head";
-      toast.success(message);
+      toast.error(message);
     }
   };
 

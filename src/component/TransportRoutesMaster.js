@@ -94,7 +94,7 @@ const TransportRoutesMaster = () => {
     } catch (err) {
       console.error("Save failed:", err);
       const message = err.response?.data?.error || "Error saving route";
-      toast.success(message);
+      toast.error(message);
     }
   };
 

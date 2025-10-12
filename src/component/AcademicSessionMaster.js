@@ -72,7 +72,7 @@ const AcademicSessionMaster = () => {
     } catch (err) {
       console.error("Save failed:", err);
       const message = err.response?.data?.error || "Error saving session";
-      toast.success(message);
+      toast.error(message);
     }
   };
 
