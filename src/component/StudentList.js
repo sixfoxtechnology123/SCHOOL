@@ -664,7 +664,14 @@ const tableRows = filteredStudents
                     <td className="border border-green-500 px-2 py-1">{stu.academicSession}</td>
                     <td className="border border-green-500 px-2 py-1">{stu.admissionNo}</td>
                     <td className="border border-green-500 px-2 py-1">{getName(stu)}</td>
-                     <td className="border border-green-500 px-2 py-1">{stu.admissionType || ""}</td>
+                     <td className="border border-green-500 px-2 py-1">
+                      {stu.admissionType
+                        ? stu.admissionType
+                            .split(/[\s-]+/)                     // split by space or dash
+                            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                            .join(" ")                            // join with space
+                        : ""}
+                    </td>
                     <td className="border border-green-500 px-2 py-1">{getClass(stu)}</td>
                     <td className="border border-green-500 px-2 py-1">{stu.section || ""}</td>
                     <td className="border border-green-500 px-2 py-1">{stu.rollNo || ""}</td>

@@ -1,6 +1,8 @@
 import StudentMaster from "../models/Student.js";
 import ClassMaster from "../models/Class.js";
 import AcademicSession from "../models/AcademicSession.js";
+import logActivity from "../utils/logActivity.js";
+
 
 const PREFIX = "G";
 const PAD = 4;
@@ -176,6 +178,19 @@ const nextAdmissionNo = await generateNextAdmissionNo();
     });
 
     await newStudent.save();
+    
+// --- Prepare display version for logs ---
+const admissionTypeDisplay = (newStudent.admissionType || "")
+  .split(/[-\s]/)                     // split by space or hyphen
+  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+  .join(" ");                          // join with space
+
+await logActivity(
+  `Added Student: ${newStudent.firstName} ${newStudent.lastName} | ${newStudent.admitClass} | Section: ${newStudent.section} | Roll No: ${newStudent.rollNo} | ${admissionTypeDisplay}`
+);
+
+
+
     res.status(201).json({ message: "Student saved successfully", student: newStudent });
 
   } catch (error) {
@@ -232,7 +247,7 @@ export const updateStudent = async (req, res) => {
 
     // --- Step 4: Save updated record ---
     await student.save({ validateBeforeSave: false });
-
+    await logActivity(`Updated Student: ${student.firstName} ${student.lastName} (${student.studentId})`);
     res.json({ message: "Student updated successfully", student });
   } catch (err) {
     console.error("Error updating student:", err);
@@ -246,6 +261,7 @@ export const deleteStudentController = async (req, res) => {
   try {
     const deleted = await StudentMaster.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ message: "Student not found" });
+    await logActivity(`Deleted Student: ${deleted.firstName} ${deleted.lastName} (${deleted.studentId})`);
     res.status(200).json({ message: "Student deleted successfully" });
   } catch (err) {
     console.error(err);
