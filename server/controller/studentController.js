@@ -257,11 +257,14 @@ export const deleteStudentController = async (req, res) => {
 export const getFullStudentInfo = async (req, res) => {
   try {
     const { id } = req.params;
+    const studentArr = await StudentMaster.find({ studentId: id.toUpperCase().trim() })
+      .sort({ _id: -1 })
+      .limit(1)
+      .lean();
 
-    const student = await StudentMaster.findOne({ studentId: id }).lean();
-    if (!student) {
-      return res.status(404).json({ error: "Student not found" });
-    }
+    if (!studentArr.length) return res.status(404).json({ error: "Student not found" });
+
+    const student = studentArr[0];
 
     res.json({
       childInfo: {
@@ -402,18 +405,19 @@ export const checkUdiseExists = async (req, res) => {
 
 export const getStudentByStudentId = async (req, res) => {
   try {
-    const studentId = req.params.studentId.toUpperCase();
-    const student = await StudentMaster.findOne({ studentId });
+    const studentArr = await StudentMaster.find({ studentId: req.params.studentId.toUpperCase() })
+      .sort({ _id: -1 })
+      .limit(1)
+      .lean();
 
-    if (!student) {
-      return res.status(404).json({ message: "Student not found" });
-    }
+    if (!studentArr.length) return res.status(404).json({ message: "Student not found" });
 
-    res.json(student); // sends full saved data
+    res.json(studentArr[0]);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 
 
@@ -440,3 +444,17 @@ export const getLatestAdmissionNo = async (req, res) => {
   }
 };
 
+export const getLatestStudentByStudentId = async (req, res) => {
+  try {
+    const studentArr = await StudentMaster.find({ studentId: req.params.studentId.toUpperCase() })
+      .sort({ _id: -1 })
+      .limit(1)
+      .lean();
+
+    if (!studentArr.length) return res.status(404).json({ message: "Student not found" });
+
+    res.json(studentArr[0]);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+};

@@ -342,6 +342,10 @@ useEffect(() => {
     } else {
       setStudentData({ ...studentData, [name]: value.toUpperCase() });
     }
+     // --- Save Academic Session in localStorage ---
+  if (name === "academicSession") {
+    localStorage.setItem("selectedAcademicSession", value);
+  }
   };
 
   const handleSameAddress = (e) => {
