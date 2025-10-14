@@ -139,11 +139,21 @@ const nextAdmissionNo = await generateNextAdmissionNo();
 
     if (admissionType === "new admission") {
       finalStudentId = await generateNextStudentId();
-    } else if (admissionType === "re-admission") {
-      if (!finalStudentId) {
-        return res.status(400).json({ message: "Student ID is required for re-admission" });
+    }  else if (admissionType === "re-admission") {
+        if (!finalStudentId) {
+          return res.status(400).json({ message: "Student ID is required for re-admission" });
+        }
+
+        // Check if this student actually exists in the database
+        const existingStudent = await StudentMaster.findOne({ studentId: finalStudentId });
+
+        if (!existingStudent) {
+          return res.status(400).json({
+            message: `Student with ID ${finalStudentId} not found. Readmission allowed only for existing students.`,
+          });
+        }
       }
-    }
+
 
     let rollNo = await generateNextRollNo(req.body.admitClass, req.body.section);
     rollNo = Number(rollNo);

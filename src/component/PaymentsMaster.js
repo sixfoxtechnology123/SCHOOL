@@ -3,6 +3,7 @@ import axios from "axios";
 import BackButton from "../component/BackButton";
 import { useLocation, useNavigate } from "react-router-dom";
 import Select from "react-select";
+import toast from "react-hot-toast";
 
 const PaymentsMaster = () => {
   const [paymentData, setPaymentData] = useState({
@@ -358,22 +359,6 @@ const handleFeeHeadChange = (selectedHeads) => {
   };
 
 
-  //  Activity saving logic
-const saveActivity = (action) => {
-  const newActivity = {
-    id: Date.now(),
-    text: action,
-    timestamp: new Date(),
-  };
-
-  const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-  const updated = [newActivity, ...stored];
-  localStorage.setItem("activities", JSON.stringify(updated));
-
-  window.dispatchEvent(
-    new CustomEvent("newActivity", { detail: { action } })
-  );
-};
 
 const handleSubmit = async (e) => {
   e.preventDefault();
@@ -382,12 +367,12 @@ const handleSubmit = async (e) => {
     ["UPI", "NetBanking"].includes(paymentData.paymentMode) &&
     !paymentData.transactionId
   ) {
-    alert("Transaction ID required for this payment mode!");
+    toast.error("Transaction ID required for this payment mode!");
     return;
   }
 
   if (paymentData.paymentMode === "Card" && !paymentData.cardNumber) {
-    alert("Card Number required for Card payment!");
+    toast.error("Card Number required for Card payment!");
     return;
   }
 
@@ -427,17 +412,13 @@ const handleSubmit = async (e) => {
         `http://localhost:5000/api/payments/${paymentData._id}`,
         submissionData
       );
-      saveActivity(
-        `Updated Payment Receipt ${paymentData.paymentId} of ${studentName}`
-      );
-      alert("Receipt updated successfully!");
+     
+      toast.success("Receipt updated successfully!");
       navigate("/PaymentsList", { replace: true });
     } else {
       await axios.post("http://localhost:5000/api/payments", submissionData);
-      saveActivity(
-        `Added new Payment Receipt ${paymentData.paymentId} of ${studentName}`
-      );
-      alert("Receipt saved successfully!");
+      
+      toast.success("Receipt saved successfully!");
       await fetchNextPaymentId();
 
       // Reset form
@@ -465,7 +446,7 @@ const handleSubmit = async (e) => {
     }
   } catch (err) {
     console.error("Save failed:", err);
-    alert("Error saving receipt. Check console.");
+    toast.error("Error saving receipt. Check console.");
   }
 };
 

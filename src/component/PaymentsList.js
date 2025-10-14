@@ -6,6 +6,7 @@ import { FaTrash, FaEdit, FaPrint } from "react-icons/fa";
 import BackButton from "../component/BackButton";
 import Sidebar from "../component/Sidebar";
 import Header from "./Header";
+import toast from "react-hot-toast";
 
 const formatDDMMYYYY = (iso) => {
   if (!iso) return "";
@@ -57,39 +58,49 @@ const getStudentName = (studentId) => {
 };
 
 
-//  Activity saving logic
-const saveActivity = (action) => {
-  const newActivity = {
-    id: Date.now(),
-    text: action,
-    timestamp: new Date(),
-  };
+// //  Activity saving logic
+// const saveActivity = (action) => {
+//   const newActivity = {
+//     id: Date.now(),
+//     text: action,
+//     timestamp: new Date(),
+//   };
 
-  const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-  const updated = [newActivity, ...stored];
-  localStorage.setItem("activities", JSON.stringify(updated));
+//   const stored = JSON.parse(localStorage.getItem("activities") || "[]");
+//   const updated = [newActivity, ...stored];
+//   localStorage.setItem("activities", JSON.stringify(updated));
 
-  window.dispatchEvent(
-    new CustomEvent("newActivity", { detail: { action } })
-  );
-};
+//   window.dispatchEvent(
+//     new CustomEvent("newActivity", { detail: { action } })
+//   );
+// };
 
 const deletePayment = async (id) => {
   if (!window.confirm("Are you sure you want to delete this payment?")) return;
+
   try {
     const payment = payments.find((p) => p._id === id);
+
     await axios.delete(`http://localhost:5000/api/payments/${id}`);
+
+    // Remove from state
     setPayments((prev) => prev.filter((p) => p._id !== id));
 
-    //  Log delete activity with student name
+    // Show success toast
+    toast.success("Payment deleted successfully!");
+
+    // Optional: Log delete activity with student name
     if (payment) {
       const studentName = getStudentName(payment.student);
-      saveActivity(`Deleted Payment Receipt ${payment.paymentId} of ${studentName}`);
+      // logActivity(`Deleted Payment for ${studentName}`);
     }
+
   } catch (err) {
     console.error("Failed to delete payment:", err);
+    toast.error("Failed to delete payment"); // Show error toast
   }
 };
+
 
 
 

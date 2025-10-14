@@ -4,6 +4,7 @@ const Student = require("../models/Student");
 const FeeStructure = require("../models/FeeStructure");
 const FeeHead = require("../models/FeeHead");
 const ClassMaster = require("../models/Class");
+const logActivity = require("../utils/logActivity");
 
 const PREFIX = "RECEIPT";
 const PAD = 5; // RECEIPT001, RECEIPT002...
@@ -223,6 +224,7 @@ const createPayment = async (req, res) => {
 
     const payment = new Payment(req.body);
     await payment.save();
+     await logActivity(`Added Payment for ${payment.studentName} | PaymentId: ${payment.paymentId}`);
 
     res.status(201).json(payment);
   } catch (err) {
@@ -245,6 +247,7 @@ const updatePayment = async (req, res) => {
     });
 
     await paymentDoc.save();
+    await logActivity(`Updated Payment for ${paymentDoc.studentName} | PaymentId: ${paymentDoc.paymentId}`);
     res.json(paymentDoc);
   } catch (err) {
     console.error("Update payment error:", err);
@@ -268,6 +271,7 @@ const deletePayment = async (req, res) => {
   try {
     const deleted = await Payment.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ error: "Payment not found" });
+     await logActivity(`Deleted Payment for ${deleted.studentName} | PaymentId: ${deleted.paymentId}`);
     res.json({ message: "Payment deleted" });
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to delete payment" });

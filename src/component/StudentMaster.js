@@ -401,9 +401,13 @@ const handleSubmit = async (e) => {
       toast.success("Student saved successfully!");
     }
     navigate("/StudentList", { replace: true });
-  } catch (error) {
+  }catch (error) {
     console.error("Error saving student:", error);
-    toast.error("Failed to save student");
+
+    //  Show backend error message if available
+    const message =
+      error.response?.data?.message || "Failed to save student";
+    toast.error(message);
   }
 };
 
@@ -1241,9 +1245,10 @@ const handleSubmit = async (e) => {
                     }
                     navigate("/StudentList", { replace: true });
                   } catch (err) {
-                    console.error("Error saving student with photos:", err);
-                    toast.error("Failed to save student");
-                  }
+                     const message =
+                        err.response?.data?.message || "Failed to save student";
+                      toast.error(message);
+                    }
                 }}
                 className="grid grid-cols-1 gap-4"
               >

@@ -125,7 +125,8 @@ const FeeHeadsMaster = () => {
                 "Electricity Charge",
                 "Miscellaneous Fee",
                 "TC",
-                "Migration"
+                "Migration",
+                "Other"
               ].map((fh) => (
                 <option key={fh} value={fh}>
                   {fh}
