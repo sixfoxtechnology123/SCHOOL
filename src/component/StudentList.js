@@ -180,6 +180,7 @@ const deleteStudent = async (id, name) => {
     return "";
   };
 
+  
 const searchTermLower = searchTerm.trim().toLowerCase();
 
 const filteredStudents = students.filter((s) => {
@@ -193,12 +194,13 @@ const filteredStudents = students.filter((s) => {
 
   const searchMatch =
     !searchTermLower ||
-    studentId.includes(searchTermLower) ||
-    admissionNo.includes(searchTermLower) ||
-    name.includes(searchTermLower);
+    studentId.startsWith(searchTermLower) ||      // <-- use startsWith
+    admissionNo.startsWith(searchTermLower) ||    // <-- use startsWith
+    name.startsWith(searchTermLower);             // <-- use startsWith
 
   return sessionMatch && classMatch && sectionMatch && searchMatch;
 });
+
 
 
 

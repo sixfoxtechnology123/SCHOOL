@@ -6,6 +6,7 @@ import { FaTrash, FaEdit } from "react-icons/fa";
 import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
+import toast from "react-hot-toast";
 
 const FeeStructureList = () => {
   const [fees, setFees] = useState([]);
@@ -45,39 +46,28 @@ const FeeStructureList = () => {
     fetchData();
     fetchSessions();
 
-    const handleActivity = (e) => {
-      console.log("Activity Event Fired:", e.detail?.action);
-    };
-
-    window.addEventListener("newActivity", handleActivity);
-    return () => window.removeEventListener("newActivity", handleActivity);
   }, [location.key]);
 
-  // --- Delete fee with activity logging ---
-  const deleteFee = async (id, className, feeHeadName) => {
-    if (!window.confirm("Are you sure you want to delete this Fee Structure?")) return;
-    try {
-      await axios.delete(`http://localhost:5000/api/fees/${id}`);
-      setFees(prev => prev.filter(f => f._id !== id));
+// --- Delete fee with activity logging and custom toast ---
+const deleteFee = async (id, className, feeHeadName) => {
+  if (!window.confirm(`Are you sure you want to delete the fee: ${feeHeadName} for class: ${className}?`)) return;
 
-      // Save activity in localStorage
-      const newActivity = {
-        id: Date.now(),
-        text: `Deleted Fee Structure: ${className} - ${feeHeadName}`,
-        timestamp: new Date(),
-      };
-      const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-      const updated = [newActivity, ...stored];
-      localStorage.setItem("activities", JSON.stringify(updated));
+  try {
+    // Delete on server
+    await axios.delete(`http://localhost:5000/api/fees/${id}`);
 
-      // Dispatch event for layout
-      window.dispatchEvent(
-        new CustomEvent("newActivity", { detail: { action: newActivity.text } })
-      );
-    } catch (err) {
-      console.error("Failed to delete Fee Structure:", err);
-    }
-  };
+    // Update frontend state
+    setFees(prev => prev.filter(f => f._id !== id));
+
+    // Show success toast with class and fee head
+    toast.success(`Fee "${feeHeadName}" for "${className}" deleted successfully!`);
+  } catch (err) {
+    console.error("Failed to delete Fee Structure:", err);
+    toast.error(`Failed to delete fee "${feeHeadName}" for class "${className}"`);
+  }
+};
+
+
   // -----------------------------------------
 
   // Filter fees based on search term and session filter

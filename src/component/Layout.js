@@ -48,7 +48,7 @@ const Layout = () => {
       const today = new Date().toISOString().split("T")[0];
       const res = await axios.get("http://localhost:5000/api/payments");
       const todayPayments = res.data.filter(p => new Date(p.date).toISOString().split("T")[0] === today);
-      const total = todayPayments.reduce((sum, item) => sum + (Number(item.amountPaid) || 0), 0);
+      const total = todayPayments.reduce((sum, item) => sum + (Number(item.totalPaidAmount) || 0), 0);
       setTodaysCollection(total);
     } catch (err) {
       console.error("Error fetching today's collection:", err);

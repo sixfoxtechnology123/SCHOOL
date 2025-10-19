@@ -6,16 +6,22 @@ const FeeHead = require("../models/FeeHead");
 const ClassMaster = require("../models/Class");
 const logActivity = require("../utils/logActivity");
 
-const PREFIX = "RECEIPT";
-const PAD = 5; // RECEIPT001, RECEIPT002...
+const PREFIX = "RCPT";  // new prefix
+// const PAD = 5;       // no padding needed
 
 // ================== Helper: Generate next PaymentId ==================
 async function generateNextPaymentId() {
   const last = await Payment.findOne().sort({ paymentId: -1 }).lean();
-  const lastNum = last ? parseInt(last.paymentId.replace(PREFIX, ""), 10) : 0;
+  
+  let lastNum = 0;
+  if (last && last.paymentId.startsWith(PREFIX)) {
+    lastNum = parseInt(last.paymentId.replace(PREFIX, ""), 10) || 0;
+  }
+  
   const nextNum = lastNum + 1;
-  return `${PREFIX}${String(nextNum).padStart(PAD, "0")}`;
+  return `${PREFIX}${nextNum}`; // no zero padding
 }
+
 
 // ================== Student Routes ==================
 const getAllStudents = async (req, res) => {
@@ -107,22 +113,24 @@ function parseDistanceRange(distanceStr) {
   return { min, max };
 }
 
-// ================== Helper: Populate Fee Amounts ==================
 async function populateFeeAmounts(paymentBody) {
+  // Parse feeDetails if it's a string
   if (!Array.isArray(paymentBody.feeDetails)) {
     try {
       paymentBody.feeDetails = JSON.parse(paymentBody.feeDetails);
-    } catch (err) {
+    } catch {
       paymentBody.feeDetails = [];
     }
   }
 
   paymentBody.date = paymentBody.date ? new Date(paymentBody.date) : new Date();
 
+  // Find student
   let studentDoc = null;
   if (paymentBody.student) {
-    studentDoc = await Student.findOne({ studentId: paymentBody.student }).lean();
-    if (!studentDoc) studentDoc = await Student.findById(paymentBody.student).lean();
+    studentDoc = await Student.findOne({
+      $or: [{ studentId: paymentBody.student }, { _id: paymentBody.student }],
+    }).lean();
 
     if (studentDoc) {
       paymentBody.student = studentDoc.studentId;
@@ -134,89 +142,170 @@ async function populateFeeAmounts(paymentBody) {
     }
   }
 
+  // Get classId
   let classId = paymentBody.classId;
   if (!classId && paymentBody.admitClass) {
     const classData = await ClassMaster.findOne({ className: paymentBody.admitClass }).lean();
     if (classData) classId = classData.classId;
   }
 
+  // Fetch fee structure and fee heads
   const classStructures = await FeeStructure.find({
     classId,
-    academicSession: paymentBody.academicSession
+    academicSession: paymentBody.academicSession,
   }).lean();
   const feeHeads = await FeeHead.find().lean();
 
-  let total = 0;
-  const finalFeeDetails = await Promise.all(
-    paymentBody.feeDetails.map(async (f) => {
-      let amount = 0;
-      const feeHeadData = feeHeads.find(h => h.feeHeadName === f.feeHead);
-      if (!feeHeadData) return { ...f, amount: 0 };
+  // Scholarships
+  let remainingAdmission = Number(studentDoc?.scholarshipForAdmissionFee || 0);
+  let remainingSession = Number(studentDoc?.scholarshipForSessionFee || 0);
 
-      // ====== TRANSPORT AUTO-FILL LOGIC ======
-      if (f.feeHead.toLowerCase() === "transport") {
+  let total = 0;
+  let totalLateFine = 0;
+  const finalFeeDetails = [];
+
+  for (const f of paymentBody.feeDetails) {
+    f.amount = f.amount !== undefined ? Number(f.amount) : undefined;
+    f.originalAmount = f.originalAmount !== undefined ? Number(f.originalAmount) : undefined;
+    f.lateFine = Number(f.lateFine || 0);
+
+    let amount = 0;
+      let feeHeadData = feeHeads.find(h => h.feeHeadName === f.feeHead);
+      if (!feeHeadData && (f.feeHead || "").toLowerCase() === "other") {
+        // treat "Other" as custom head, allow it
+        feeHeadData = { feeHeadId: "OTHER", feeHeadName: "Other" };
+      }
+      if (!feeHeadData) {
+        finalFeeDetails.push({ ...f, amount: f.amount || 0 });
+        totalLateFine += f.lateFine;
+        continue;
+      }
+
+
+    if (typeof f.originalAmount === "number" && typeof f.amount === "number") {
+      amount = f.amount;
+      f.appliedScholarship = f.appliedScholarship || 0;
+    } else {
+      if ((f.feeHead || "").toLowerCase() === "transport") {
         if ((!f.routeId || f.routeId === "") && studentDoc?.distanceFromSchool && studentDoc.transportRequired === "Yes") {
           const routes = classStructures.filter(cs => cs.feeHeadId === feeHeadData.feeHeadId);
           const km = Number(studentDoc.distanceFromSchool);
-
           const autoRoute = routes.find(r => {
             const { min, max } = parseDistanceRange(r.distance);
             return km >= min && km <= max;
           });
-
           if (autoRoute) {
             f.routeId = autoRoute.routeId;
             f.distance = autoRoute.distance;
           }
         }
 
-        if (f.routeId) {
-          const routeFee = classStructures.find(
-            cs => cs.feeHeadId === feeHeadData.feeHeadId && cs.routeId === f.routeId
-          );
+      if (f.distance) {
+          const routeFee = classStructures.find(cs => cs.feeHeadId === feeHeadData.feeHeadId && cs.distance === f.distance);
+          amount = routeFee ? Number(routeFee.amount) : Number(f.amount || 0);
+        } else if (studentDoc?.distanceFromSchool) {
+          const km = Number(studentDoc.distanceFromSchool);
+          const routeFee = classStructures.find(cs => {
+            const { min, max } = parseDistanceRange(cs.distance);
+            return km >= min && km <= max;
+          });
           amount = routeFee ? Number(routeFee.amount) : Number(f.amount || 0);
         } else {
           amount = Number(f.amount || 0);
         }
+
       } else {
-        // Non-transport fee
         const feeData = classStructures.find(cs => cs.feeHeadId === feeHeadData.feeHeadId);
         amount = feeData ? Number(feeData.amount) : Number(f.amount || 0);
       }
 
-      total += amount;
-      return { ...f, amount };
-    })
-  );
+      const head = (f.feeHead || "").toLowerCase();
+      f.appliedScholarship = 0;
 
-  paymentBody.feeDetails = finalFeeDetails;
-  paymentBody.currentFee = total;
+      if (head.includes("admission") && remainingAdmission > 0) {
+        const apply = Math.min(remainingAdmission, amount);
+        amount -= apply;
+        remainingAdmission -= apply;
+        f.appliedScholarship = apply;
+      }
 
-  let previousPending = 0;
-  if (studentDoc) {
-    const lastPayment = await Payment.findOne({ student: studentDoc.studentId })
-      .sort({ date: -1, _id: -1 })
-      .lean();
-    previousPending = lastPayment ? Number(lastPayment.pendingAmount || 0) : 0;
+      if (head.includes("session") && remainingSession > 0) {
+        const apply = Math.min(remainingSession, amount);
+        amount -= apply;
+        remainingSession -= apply;
+        f.appliedScholarship = (f.appliedScholarship || 0) + apply;
+      }
+    }
+
+    if (amount < 0) amount = 0;
+
+    total += Number(amount);
+    totalLateFine += Number(f.lateFine || 0);
+
+    finalFeeDetails.push({ ...f, amount });
   }
 
+ const sanitizedFeeDetails = finalFeeDetails
+    .filter(fd => fd && fd.feeHead)                 // drop empty objects
+    .map(fd => ({
+      feeHead: fd.feeHead,
+      originalAmount: Number(fd.originalAmount || 0),
+      amount: Number(fd.amount || 0),
+      amountPaid: Number(fd.amountPaid || 0),
+      pendingAmount: Number(fd.pendingAmount || 0),
+      paymentStatus: fd.paymentStatus || (Number(fd.pendingAmount || 0) > 0 ? "Pending" : "Full Payment"),
+      lateFine: Number(fd.lateFine || 0),
+      otherName: fd.otherName || "",
+      appliedScholarship: Number(fd.appliedScholarship || 0),
+      routeId: fd.routeId || "",
+      distance: fd.distance || ""
+    }));
+
+  paymentBody.feeDetails = sanitizedFeeDetails;
+
+  // Discount (force numeric)
   paymentBody.discount = Number(paymentBody.discount || 0);
-  paymentBody.totalAmount = total + previousPending;
-  paymentBody.netPayable = Math.max(paymentBody.totalAmount - paymentBody.discount, 0);
-  paymentBody.previousPending = previousPending;
 
-  if (paymentBody.paymentStatus === "Full Payment") {
-    paymentBody.amountPaid = paymentBody.netPayable;
-    paymentBody.pendingAmount = 0;
-  } else {
-    paymentBody.amountPaid = Number(paymentBody.amountPaid || 0);
-    paymentBody.pendingAmount = Math.max(paymentBody.netPayable - paymentBody.amountPaid, 0);
-  }
+ const previousPending = Number(paymentBody.previousPending || 0);
+  const lateFine = Number(paymentBody.lateFine || 0);
 
-  paymentBody.paymentStatus = paymentBody.pendingAmount > 0 ? "Pending" : "Full Payment";
+  // currentFee = SUM of amountPaid (what has been paid for the current fee heads)
+  const currentFee = sanitizedFeeDetails.reduce((s, fd) => s + Number(fd.amountPaid || 0), 0);
+
+//  Correct calculations
+paymentBody.totalFee = Number(currentFee + lateFine + previousPending);
+paymentBody.netPayable = Math.max(paymentBody.totalFee - paymentBody.discount, 0);
+paymentBody.totalPaidAmount = paymentBody.netPayable;
+paymentBody.totalPendingAmount = paymentBody.feeDetails.reduce(
+  (sum, f) => sum + Number(f.pendingAmount || 0),
+  0
+);
+
+paymentBody.amountPaid = paymentBody.totalPaidAmount;
+paymentBody.pendingAmount = paymentBody.totalPendingAmount;
+
+// Payment status
+paymentBody.paymentStatus = paymentBody.totalPendingAmount > 0 ? "Pending" : "Full Payment";
+// // debug log computed values
+// console.log("POPULATE_COMPUTED", {
+//   previousPending,
+//   lateFine,
+//   currentFee,
+//   totalFee: paymentBody.totalFee,
+//   netPayable: paymentBody.netPayable,
+//   totalPaidAmount: paymentBody.totalPaidAmount,
+//   totalPendingAmount: paymentBody.totalPendingAmount,
+//   feeDetails: paymentBody.feeDetails,
+// });
+return paymentBody;
+
 }
 
-// ================== Create Payment ==================
+
+
+
+
+// ===== Create Payment =====
 const createPayment = async (req, res) => {
   try {
     if (!req.body.paymentId) req.body.paymentId = await generateNextPaymentId();
@@ -224,15 +313,13 @@ const createPayment = async (req, res) => {
 
     const payment = new Payment(req.body);
     await payment.save();
-     await logActivity(`Added Payment for ${payment.studentName} | PaymentId: ${payment.paymentId}`);
-
+    await logActivity(`Added Payment for ${payment.studentName} | PaymentId: ${payment.paymentId}`);
     res.status(201).json(payment);
   } catch (err) {
     console.error("Error creating payment:", err);
     res.status(500).json({ error: err.message || "Failed to create payment" });
   }
 };
-
 // ================== Update Payment ==================
 const updatePayment = async (req, res) => {
   try {
@@ -405,4 +492,5 @@ module.exports = {
   getPreviousPending,
   getClassFeeStructure,
   getFeeStructureByClassAndSession,
+  populateFeeAmounts,
 };

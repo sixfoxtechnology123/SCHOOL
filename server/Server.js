@@ -55,6 +55,9 @@ import outstandingRoutes from "./routes/outstandingFeesRoutes.js";
 // New Activity Routes
 import activityRoutes from "./routes/activityRoutes.js";
 
+
+
+
 app.use("/api/classes", classRoutes);
 app.use("/api/feeheads", feeHeadRoutes);
 app.use("/api/sessions", academicSessionRoutes);

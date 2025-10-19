@@ -1,6 +1,7 @@
 // ======= server/routes/payments.js =======
 const express = require("express");
 const router = express.Router();
+const Student = require("../models/Student"); // your Student model
 
 const controller = require("../controller/paymentController");
 const Payment = require("../models/Payment");
@@ -21,9 +22,42 @@ router.get("/classes", controller.getAllClasses);
 router.get("/pending/:studentId", controller.getPreviousPending);
 
 
-// CRUD routes
-router.post("/", controller.createPayment);
+// GET scholarship by admission number
+router.get("/scholarships/:admissionNo", async (req, res) => {
+  try {
+    const admissionNo = req.params.admissionNo;
+    const student = await Student.findOne({ admissionNo });
+
+    if (!student) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    res.json({
+      scholarshipForAdmissionFee: student.scholarshipForAdmissionFee || "0",
+      scholarshipForSessionFee: student.scholarshipForSessionFee || "0"
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+// CRUD
+router.post("/", (req, res, next) => {
+//   console.log(" POST /api/payments HIT");
+//   console.log("Body:", req.body);
+  next();
+}, controller.createPayment);
+
 router.put("/:id", controller.updatePayment);
 router.delete("/:id", controller.deletePayment);
+// ===== New route for real-time fee calculation =====
+router.post("/calc-fee", async (req, res) => {
+  try {
+    const paymentBody = req.body; // send studentId, feeDetails, etc.
+    const calculated = await controller.populateFeeAmounts(paymentBody);
+    res.json(calculated); // frontend gets feeDetails with applied scholarship
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 module.exports = router;

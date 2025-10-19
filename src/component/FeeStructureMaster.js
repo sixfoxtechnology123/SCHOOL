@@ -173,14 +173,7 @@ const FeeStructureMaster = () => {
     if (name === "feeHeadId") setMonth(""); // clear month if fee head changes
   };
 
-  // const saveActivity = (message) => {
-  //   const newActivity = { id: Date.now(), text: message, timestamp: new Date() };
-  //   const stored = JSON.parse(localStorage.getItem("activities") || "[]");
-  //   const updated = [newActivity, ...stored];
-  //   localStorage.setItem("activities", JSON.stringify(updated));
 
-  //   window.dispatchEvent(new CustomEvent("newActivity", { detail: { action: message } }));
-  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -200,11 +193,11 @@ const FeeStructureMaster = () => {
       if (isEditMode) {
         await axios.put(`http://localhost:5000/api/fees/${feeData._id}`, payload);
         toast.success("Fee Structure updated!");
-        // saveActivity(`Updated Fee Structure: ${payload.className} - ${payload.feeHeadName}`);
+       
       } else {
         await axios.post("http://localhost:5000/api/fees", payload);
         toast.success("Fee Structure saved!");
-        // saveActivity(`Added Fee Structure: ${payload.className} - ${payload.feeHeadName}`);
+        
       }
 
       navigate("/FeeStructureList", { replace: true });
