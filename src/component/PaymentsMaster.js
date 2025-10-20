@@ -221,7 +221,6 @@ useEffect(() => {
 
 const handleStudentChange = async (selected) => {
   if (!selected) {
-    // reset
     setPaymentData({
       paymentId: "",
       date: new Date().toISOString().split("T")[0],
@@ -252,7 +251,7 @@ const handleStudentChange = async (selected) => {
   const stu = initialStudentOptions.find(s => s.value === selected.value);
   if (!stu) return;
 
-  // set basic data
+  // Set basic student info
   setPaymentData(prev => ({
     ...prev,
     student: stu.value,
@@ -260,11 +259,15 @@ const handleStudentChange = async (selected) => {
     admitClass: stu.admitClass,
     section: stu.section,
     academicSession: stu.academicSession,
-    feeDetails: [],         // keep empty: user must select manually
+    feeDetails: [],
     totalAmount: 0,
   }));
 
-  // previous pending
+  // ✅ Add studentDistance here
+  const studentDistance = Number(stu.distanceFromSchool || 0);
+  setPaymentData(prev => ({ ...prev, studentDistance }));
+
+  // Previous pending
   let prevPending = 0;
   try {
     const res = await axios.get(`http://localhost:5000/api/payments/pending/${stu.value}`);
@@ -275,7 +278,7 @@ const handleStudentChange = async (selected) => {
     setPreviousPending(0);
   }
 
-  // scholarships (fetch, store)
+  // Scholarships
   let scholarships = { admission: 0, session: 0 };
   try {
     const admissionNo = stu.admissionNo || stu.label.split("-").pop().trim();
@@ -293,7 +296,7 @@ const handleStudentChange = async (selected) => {
     setStudentScholarships({ admission: 0, session: 0 });
   }
 
-  // fetch fee heads and build "options" that contain BOTH originalAmount and amount (already reduced)
+  // Fetch fee heads for class
   try {
     const feesRes = await axios.get("http://localhost:5000/api/payments/class-fees", {
       params: { className: stu.admitClass, academicSession: stu.academicSession },
@@ -305,64 +308,144 @@ const handleStudentChange = async (selected) => {
       const name = (fh.feeHeadName || "").toLowerCase();
       if (name.includes("admission")) reduced = orig - (scholarships.admission || 0);
       else if (name.includes("session")) reduced = orig - (scholarships.session || 0);
-
-      // make sure reduced never goes negative
       if (reduced < 0) reduced = 0;
 
       return {
         feeHead: fh.feeHeadName,
         originalAmount: orig,
-        amount: reduced,       // scholarship applied ONCE here
+        amount: reduced,
+        distance: fh.distance || "",
       };
     });
 
-    // set options for select but do NOT mark them selected
     setFeeHeads(feeHeadOptions);
-    setSelectedFeeHeads([]);            // no selection
-    setPaymentData(prev => ({ ...prev, feeDetails: [] })); // user will populate feeDetails via handleFeeHeadChange
-
-    // reset totals
+    setSelectedFeeHeads([]);
+    setPaymentData(prev => ({ ...prev, feeDetails: [] }));
     setCurrentFee(0);
     setNetPayable(0);
-    setPendingAmount(prevPending); // show previous pending if you want
+    setPendingAmount(prevPending);
   } catch (err) {
     console.error("Error fetching fee heads:", err);
   }
 };
 
+
 const handleFeeHeadChange = (selectedHeads) => {
   const selected = selectedHeads || [];
-  setSelectedFeeHeads(selected);
+  const updatedFeeDetails = [];
 
-  setPaymentData(prev => {
-    const updated = [];
+  const stu = initialStudentOptions.find(s => s.value === paymentData.student);
+  const studentDistance = stu ? Number(stu.distanceFromSchool || 0) : 0;
 
-    selected.forEach(sh => {
-      const feeOpt = feeHeads.find(f => f.feeHead === sh.value);
+  selected.forEach(sh => {
+    const val = sh.value;
+    const existing = paymentData.feeDetails.find(f => f.feeHead === val);
+
+    if (val.toLowerCase() === "transport") {
+      let transportAmount = 0;
+      feeHeads
+        .filter(f => f.feeHead.toLowerCase() === "transport")
+        .forEach(f => {
+          if (f.distance.includes("-")) {
+            const [min, max] = f.distance.split("-").map(Number);
+            if (studentDistance >= min && studentDistance <= max) transportAmount = f.amount;
+          } else {
+            if (studentDistance === Number(f.distance)) transportAmount = f.amount;
+          }
+        });
+
+      updatedFeeDetails.push({
+        feeHead: "Transport",
+        amount: transportAmount,
+        originalAmount: transportAmount,
+        distance: studentDistance,
+        paymentStatus: existing?.paymentStatus || "Full Payment",
+        amountPaid: existing?.amountPaid ?? transportAmount,
+        pendingAmount: existing?.pendingAmount ?? 0,
+        lateFine: existing?.lateFine ?? 0,
+      });
+
+    } else if (val.toLowerCase() === "other") {
+      updatedFeeDetails.push({
+        feeHead: "Other",
+        otherName: existing?.otherName || "",
+        amount: existing?.amount || 0,
+        paymentStatus: existing?.paymentStatus || "Full Payment",
+        amountPaid: existing?.amountPaid ?? 0,
+        pendingAmount: existing?.pendingAmount ?? 0,
+        lateFine: existing?.lateFine ?? 0,
+      });
+
+    } else {
+      const feeOpt = feeHeads.find(f => f.feeHead === val);
       if (!feeOpt) return;
-
-      // If already exists, preserve values; otherwise, default Full Payment
-      const existing = prev.feeDetails.find(fd => fd.feeHead === feeOpt.feeHead);
-
-      const isFullPayment = existing?.paymentStatus === "Full Payment" || !existing;
-
-      updated.push({
+      updatedFeeDetails.push({
         feeHead: feeOpt.feeHead,
         originalAmount: feeOpt.originalAmount,
         amount: feeOpt.amount,
-        paymentStatus: isFullPayment ? "Full Payment" : existing.paymentStatus,
-        amountPaid: isFullPayment ? feeOpt.amount : existing?.amountPaid ?? 0, // ✅ full amount if full payment
-        pendingAmount: isFullPayment ? 0 : existing?.pendingAmount ?? feeOpt.amount, // ✅ pending 0 if full payment
+        paymentStatus: existing?.paymentStatus || "Full Payment",
+        amountPaid: existing?.amountPaid ?? feeOpt.amount,
+        pendingAmount: existing?.pendingAmount ?? 0,
         lateFine: existing?.lateFine ?? 0,
-        otherName: existing?.otherName || ""
       });
+    }
+  });
+
+  const totalAmount = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  const currentFee = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amountPaid || 0), 0);
+
+  setPaymentData(prev => ({
+    ...prev,
+    feeDetails: updatedFeeDetails,
+    totalAmount,
+  }));
+
+  setCurrentFee(currentFee);
+  setNetPayable(totalAmount - Number(discount || 0) + Number(lateFine || 0));
+  setPendingAmount(totalAmount - currentFee + Number(lateFine || 0));
+};
+
+
+
+// Handle Other Fee Input
+const handleOtherFeeChange = (type, value) => {
+  setPaymentData(prev => {
+    const feeDetails = prev.feeDetails.map(f => {
+      if (f.feeHead === "Other") {
+        const updated = { ...f };
+        if (type === "name") updated.otherName = value;
+        if (type === "amount") updated.amount = Number(value || 0);
+
+        // Update amountPaid and pendingAmount based on paymentStatus
+        if (updated.paymentStatus === "Full Payment") {
+          updated.amountPaid = updated.amount;
+          updated.pendingAmount = 0;
+        } else {
+          updated.amountPaid = 0;
+          updated.pendingAmount = updated.amount;
+        }
+
+        return updated;
+      }
+      return f;
     });
 
-    recalcTotals(updated); // recalc totals based on new selection
+    const totalAmount = feeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
 
-    return { ...prev, feeDetails: updated, totalAmount: updated.reduce((s, f) => s + Number(f.amount || 0), 0) };
+    // Recalculate currentFee, netPayable, pendingAmount
+    const currentFee = feeDetails.reduce((sum, f) => sum + Number(f.amountPaid || 0), 0);
+    const netPayable = totalAmount - (discount || 0) + (lateFine || 0);
+    const pendingAmount = netPayable - currentFee;
+
+    setCurrentFee(currentFee);
+    setNetPayable(netPayable);
+    setPendingAmount(pendingAmount);
+
+    return { ...prev, feeDetails, totalAmount };
   });
 };
+
+
 
 
 // ===== Payment Status Change =====
@@ -404,20 +487,8 @@ const handleFeeHeadAmountPaidChange = (feeHead, val) => {
   });
 };
 
-// ===== Other Fee Change =====
-const handleOtherFeeChange = (name, val) => {
-  setOtherName(name);
-  setOtherAmount(Number(val || 0));
 
-  setPaymentData(prev => {
-    const updated = prev.feeDetails.map(f =>
-      f.feeHead === "Other" ? { ...f, otherName: name, amount: Number(val || 0), amountPaid: Number(val || 0), pendingAmount: 0 } : f
-    );
 
-    recalcTotals(updated);
-    return { ...prev, feeDetails: updated };
-  });
-};
 
 const recalcTotals = (feeDetails) => {
   if (!feeDetails || feeDetails.length === 0) {
@@ -539,6 +610,8 @@ const handleSubmit = async (e) => {
       paymentStatus: f.paymentStatus || "Full Payment",
       lateFine: Number(f.lateFine || 0),
       otherName: f.otherName || "",
+      distance: f.distance || 0,    // add this
+      //routeId: f.routeId || "", 
     }));
 
     const payload = {
@@ -672,6 +745,12 @@ const handleSubmit = async (e) => {
               placeholder="Search Student..."
               isSearchable
               isClearable
+              onInputChange={(inputValue, { action }) => {
+                if (action === "input-change") {
+                  return inputValue.toUpperCase(); // convert typed letters to uppercase
+                }
+                return inputValue;
+  }}
             />
           )}
 
@@ -692,109 +771,77 @@ const handleSubmit = async (e) => {
           </label>
 
     
-
 {/* ================== Fee Heads ================== */}
 <label className="flex flex-col text-sm font-semibold text-black col-span-2 mb-2">
   Fee Heads
-  <Select
-    isMulti
-    options={[
-      ...feeHeads.map((fh) => ({ value: fh.feeHead, label: fh.feeHead })),
-      { value: "Other", label: "Other" },
-    ]}
-    onChange={(selected) => {
-      handleFeeHeadChange(selected);
-      const hasOther = selected.some((s) => s.value === "Other");
-      setIsOtherSelected(hasOther);
+<Select
+  isMulti
+  options={[
+    ...Array.from(new Set(feeHeads.map(fh => fh.feeHead))).map(fh => ({ value: fh, label: fh })),
+    { value: "Other", label: "Other" },
+  ]}
+  onChange={handleFeeHeadChange} // ✅ use your function here
+  value={paymentData.feeDetails.map(f =>
+    f.feeHead === "Other" ? { value: "Other", label: "Other" } : { value: f.feeHead, label: f.feeHead }
+  )}
+  placeholder="Select Fee Heads..."
+  isSearchable
+  className="mb-2"
+/>
 
-      setPaymentData((prev) => {
-        let updated = prev.feeDetails.filter((f) => f.feeHead !== "Other");
-        if (hasOther) {
-          updated.push({
-            feeHead: "Other",
-            otherName: otherName || "",
-            amount: otherAmount || 0,
-          });
-        }
-        return { ...prev, feeDetails: updated };
-      });
-    }}
-    value={paymentData.feeDetails.map((f) =>
-      f.feeHead === "Other" ? { value: "Other", label: "Other" } : { value: f.feeHead, label: f.feeHead }
-    )}
-    placeholder="Select Fee Heads..."
-    isSearchable
-    className="mb-2"
-  />
 </label>
 
-{/* ================== Other Fields (Vertical) ================== */}
-{isOtherSelected && (
-  <div className="flex flex-col gap-2 mb-4">
-    {/* Other Name */}
-    <label className="flex flex-col text-sm font-semibold text-black">
-      Other Name
-      <input
-        type="text"
-        value={otherName}
-        onChange={(e) => handleOtherFeeChange("name", e.target.value)}
-        placeholder="Enter other fee name"
-        className="border border-gray-400 p-1 rounded"
-      />
-    </label>
-
-    {/* Other Amount */}
-    <label className="flex flex-col text-sm font-semibold text-black">
-      Other Amount
-      <input
-        type="number"
-        value={otherAmount}
-        onChange={(e) => handleOtherFeeChange("amount", e.target.value)}
-        placeholder="Enter other amount"
-        className="border border-gray-400 p-1 rounded"
-      />
-    </label>
-  </div>
-)}
-
-
-
-
-
-
-
-     {paymentData.feeDetails.some(f => (f.feeHead || "").toLowerCase() === "transport") && (
-
-        <label className="flex flex-col text-sm font-semibold text-black">
-          Distance (KM)
-          <input
-            type="number"
-            value={initialStudentOptions.find(s => s.value === paymentData.student)?.distanceFromSchool || ""}
-            readOnly
-            className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
-          />
-        </label>
-      )}
-
-
-
-         
 {paymentData.feeDetails.map((f) => (
-  <div key={f.feeHead} className="col-span-1">
-    {/* Fee Amount */}
+  <div key={f.feeHead} className="col-span-1 border p-2 rounded mb-2">
+    {/* Fee Head Name */}
     <label className="flex flex-col text-sm font-semibold text-black">
-      {f.feeHead} Amount
+      {f.feeHead === "Other" ? (
+        <>
+          Other Fee Name
+          <input
+            type="text"
+            value={f.otherName || ""}
+            onChange={(e) => handleOtherFeeChange("name", e.target.value)}
+            className="border border-gray-400 p-1 rounded"
+            placeholder="Enter fee name"
+          />
+        </>
+      ) : (
+        f.feeHead
+      )}
+    </label>
+
+    {/* Amount */}
+    <label className="flex flex-col text-sm font-semibold text-black mt-1">
+      Amount
       <input
         type="number"
-        value={f.amount}
-        readOnly
-        className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
+        value={f.amount === 0 ? "" : f.amount}
+        onChange={(e) => {
+          if (f.feeHead === "Other") handleOtherFeeChange("amount", e.target.value);
+          else handleAmountChange(f.feeHead, e.target.value);
+        }}
+        className="border border-gray-400 p-1 rounded"
+        placeholder="Enter Amount"
       />
     </label>
+
+    {/* Distance (for Transport) */}
+    {f.feeHead.toLowerCase() === "transport" && (
+      <label className="flex flex-col text-sm font-semibold text-black mt-1">
+        Distance (KM)
+        <input
+          type="number"
+          value={f.distance || ""}
+          readOnly
+          className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
+        />
+      </label>
+    )}
 
     {/* Payment Status */}
     <label className="flex flex-col text-sm font-semibold text-black mt-1">
-      {f.feeHead} Payment Status
+      Payment Status
       <select
         value={f.paymentStatus}
         onChange={(e) => handleFeeHeadPaymentStatusChange(f.feeHead, e.target.value)}
@@ -805,26 +852,22 @@ const handleSubmit = async (e) => {
       </select>
     </label>
 
-    {/* Show only if Pending */}
+    {/* Amount Paid & Pending (only if Pending) */}
     {f.paymentStatus === "Pending" && (
       <>
         <label className="flex flex-col text-sm font-semibold text-black mt-1">
-          {f.feeHead} Amount Paid
+          Amount Paid
           <input
-            type="text"
-            value={f.amountPaid === 0 ? "" : String(f.amountPaid)}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (/^\d*$/.test(val))
-                handleFeeHeadAmountPaidChange(f.feeHead, val === "" ? 0 : Number(val));
-            }}
+            type="number"
+            value={f.amountPaid === 0 ? "" : f.amountPaid}
+            onChange={(e) => handleFeeHeadAmountPaidChange(f.feeHead, e.target.value)}
             className="border border-gray-400 p-1 rounded"
-            placeholder="Enter paid amount"
+            placeholder="Enter Paid Amount"
           />
         </label>
 
         <label className="flex flex-col text-sm font-semibold text-black mt-1">
-          {f.feeHead} Pending Amount
+          Pending Amount
           <input
             type="number"
             value={f.pendingAmount}
@@ -839,188 +882,85 @@ const handleSubmit = async (e) => {
 
 
 
-          {/* If status is Full Payment show read-only paid and pending=0 */}
-          {/* {f.paymentStatus === "Full Payment" && (
-            <>
-              <label className="flex flex-col text-sm font-semibold text-black mt-1">
-                {f.feeHead} Amount Paid
-                <input
-                  type="number"
-                  value={f.amountPaid}
-                  readOnly
-                  className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
-                />
-              </label>
-              <label className="flex flex-col text-sm font-semibold text-black mt-1">
-                {f.feeHead} Pending Amount
-                <input
-                  type="number"
-                  value={0}
-                  readOnly
-                  className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
-                />
-              </label>
-            </>
-          )}
-        </div>
-      ))} */}
-
-
-         {/* Previous Pending */}
-      {/* <label className="flex flex-col text-sm font-semibold text-black">
-        Previous Pending
-        <input
-          type="number"
-          value={previousPending}
-          readOnly
-          className="border border-gray-400 p-1 rounded bg-gray-100"
-        />
-      </label> */}
-
-      {/* Current Fee */}
-      <label className="flex flex-col text-sm font-semibold text-black">
-        Current Fee
-        <input
-          type="number"
-          value={currentFee}
-          readOnly
-          onChange={(e) => {
-            const val = Number(e.target.value || '');
-            setCurrentFee(val);
-
-            // recalc net payable and pending
-            const total = previousPending + val;
-            setNetPayable(total - Number(discount));
-            setPendingAmount(total - Number(discount) - Number(amountPaid));
-          }}
-          className="border border-gray-400 p-1 rounded cursor-not-allowed"
-        />
-      </label>
-
-
-<label className="flex flex-col text-sm font-semibold text-black">
-  Late Fine
-  <input
-    type="number"
-    value={lateFine}
-    onChange={(e) => setLateFine(Number(e.target.value) || 0)}
-
-    className="border border-gray-400 p-1 rounded"
-    placeholder="Enter Late Fine"
-  />
-</label>
-
-
-      {/* Total Amount */}
-      <label className="flex flex-col text-sm font-semibold text-black">
-        Total Fee
-        <input
-          type="number"
-          value={Number(previousPending || 0) + Number(currentFee || 0) + Number(lateFine || 0)}
-          readOnly
-          className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
-        />
-
-      </label>
-
-     {/* Discount */}
-<label className="flex flex-col text-sm font-semibold text-black">
-  Discount
-  <input
-    type="number"
-    value={discount} // blank default
-    onChange={(e) => {
-      const val = e.target.value === "" ? "" : Number(e.target.value);
-      setDiscount(val);
-
-      const disc = val === "" ? 0 : Number(val);
-      const totalPayable = previousPending + currentFee + (lateFine || 0); // include late fine if needed
-      setNetPayable(totalPayable - disc);
-      setPendingAmount(totalPayable - disc - Number(amountPaid || 0));
-    }}
-    className="border border-gray-400 p-1 rounded"
-    placeholder="Enter Discount"
-  />
-</label>
-
-
-<label className="flex flex-col text-sm font-semibold text-black">
-  Net Payable
-  <input
-    type="number"
-    value={netPayable}  //  use the state, not paymentData.netPayable
-    readOnly
-    className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
-  />
-</label>
 
 
 
+          {/* Current Fee */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Current Fee
+            <input
+              type="number"
+              value={currentFee}
+              readOnly
+              onChange={(e) => {
+                const val = Number(e.target.value || '');
+                setCurrentFee(val);
+
+                // recalc net payable and pending
+                const total = previousPending + val;
+                setNetPayable(total - Number(discount));
+                setPendingAmount(total - Number(discount) - Number(amountPaid));
+              }}
+              className="border border-gray-400 p-1 rounded cursor-not-allowed"
+            />
+          </label>
 
 
+    <label className="flex flex-col text-sm font-semibold text-black">
+      Late Fine
+      <input
+      type="number"
+      value={lateFine === 0 ? "" : lateFine}
+      onChange={(e) => setLateFine(e.target.value === "" ? 0 : Number(e.target.value))}
+      placeholder="Enter Late Fine"
+      className="border border-gray-400 p-1 rounded"
+    />
 
-          {/* ===== PAYMENT STATUS DROPDOWN =====
-        <label className="flex flex-col text-sm font-semibold text-black">
-          Payment Status
-          <select
-            name="paymentStatus"
-            value={paymentStatus}
-            onChange={(e) => {
-              const val = e.target.value;
-              setPaymentStatus(val);
+    </label>
 
-              if (val === "Full Payment") {
-                setAmountPaid("");
-                setPendingAmount(0);
-              } else {
-                setAmountPaid("");
-                setPendingAmount(paymentData.totalAmount);
-              }
-            }}
-            className="border border-gray-400 p-1 rounded"
-          >
-            <option value="Full Payment">Full Payment</option>
-            <option value="Pending">Pending</option>
-          </select>
-        </label>
 
-        Amount Paid & Pending Amount (only if Pending)
-        {paymentStatus === "Pending" && (
-          <>
-            <label className="flex flex-col text-sm font-semibold text-black">
-              Amount Paid
-             <input
-                type="text" 
-                value={amountPaid}
-                onChange={(e) => {
-                  const val = e.target.value;
+          {/* Total Amount */}
+          <label className="flex flex-col text-sm font-semibold text-black">
+            Total Fee
+            <input
+              type="number"
+              value={Number(previousPending || 0) + Number(currentFee || 0) + Number(lateFine || 0)}
+              readOnly
+              className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
+            />
 
-                  Allow only numbers or empty
-                  if (/^\d*$/.test(val)) {
-                    setAmountPaid(val); 
-                    const paid = val === "" ? 0 : Number(val);
+          </label>
 
-                    const pending = (paymentData.totalAmount || 0) - paid;
-                    setPendingAmount(pending > 0 ? pending : 0);
-                  }
-                }}
-                className="border border-gray-400 p-1 rounded"
-                placeholder="Enter paid amount"
-              />
+        {/* Discount */}
+    <label className="flex flex-col text-sm font-semibold text-black">
+      Discount
+      <input
+        type="number"
+        value={discount} // blank default
+        onChange={(e) => {
+          const val = e.target.value === "" ? "" : Number(e.target.value);
+          setDiscount(val);
 
-            </label>
+          const disc = val === "" ? 0 : Number(val);
+          const totalPayable = previousPending + currentFee + (lateFine || 0); // include late fine if needed
+          setNetPayable(totalPayable - disc);
+          setPendingAmount(totalPayable - disc - Number(amountPaid || 0));
+        }}
+        className="border border-gray-400 p-1 rounded"
+        placeholder="Enter Discount"
+      />
+    </label>
 
-            <label className="flex flex-col text-sm font-semibold text-black">
-              Pending Amount
-              <input
-                type="number"
-                value={netPayable-amountPaid}
-                readOnly
-                className="border border-gray-400 p-1 rounded cursor-not-allowed"
-              />
-            </label>
-          </>
-        )} */}
+
+    <label className="flex flex-col text-sm font-semibold text-black">
+      Net Payable
+      <input
+        type="number"
+        value={netPayable}  //  use the state, not paymentData.netPayable
+        readOnly
+        className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
+      />
+    </label>
 
 
           {/* Payment Mode */}

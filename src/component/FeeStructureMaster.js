@@ -150,29 +150,46 @@ const FeeStructureMaster = () => {
     }
   }, [feeData.feeHeadId, feeData.academicSession]);
 
-  useEffect(() => {
-    if (!feeData.classId || !feeData.feeHeadId) return;
+useEffect(() => {
+  if (!feeData.classId || !feeData.feeHeadId) return;
 
-    if (isTransportFee) {
-      const selectedRoute = routes.find(r => r.routeId === feeData.routeId);
-      setFeeData(prev => ({
-        ...prev,
-        amount: selectedRoute ? selectedRoute.vanCharge : '',
-        distance: selectedRoute?.distance || ''
-      }));
-    } else {
-      fetchAmount(feeData.classId, feeData.feeHeadId);
-    }
-  }, [feeData.classId, feeData.feeHeadId, feeData.routeId, routes]);
+  if (isTransportFee) {
+    const selectedRoute = routes.find(r => r.routeId === feeData.routeId);
+    setFeeData(prev => ({
+      ...prev,
+      amount: selectedRoute ? selectedRoute.vanCharge : '',
+      distance: selectedRoute?.distance || ''
+    }));
+  } else if (!isTuitionFee) {
+    // fetch amount for non-Tuition fee heads
+    fetchAmount(feeData.classId, feeData.feeHeadId);
+  } else {
+    // Tuition fee → reset amount
+    setFeeData(prev => ({ ...prev, amount: '' }));
+  }
+}, [feeData.classId, feeData.feeHeadId, feeData.routeId, routes]);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+
+const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  if (name === "feeHeadId") {
+    const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === value);
+    const isTuition = selectedFeeHead?.feeHeadName.toLowerCase().includes("tuition");
+
+    setFeeData(prev => ({
+      ...prev,
+      [name]: value,
+      amount: isTuition ? "" : prev.amount,
+    }));
+
+    if (isTuition) setMonth(""); // reset month
+  } else {
     setFeeData(prev => ({ ...prev, [name]: value }));
+  }
 
-    if (name === "academicSession") localStorage.setItem("selectedAcademicSession", value);
-    if (name === "feeHeadId") setMonth(""); // clear month if fee head changes
-  };
-
+  if (name === "academicSession") localStorage.setItem("selectedAcademicSession", value);
+};
 
 
   const handleSubmit = async (e) => {
@@ -256,15 +273,23 @@ const FeeStructureMaster = () => {
             </div>
           )}
 
-          {isTuitionFee && (
-            <div>
-              <label className="block font-medium">Month</label>
-              <select name="month" value={month} onChange={(e)=>setMonth(e.target.value)} className="w-full border border-gray-300 p-1 rounded" required>
-                <option value="">--Select Month--</option>
-                {months.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
-          )}
+{isTuitionFee && (
+  <div>
+    <label className="block font-medium">Month</label>
+    <select
+      name="month"
+      value={month}
+      onChange={(e)=>setMonth(e.target.value)}
+      className="w-full border border-gray-300 p-1 rounded"
+      required
+    >
+      <option value="">--Select Month--</option>
+      {months.map(m => <option key={m} value={m}>{m}</option>)}
+    </select>
+  </div>
+)}
+
+
 
           <div>
             <label className="block font-medium">Amount</label>
