@@ -379,17 +379,19 @@ const handleFeeHeadChange = (selectedHeads) => {
     const existing = paymentData.feeDetails.find(f => f.feeHead === val);
 
 if (val.toLowerCase() === "tuition fee") {
+  const existingTuition = paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "tuition fee");
   updatedFeeDetails.push({
     feeHead: "Tuition Fee",
-    selectedMonth: [],   // empty array initially
-    amount: 0,           // total amount will calculate when months selected
-    originalAmount: 0,   // per month amount will set later
-    paymentStatus: "Full Payment",
-    amountPaid: 0,
-    pendingAmount: 0,
-    lateFine: 0,
+    selectedMonth: existingTuition?.selectedMonth || [], // preserve selected months
+    amount: existingTuition?.amount || 0,               // preserve amount
+    originalAmount: existingTuition?.originalAmount || 0, 
+    paymentStatus: existingTuition?.paymentStatus || "Full Payment",
+    amountPaid: existingTuition?.amountPaid || 0,
+    pendingAmount: existingTuition?.pendingAmount || 0,
+    lateFine: existingTuition?.lateFine || 0,
   });
 }
+
      else if (val.toLowerCase() === "transport") {
       let transportAmount = 0;
       feeHeads

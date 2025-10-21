@@ -63,7 +63,7 @@ const FeeHeadsList = () => {
               <tr>
                 <th className="border border-green-500 px-2 py-1">FeeHead ID</th>
                 <th className="border border-green-500 px-2 py-1">FeeHead Name</th>
-                <th className="border border-green-500 px-2 py-1">Description</th>
+                {/* <th className="border border-green-500 px-2 py-1">Description</th> */}
                 <th className="border border-green-500 px-2 py-1">Action</th>
               </tr>
             </thead>
@@ -73,7 +73,7 @@ const FeeHeadsList = () => {
                   <tr key={fh._id} className="hover:bg-gray-100 transition">
                     <td className="border border-green-500 px-2 py-1">{fh.feeHeadId}</td>
                     <td className="border border-green-500 px-2 py-1">{fh.feeHeadName}</td>
-                    <td className="border border-green-500 px-2 py-1">{fh.description}</td>
+                    {/* <td className="border border-green-500 px-2 py-1">{fh.description}</td> */}
                     <td className="border border-green-500 px-2 py-1 text-center">
                       <div className="flex justify-center items-center gap-4">
                         <button

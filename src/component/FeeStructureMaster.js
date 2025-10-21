@@ -26,6 +26,8 @@ const FeeStructureMaster = () => {
   const [feeHeads, setFeeHeads] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [classOptions, setClassOptions] = useState([]);
+
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -60,6 +62,13 @@ const FeeStructureMaster = () => {
       console.error(err);
     }
   };
+
+const handleClassChange = (e) => {
+  const selectedClassId = e.target.value;
+  setFeeData(prev => ({ ...prev, classId: selectedClassId }));
+  localStorage.setItem("selectedClass", selectedClassId); // persist
+};
+
 
   const fetchNextId = async () => {
     try {
@@ -96,36 +105,45 @@ const FeeStructureMaster = () => {
     }
   };
 
-  useEffect(() => {
-    const init = async () => {
-      await fetchDropdownData();
+useEffect(() => {
+  const init = async () => {
+    await fetchDropdownData();
 
-      const savedSession = localStorage.getItem("selectedAcademicSession");
-      if (savedSession) {
-        setFeeData(prev => ({ ...prev, academicSession: savedSession }));
-        await fetchRoutesBySession(savedSession);
-      }
+    // Load saved class
+    const savedClass = localStorage.getItem("selectedClass");
+    if (savedClass) {
+      setFeeData(prev => ({ ...prev, classId: savedClass }));
+    }
 
-      if (feeItem) {
-        setIsEditMode(true);
-        setFeeData({
-          _id: feeItem._id,
-          feeStructId: feeItem.feeStructId,
-          classId: feeItem.classId,
-          feeHeadId: feeItem.feeHeadId,
-          routeId: feeItem.routeId || "",
-          amount: feeItem.amount || 0,
-          academicSession: savedSession || feeItem.academicSession || "",
-          distance: feeItem.distance || "",
-        });
-        setMonth(feeItem.month || ""); // NEW
-      } else {
-        fetchNextId();
-      }
-      setLoading(false);
-    };
-    init();
-  }, []);
+    const savedSession = localStorage.getItem("selectedAcademicSession");
+    if (savedSession) {
+      setFeeData(prev => ({ ...prev, academicSession: savedSession }));
+      await fetchRoutesBySession(savedSession);
+    }
+
+    if (feeItem) {
+      setIsEditMode(true);
+      setFeeData({
+        _id: feeItem._id,
+        feeStructId: feeItem.feeStructId,
+        classId: feeItem.classId || savedClass || "",
+        feeHeadId: feeItem.feeHeadId,
+        routeId: feeItem.routeId || "",
+        amount: feeItem.amount || 0,
+        academicSession: savedSession || feeItem.academicSession || "",
+        distance: feeItem.distance || "",
+      });
+      setMonth(feeItem.month || "");
+    } else {
+      fetchNextId();
+    }
+
+    setLoading(false);
+  };
+
+  init();
+}, []);
+
 
   useEffect(() => {
     if (feeData.academicSession) {
@@ -261,7 +279,7 @@ const handleChange = (e) => {
 
           <div>
             <label className="block font-medium">Class</label>
-            <select name="classId" value={feeData.classId} onChange={handleChange} className="w-full border border-gray-300 p-1 rounded" required>
+            <select name="classId" value={feeData.classId}  onChange={handleClassChange}  className="w-full border border-gray-300 p-1 rounded" required>
               <option value="">--Select--</option>
               {classes.map(c => <option key={c.classId} value={c.classId}>{c.className}</option>)}
             </select>

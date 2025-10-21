@@ -136,7 +136,7 @@ const FeeHeadsMaster = () => {
           </div>
 
           {/* Description */}
-          <div>
+          {/* <div>
             <label className="block font-medium">Description</label>
             <textarea
               name="description"
@@ -145,7 +145,7 @@ const FeeHeadsMaster = () => {
               className="w-full border border-gray-300 p-1 rounded"
               placeholder="Enter details"
             />
-          </div>
+          </div> */}
 
           {/* Buttons */}
           <div className="flex justify-between">
