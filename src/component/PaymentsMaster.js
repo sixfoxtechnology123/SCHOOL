@@ -82,57 +82,75 @@ useEffect(() => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // ===== Fetch dropdown data =====
-  const fetchDropdownData = async () => {
-    try {
-      const [stuRes, classRes, sectionRes, fhRes] = await Promise.all([
-        axios.get("http://localhost:5000/api/payments/students"),
-        axios.get("http://localhost:5000/api/payments/classes"),
-        axios.get("http://localhost:5000/api/payments/sections"),
-        axios.get("http://localhost:5000/api/feeheads"),
-      ]);
+const fetchDropdownData = async () => {
+  try {
+    const [stuRes, classRes, sectionRes, fhRes] = await Promise.all([
+      axios.get("http://localhost:5000/api/payments/students"),
+      axios.get("http://localhost:5000/api/payments/classes"),
+      axios.get("http://localhost:5000/api/payments/sections"),
+      axios.get("http://localhost:5000/api/feeheads"),
+    ]);
 
-      const studentsData = stuRes.data || [];
-      const stuOpts = studentsData.map((s) => {
-        const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
-        return {
-          value: s._id,
-         label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""} - ${s.admissionNo || ""}`,
+    let studentsData = stuRes.data || [];
 
-          admitClass: s.admitClass,
-          section: s.section,
-          rollNo: s.rollNo,
-          transportRequired: s.transportRequired,
-          distanceFromSchool: s.distanceFromSchool || 0,
-          academicSession: s.academicSession || "",
-          fullData: s ,
-        };
-      });
+    // --- 1️⃣ Sort students by latest (descending by _id) ---
+    studentsData.sort((a, b) => (a._id < b._id ? 1 : -1));
 
-      const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
-      const classOpts = classData.map((c) => ({ value: c, label: c }));
+    // --- 2️⃣ Remove duplicates by studentId ---
+    const uniqueStudents = [];
+    const seenIds = new Set();
+    studentsData.forEach(s => {
+      if (!seenIds.has(s.studentId)) {
+        uniqueStudents.push(s);
+        seenIds.add(s.studentId);
+      }
+    });
 
-      const sectionsData = sectionRes.data || [];
-      const secOpts = sectionsData.map((s) => ({
-        value: s.section,
-        label: s.section,
-        className: s.className,
-      }));
+    // --- 3️⃣ Map to dropdown options ---
+    const stuOpts = uniqueStudents.map((s) => {
+      const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
+      return {
+        value: s._id,
+        label: `${fullName || s.studentName || "Unnamed"} - ${s.studentId || ""} - ${s.admissionNo || ""}`,
+        admitClass: s.admitClass,
+        section: s.section,
+        rollNo: s.rollNo,
+        transportRequired: s.transportRequired,
+        distanceFromSchool: s.distanceFromSchool || 0,
+        academicSession: s.academicSession || "",
+        fullData: s,
+      };
+    });
 
-      setStudents(studentsData);
-      setStudentOptions(stuOpts);
-      setInitialStudentOptions(stuOpts);
+    // --- 4️⃣ Classes ---
+    const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
+    const classOpts = classData.map((c) => ({ value: c, label: c }));
 
-      setClassOptions(classOpts);
-      setSections(sectionsData);
-      setSectionOptions(secOpts);
-      setInitialSectionOptions(secOpts);
+    // --- 5️⃣ Sections ---
+    const sectionsData = sectionRes.data || [];
+    const secOpts = sectionsData.map((s) => ({
+      value: s.section,
+      label: s.section,
+      className: s.className,
+    }));
 
-      setFeeHeads(fhRes.data || []);
-    } catch (err) {
-      console.error("Error fetching dropdown data:", err);
-    }
-  };
+    // --- 6️⃣ Set state ---
+    setStudents(uniqueStudents);
+    setStudentOptions(stuOpts);
+    setInitialStudentOptions(stuOpts);
+
+    setClassOptions(classOpts);
+    setSections(sectionsData);
+    setSectionOptions(secOpts);
+    setInitialSectionOptions(secOpts);
+
+    setFeeHeads(fhRes.data || []);
+  } catch (err) {
+    console.error("Error fetching dropdown data:", err);
+  }
+};
+
+
 
   const fetchRoutes = async () => {
     try {
