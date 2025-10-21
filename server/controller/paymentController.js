@@ -6,21 +6,24 @@ const FeeHead = require("../models/FeeHead");
 const ClassMaster = require("../models/Class");
 const logActivity = require("../utils/logActivity");
 
-const PREFIX = "RCPT";  // new prefix
-// const PAD = 5;       // no padding needed
+const PREFIX = "RCPT";
 
 // ================== Helper: Generate next PaymentId ==================
 async function generateNextPaymentId() {
-  const last = await Payment.findOne().sort({ paymentId: -1 }).lean();
-  
+  // Fetch the latest payment by creation time or _id
+  const last = await Payment.findOne().sort({ createdAt: -1 }).lean(); 
+  // If your model doesn't have 'createdAt', use: sort({ _id: -1 })
+
   let lastNum = 0;
-  if (last && last.paymentId.startsWith(PREFIX)) {
+  if (last && last.paymentId?.startsWith(PREFIX)) {
+    // Extract the numeric part after "RCPT"
     lastNum = parseInt(last.paymentId.replace(PREFIX, ""), 10) || 0;
   }
-  
+
   const nextNum = lastNum + 1;
-  return `${PREFIX}${nextNum}`; // no zero padding
+  return `${PREFIX}${nextNum}`; // RCPT1, RCPT2, RCPT3...
 }
+
 
 
 // ================== Student Routes ==================
@@ -258,7 +261,8 @@ async function populateFeeAmounts(paymentBody) {
       otherName: fd.otherName || "",
       appliedScholarship: Number(fd.appliedScholarship || 0),
       routeId: fd.routeId || "",
-      distance: fd.distance || ""
+      distance: fd.distance || "",
+      selectedMonth: fd.selectedMonth || "" 
     }));
 
   paymentBody.feeDetails = sanitizedFeeDetails;

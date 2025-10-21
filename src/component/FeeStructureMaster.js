@@ -153,6 +153,10 @@ const FeeStructureMaster = () => {
 useEffect(() => {
   if (!feeData.classId || !feeData.feeHeadId) return;
 
+  const selectedFeeHead = feeHeads.find(fh => fh.feeHeadId === feeData.feeHeadId);
+  const isTransportFee = selectedFeeHead?.feeHeadName.toLowerCase() === "transport";
+  const isTuitionFee = selectedFeeHead?.feeHeadName.toLowerCase().includes("tuition");
+
   if (isTransportFee) {
     const selectedRoute = routes.find(r => r.routeId === feeData.routeId);
     setFeeData(prev => ({
@@ -161,13 +165,21 @@ useEffect(() => {
       distance: selectedRoute?.distance || ''
     }));
   } else if (!isTuitionFee) {
-    // fetch amount for non-Tuition fee heads
     fetchAmount(feeData.classId, feeData.feeHeadId);
+  } else if (isTuitionFee && isEditMode) {
+    // For Tuition Fee in edit mode, keep existing amount and month
+    setFeeData(prev => ({
+      ...prev,
+      amount: feeItem.amount || '',
+    }));
+    setMonth(feeItem.month || '');
   } else {
-    // Tuition fee → reset amount
+    // New Tuition Fee entry → reset
     setFeeData(prev => ({ ...prev, amount: '' }));
+    setMonth('');
   }
 }, [feeData.classId, feeData.feeHeadId, feeData.routeId, routes]);
+
 
 
 const handleChange = (e) => {

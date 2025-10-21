@@ -29,7 +29,8 @@ const PaymentsMaster = () => {
   const [pendingAmount, setPendingAmount] = useState(0);
   const [netPayable, setNetPayable] = useState(0);
 
-
+  const [tuitionMonths, setTuitionMonths] = useState([]); 
+  const [selectedMonth, setSelectedMonth] = useState(""); 
   const [classes, setClasses] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false);
   const [students, setStudents] = useState([]);
@@ -263,7 +264,7 @@ const handleStudentChange = async (selected) => {
     totalAmount: 0,
   }));
 
-  // ✅ Add studentDistance here
+  // Add studentDistance here
   const studentDistance = Number(stu.distanceFromSchool || 0);
   setPaymentData(prev => ({ ...prev, studentDistance }));
 
@@ -327,6 +328,23 @@ const handleStudentChange = async (selected) => {
   } catch (err) {
     console.error("Error fetching fee heads:", err);
   }
+
+
+// Fetch tuition months from backend
+try {
+  const monthsRes = await axios.get("http://localhost:5000/api/payments/months", {
+    params: { 
+      className: stu.admitClass, 
+      academicSession: stu.academicSession 
+    },
+  });
+  // monthsRes.data = array of objects like { month: "January", amount: 200 }
+  setTuitionMonths(monthsRes.data || []);
+} catch (err) {
+  console.error("Error fetching tuition months:", err);
+  setTuitionMonths([]);
+}
+
 };
 
 
@@ -341,7 +359,24 @@ const handleFeeHeadChange = (selectedHeads) => {
     const val = sh.value;
     const existing = paymentData.feeDetails.find(f => f.feeHead === val);
 
-    if (val.toLowerCase() === "transport") {
+if (val.toLowerCase() === "tuition fee") {
+  // Preserve existing tuition fee data if already present
+  const existingTuition = paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "tuition fee");
+
+  updatedFeeDetails.push({
+    feeHead: "Tuition Fee",
+    selectedMonth: existingTuition?.selectedMonth || "",  // preserve month
+    amount: existingTuition?.amount || 0,               // preserve amount
+    originalAmount: existingTuition?.originalAmount || 0,
+    paymentStatus: existingTuition?.paymentStatus || "Full Payment",
+    amountPaid: existingTuition?.amountPaid || 0,
+    pendingAmount: existingTuition?.pendingAmount || 0,
+    lateFine: existingTuition?.lateFine || 0,
+  });
+}
+
+
+     else if (val.toLowerCase() === "transport") {
       let transportAmount = 0;
       feeHeads
         .filter(f => f.feeHead.toLowerCase() === "transport")
@@ -387,6 +422,7 @@ const handleFeeHeadChange = (selectedHeads) => {
         amountPaid: existing?.amountPaid ?? feeOpt.amount,
         pendingAmount: existing?.pendingAmount ?? 0,
         lateFine: existing?.lateFine ?? 0,
+        selectedMonth: "", 
       });
     }
   });
@@ -404,6 +440,7 @@ const handleFeeHeadChange = (selectedHeads) => {
   setNetPayable(totalAmount - Number(discount || 0) + Number(lateFine || 0));
   setPendingAmount(totalAmount - currentFee + Number(lateFine || 0));
 };
+
 
 
 
@@ -445,29 +482,28 @@ const handleOtherFeeChange = (type, value) => {
   });
 };
 
-
-
-
-// ===== Payment Status Change =====
 const handleFeeHeadPaymentStatusChange = (feeHead, status) => {
   setPaymentData(prev => {
     const updatedFeeDetails = prev.feeDetails.map(f => {
       if (f.feeHead === feeHead) {
-        if (status === "Full Payment") {
-          return { ...f, paymentStatus: status, amountPaid: f.amount, pendingAmount: 0 };
-        } else {
-          return { ...f, paymentStatus: status, amountPaid: 0, pendingAmount: f.amount };
-        }
+        const amount = f.amount || 0;
+        return {
+          ...f,
+          paymentStatus: status,
+          amountPaid: status === "Full Payment" ? amount : 0,
+          pendingAmount: status === "Full Payment" ? 0 : amount,
+        };
       }
       return f;
     });
 
-    // Recalculate totals
-    recalcTotals(updatedFeeDetails);
+    recalcTotals(updatedFeeDetails); // update currentFee, netPayable, pendingAmount
 
     return { ...prev, feeDetails: updatedFeeDetails };
   });
 };
+
+
 
 // ===== Amount Paid Change (for Pending) =====
 const handleFeeHeadAmountPaidChange = (feeHead, val) => {
@@ -612,6 +648,8 @@ const handleSubmit = async (e) => {
       otherName: f.otherName || "",
       distance: f.distance || 0,    // add this
       //routeId: f.routeId || "", 
+       ...(f.feeHead.toLowerCase() === "tuition" ? { month: f.selectedMonth } : {}),
+      selectedMonth: f.selectedMonth || "",
     }));
 
     const payload = {
@@ -811,18 +849,60 @@ const handleSubmit = async (e) => {
       )}
     </label>
 
+{f.feeHead.toLowerCase().includes("tuition") && (
+  <label className="flex flex-col text-sm font-semibold text-black mt-1 required">
+    Month
+<select
+  value={f.selectedMonth || ""}
+  onChange={(e) => {
+    const selectedMonthObj = tuitionMonths.find(m => m.month === e.target.value);
+    if (!selectedMonthObj) return;
+
+    const updatedFeeDetails = paymentData.feeDetails.map(fd => {
+      if (fd.feeHead.toLowerCase() === "tuition fee") {
+        const status = fd.paymentStatus || "Full Payment";
+        const amountPaid = status === "Full Payment" ? selectedMonthObj.amount : 0;
+        const pendingAmount = selectedMonthObj.amount - amountPaid;
+
+        return {
+          ...fd,
+          selectedMonth: selectedMonthObj.month,
+          amount: selectedMonthObj.amount,
+          amountPaid,
+          pendingAmount,
+        };
+      }
+      return fd;
+    });
+
+    setPaymentData(prev => ({ ...prev, feeDetails: updatedFeeDetails }));
+    recalcTotals(updatedFeeDetails); // recalc all totals
+  }}
+  className="border border-gray-400 p-1 rounded"
+  required
+>
+  <option value="">--Select Month--</option>
+  {tuitionMonths.map((m, i) => (
+    <option key={i} value={m.month}>{m.month}</option>
+  ))}
+</select>
+
+
+</label>
+)}
+
     {/* Amount */}
     <label className="flex flex-col text-sm font-semibold text-black mt-1">
       Amount
       <input
         type="number"
+        
         value={f.amount === 0 ? "" : f.amount}
         onChange={(e) => {
           if (f.feeHead === "Other") handleOtherFeeChange("amount", e.target.value);
           else handleAmountChange(f.feeHead, e.target.value);
         }}
-        className="border border-gray-400 p-1 rounded"
-        placeholder="Enter Amount"
+        className="border bg-gray-100  p-1 rounded "
       />
     </label>
 

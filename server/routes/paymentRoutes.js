@@ -2,6 +2,7 @@
 const express = require("express");
 const router = express.Router();
 const Student = require("../models/Student"); // your Student model
+const FeeMonth = require("../models/FeeStructure"); // your Student model
 
 const controller = require("../controller/paymentController");
 const Payment = require("../models/Payment");
@@ -59,5 +60,29 @@ router.post("/calc-fee", async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 });
+router.get('/months', async (req, res) => {
+  try {
+    const { className, academicSession } = req.query;
+    if (!className || !academicSession) 
+      return res.status(400).json({ message: "Missing params" });
+
+    const months = await FeeMonth.find({ 
+      className, 
+      academicSession, 
+      feeHeadName: /Tuition/i 
+    }).sort({ order: 1 }); // optional order if you have it
+
+    // return array of objects with month and amount
+    res.json(months.map(m => ({
+      month: m.month,
+      amount: m.amount
+    })));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 module.exports = router;

@@ -13,6 +13,9 @@ const FeeStructureList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [sessions, setSessions] = useState([]);
   const [filterSession, setFilterSession] = useState("");
+  const [filterClass, setFilterClass] = useState(""); // selected class in filter
+  const [allClasses, setAllClasses] = useState([]); // all classes from backend
+
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -48,6 +51,23 @@ const FeeStructureList = () => {
 
   }, [location.key]);
 
+
+useEffect(() => {
+  const fetchAllClasses = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/classes");
+      const uniqueClasses = Array.from(
+        new Map(res.data.map((c) => [c.className, c])).values()
+      );
+      setAllClasses(uniqueClasses);
+    } catch (err) {
+      console.error("Error fetching classes:", err);
+    }
+  };
+  fetchAllClasses();
+}, []);
+
+
 // --- Delete fee with activity logging and custom toast ---
 const deleteFee = async (id, className, feeHeadName) => {
   if (!window.confirm(`Are you sure you want to delete the fee: ${feeHeadName} for class: ${className}?`)) return;
@@ -67,16 +87,19 @@ const deleteFee = async (id, className, feeHeadName) => {
   }
 };
 
+// -----------------------------------------
 
-  // -----------------------------------------
-
-  // Filter fees based on search term and session filter
-  const filteredFees = fees.filter(fee =>
-    (fee.className?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+// Filter fees based on search term, class, and session filters
+const filteredFees = fees.filter(fee =>
+  (
+    fee.className?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     fee.feeHeadName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fee.academicSession?.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (filterSession ? fee.academicSession === filterSession : true)
-  );
+    fee.academicSession?.toLowerCase().includes(searchTerm.toLowerCase())
+  ) &&
+  (filterSession ? fee.academicSession === filterSession : true) &&
+  (filterClass ? fee.classId === filterClass : true)
+);
+
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -90,13 +113,26 @@ const deleteFee = async (id, className, feeHeadName) => {
               <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
                 <BackButton />
                 {/* Search Input */}
-                <input
+               <input
                   type="text"
                   placeholder="Search by Class, Fee Head, or Session"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1 min-w-[270px] border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
                 />
+
+                {/* Class Filter */}
+                <select
+                  value={filterClass}
+                  onChange={(e) => setFilterClass(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  <option value="">All Classes</option>
+                  {allClasses.map((c) => (
+                    <option key={c.classId} value={c.classId}>{c.className}</option>
+                  ))}
+                </select>
+
                 {/* Session Filter */}
                 <select
                   value={filterSession}
@@ -108,20 +144,28 @@ const deleteFee = async (id, className, feeHeadName) => {
                     <option key={s.id} value={s.name}>{s.name}</option>
                   ))}
                 </select>
-                {filterSession && (
+
+                {/* Clear Button — clears both filters */}
+                {(filterSession || filterClass) && (
                   <button
-                    onClick={() => setFilterSession("")}
+                    onClick={() => {
+                      setFilterSession("");
+                      setFilterClass("");
+                    }}
                     className="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
                   >
                     Clear
                   </button>
                 )}
+
                 <button
                   onClick={() => navigate("/FeeStructureMaster")}
                   className="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded font-semibold whitespace-nowrap"
                 >
                   Add Fee Structure
                 </button>
+
+
               </div>
             </div>
           </div>
