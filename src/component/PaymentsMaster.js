@@ -330,20 +330,21 @@ const handleStudentChange = async (selected) => {
   }
 
 
-// Fetch tuition months from backend
-try {
-  const monthsRes = await axios.get("http://localhost:5000/api/payments/months", {
-    params: { 
-      className: stu.admitClass, 
-      academicSession: stu.academicSession 
-    },
-  });
-  // monthsRes.data = array of objects like { month: "January", amount: 200 }
-  setTuitionMonths(monthsRes.data || []);
-} catch (err) {
-  console.error("Error fetching tuition months:", err);
-  setTuitionMonths([]);
-}
+setTuitionMonths([
+  { month: "January" },
+  { month: "February" },
+  { month: "March" },
+  { month: "April" },
+  { month: "May" },
+  { month: "June" },
+  { month: "July" },
+  { month: "August" },
+  { month: "September" },
+  { month: "October" },
+  { month: "November" },
+  { month: "December" },
+]);
+
 
 };
 
@@ -360,22 +361,17 @@ const handleFeeHeadChange = (selectedHeads) => {
     const existing = paymentData.feeDetails.find(f => f.feeHead === val);
 
 if (val.toLowerCase() === "tuition fee") {
-  // Preserve existing tuition fee data if already present
-  const existingTuition = paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "tuition fee");
-
   updatedFeeDetails.push({
     feeHead: "Tuition Fee",
-    selectedMonth: existingTuition?.selectedMonth || "",  // preserve month
-    amount: existingTuition?.amount || 0,               // preserve amount
-    originalAmount: existingTuition?.originalAmount || 0,
-    paymentStatus: existingTuition?.paymentStatus || "Full Payment",
-    amountPaid: existingTuition?.amountPaid || 0,
-    pendingAmount: existingTuition?.pendingAmount || 0,
-    lateFine: existingTuition?.lateFine || 0,
+    selectedMonth: [],   // empty array initially
+    amount: 0,           // total amount will calculate when months selected
+    originalAmount: 0,   // per month amount will set later
+    paymentStatus: "Full Payment",
+    amountPaid: 0,
+    pendingAmount: 0,
+    lateFine: 0,
   });
 }
-
-
      else if (val.toLowerCase() === "transport") {
       let transportAmount = 0;
       feeHeads
@@ -649,7 +645,7 @@ const handleSubmit = async (e) => {
       distance: f.distance || 0,    // add this
       //routeId: f.routeId || "", 
        ...(f.feeHead.toLowerCase() === "tuition" ? { month: f.selectedMonth } : {}),
-      selectedMonth: f.selectedMonth || "",
+       selectedMonth: Array.isArray(f.selectedMonth) ? f.selectedMonth.filter(m => m) : [],
     }));
 
     const payload = {
@@ -690,10 +686,6 @@ const handleSubmit = async (e) => {
     toast.error("Error saving receipt. Check console.");
   }
 };
-
-
-
-
 
   return (
     <div className="min-h-screen bg-zinc-300 flex justify-center">
@@ -852,44 +844,41 @@ const handleSubmit = async (e) => {
 {f.feeHead.toLowerCase().includes("tuition") && (
   <label className="flex flex-col text-sm font-semibold text-black mt-1 required">
     Month
-<select
-  value={f.selectedMonth || ""}
-  onChange={(e) => {
-    const selectedMonthObj = tuitionMonths.find(m => m.month === e.target.value);
-    if (!selectedMonthObj) return;
+    <Select
+      isMulti
+      options={tuitionMonths.map(m => ({ value: m.month, label: m.month }))}
+      value={(f.selectedMonth || []).map(m => ({ value: m, label: m }))}
+      onChange={(selectedOptions) => {
+        const months = selectedOptions.map(o => o.value);
 
-    const updatedFeeDetails = paymentData.feeDetails.map(fd => {
-      if (fd.feeHead.toLowerCase() === "tuition fee") {
-        const status = fd.paymentStatus || "Full Payment";
-        const amountPaid = status === "Full Payment" ? selectedMonthObj.amount : 0;
-        const pendingAmount = selectedMonthObj.amount - amountPaid;
+        // Get tuition fee per month from feeHeads
+        const perMonthFee = feeHeads.find(fh => fh.feeHead.toLowerCase() === "tuition fee")?.amount || 0;
 
-        return {
-          ...fd,
-          selectedMonth: selectedMonthObj.month,
-          amount: selectedMonthObj.amount,
-          amountPaid,
-          pendingAmount,
-        };
-      }
-      return fd;
-    });
+        const updatedFeeDetails = paymentData.feeDetails.map(fd => {
+          if (fd.feeHead.toLowerCase() === "tuition fee") {
+            const totalAmount = months.length * perMonthFee; // multiply
+            return {
+              ...fd,
+              selectedMonth: months,
+              amount: totalAmount,
+              originalAmount: perMonthFee, // original per month fee
+              amountPaid: fd.paymentStatus === "Full Payment" ? totalAmount : 0,
+              pendingAmount: fd.paymentStatus === "Full Payment" ? 0 : totalAmount,
+            };
+          }
+          return fd;
+        });
 
-    setPaymentData(prev => ({ ...prev, feeDetails: updatedFeeDetails }));
-    recalcTotals(updatedFeeDetails); // recalc all totals
-  }}
-  className="border border-gray-400 p-1 rounded"
-  required
->
-  <option value="">--Select Month--</option>
-  {tuitionMonths.map((m, i) => (
-    <option key={i} value={m.month}>{m.month}</option>
-  ))}
-</select>
-
-
-</label>
+        setPaymentData(prev => ({ ...prev, feeDetails: updatedFeeDetails }));
+        recalcTotals(updatedFeeDetails); // recalc total, netPayable, pending
+      }}
+      className="p-1 rounded border-gray-400"
+    />
+  </label>
 )}
+
+
+
 
     {/* Amount */}
     <label className="flex flex-col text-sm font-semibold text-black mt-1">

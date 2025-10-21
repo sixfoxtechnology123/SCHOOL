@@ -177,7 +177,7 @@ const filteredFees = fees.filter(fee =>
                 <th className="border border-green-500 px-2 py-1">Session</th>
                 <th className="border border-green-500 px-2 py-1">Class</th>
                 <th className="border border-green-500 px-2 py-1">Fee Head</th>
-                <th className="border border-green-500 px-2 py-1">Month</th>
+                {/* <th className="border border-green-500 px-2 py-1">Month</th> */}
                 <th className="border border-green-500 px-2 py-1">Amount</th>
                 <th className="border border-green-500 px-2 py-1">Distance (KM)</th>
                 <th className="border border-green-500 px-2 py-1">Action</th>
@@ -191,7 +191,7 @@ const filteredFees = fees.filter(fee =>
                     <td className="border border-green-500 px-2 py-1">{fee.academicSession}</td>
                     <td className="border border-green-500 px-2 py-1">{fee.className}</td>
                     <td className="border border-green-500 px-2 py-1">{fee.feeHeadName}</td>
-                    <td className="border border-green-500 px-2 py-1">{fee.month || "-"}</td>
+                    {/* <td className="border border-green-500 px-2 py-1">{fee.month || "-"}</td> */}
                     <td className="border border-green-500 px-2 py-1">{fee.amount}</td>
                     <td className="border border-green-500 px-2 py-1">{fee.distance || "-"}</td>
                     <td className="border border-green-500 px-2 py-1 text-center">

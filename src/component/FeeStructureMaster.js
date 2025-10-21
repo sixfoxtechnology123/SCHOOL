@@ -285,7 +285,7 @@ const handleChange = (e) => {
             </div>
           )}
 
-{isTuitionFee && (
+{/* {isTuitionFee && (
   <div>
     <label className="block font-medium">Month</label>
     <select
@@ -299,7 +299,7 @@ const handleChange = (e) => {
       {months.map(m => <option key={m} value={m}>{m}</option>)}
     </select>
   </div>
-)}
+)} */}
 
 
 

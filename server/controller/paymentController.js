@@ -262,7 +262,9 @@ async function populateFeeAmounts(paymentBody) {
       appliedScholarship: Number(fd.appliedScholarship || 0),
       routeId: fd.routeId || "",
       distance: fd.distance || "",
-      selectedMonth: fd.selectedMonth || "" 
+     selectedMonth: Array.isArray(fd.selectedMonth) && fd.selectedMonth.length > 0
+                     ? fd.selectedMonth.filter(m => m)  // remove null/undefined
+                     : [] 
     }));
 
   paymentBody.feeDetails = sanitizedFeeDetails;
@@ -304,10 +306,6 @@ paymentBody.paymentStatus = paymentBody.totalPendingAmount > 0 ? "Pending" : "Fu
 return paymentBody;
 
 }
-
-
-
-
 
 // ===== Create Payment =====
 const createPayment = async (req, res) => {

@@ -9,7 +9,7 @@ const feeDetailSchema = new mongoose.Schema({
   pendingAmount: { type: Number, default: 0 },
   otherName: { type: String, default: "" },      // for "Other" fee
   distance: { type: String, default: "" },
-  selectedMonth: { type: String, default: "" },
+  selectedMonth: [String]
 });
 
 const paymentSchema = new mongoose.Schema(
