@@ -902,7 +902,9 @@ const handleSubmit = async (e) => {
           if (f.feeHead === "Other") handleOtherFeeChange("amount", e.target.value);
           else handleAmountChange(f.feeHead, e.target.value);
         }}
-        className="border bg-gray-100  p-1 rounded "
+        readOnly={f.feeHead !== "Other"} // Only editable for 'Other'
+        placeholder={f.feeHead === "Other" ? "Enter Amount" : ""}
+        className={`border p-1 rounded ${f.feeHead === "Other" ? "" : "bg-gray-100 cursor-not-allowed"}`}
       />
     </label>
 
