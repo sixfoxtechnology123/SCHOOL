@@ -292,16 +292,15 @@ paymentBody.pendingAmount = paymentBody.totalPendingAmount;
 
 // Payment status
 paymentBody.paymentStatus = paymentBody.totalPendingAmount > 0 ? "Pending" : "Full Payment";
-// // debug log computed values
-// console.log("POPULATE_COMPUTED", {
-//   previousPending,
-//   lateFine,
-//   currentFee,
-//   totalFee: paymentBody.totalFee,
-//   netPayable: paymentBody.netPayable,
-//   totalPaidAmount: paymentBody.totalPaidAmount,
-//   totalPendingAmount: paymentBody.totalPendingAmount,
-//   feeDetails: paymentBody.feeDetails,
+// ====== Set Scholarship Flags Based on Selected Fee Heads ======
+paymentBody.admissionScholarshipApplied = paymentBody.feeDetails.some(fd => 
+  (fd.feeHead || "").toLowerCase() === "admission fee"
+);
+
+paymentBody.sessionScholarshipApplied = paymentBody.feeDetails.some(fd => 
+  (fd.feeHead || "").toLowerCase() === "session fee"
+);
+
 // });
 return paymentBody;
 
@@ -510,6 +509,40 @@ const getPendingFeeHeads = async (req, res) => {
 
 
 
+const getLatestPaymentFlags = async (req, res) => {
+  try {
+    const studentId = req.params.studentId;
+
+    // Fetch latest payment of this student
+    const latestPayment = await Payment.findOne({ student: studentId })
+      .sort({ date: -1 }) // latest first
+      .lean();
+
+    if (!latestPayment) {
+      return res.json({
+        admissionScholarshipApplied: false,
+        sessionScholarshipApplied: false,
+      });
+    }
+
+    // Check feeDetails if admission or session fee already paid
+    const admissionFeePaid = latestPayment.feeDetails.some(fd =>
+      (fd.feeHead || "").toLowerCase().includes("admission")
+    );
+
+    const sessionFeePaid = latestPayment.feeDetails.some(fd =>
+      (fd.feeHead || "").toLowerCase().includes("session")
+    );
+
+    res.json({
+      admissionScholarshipApplied: admissionFeePaid,
+      sessionScholarshipApplied: sessionFeePaid,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 
 
 // ================== Export All ==================
@@ -531,4 +564,5 @@ module.exports = {
   populateFeeAmounts,
   generateNextPaymentId,
   getPendingFeeHeads,
+  getLatestPaymentFlags,
 };

@@ -243,11 +243,9 @@ useEffect(() => {
   };
 
 
-
-
+// ========================== HANDLE STUDENT CHANGE ==========================
 const handleStudentChange = async (selected) => {
   if (!selected) {
-     
     setPaymentData({
       paymentId: "",
       date: new Date().toISOString().split("T")[0],
@@ -264,6 +262,8 @@ const handleStudentChange = async (selected) => {
       remarks: "",
       user: paymentData.user,
       prevPending: 0,
+      admissionScholarshipApplied: false,
+      sessionScholarshipApplied: false,
     });
     setPreviousPending(0);
     setCurrentFee(0);
@@ -280,9 +280,8 @@ const handleStudentChange = async (selected) => {
 
   const stu = initialStudentOptions.find(s => s.value === selected.value);
   if (!stu) return;
-    const studentCode = stu.fullData.studentId || stu.student || stu.value; // make sure it matches backend
+  const studentCode = stu.fullData.studentId || stu.student || stu.value;
   const studentName = [stu.fullData.firstName, stu.fullData.lastName].filter(Boolean).join(" ") || stu.fullData.studentName;
-
 
   // Set basic student info
   setPaymentData(prev => ({
@@ -297,7 +296,6 @@ const handleStudentChange = async (selected) => {
     totalAmount: 0,
   }));
 
-  // Add studentDistance here
   const studentDistance = Number(stu.distanceFromSchool || 0);
   setPaymentData(prev => ({ ...prev, studentDistance }));
 
@@ -312,38 +310,45 @@ const handleStudentChange = async (selected) => {
     setPreviousPending(0);
   }
   try {
-  const res = await axios.get(`http://localhost:5000/api/payments/previous-pending/${studentCode}`);
-  const prevPending = res.data?.previousPending || 0;
+    const res = await axios.get(`http://localhost:5000/api/payments/previous-pending/${studentCode}`);
+    const prevPending = res.data?.previousPending || 0;
+    setPreviousPending(prevPending);
+    setPendingAmount(prevPending);
+    setShowPreviousPending(prevPending > 0);
+    setPaymentData(prev => ({ ...prev, prevPending }));
+  } catch (err) {
+    console.error("Error fetching previous pending:", err);
+    setPreviousPending(0);
+    setPendingAmount(0);
+    setShowPreviousPending(false);
+    setPaymentData(prev => ({ ...prev, prevPending: 0 }));
+  }
 
-  setPreviousPending(prevPending);
-  setPendingAmount(prevPending);
-  setShowPreviousPending(prevPending > 0);
+  try {
+    const res = await axios.get(`http://localhost:5000/api/payments/pending-fee-heads/${studentCode}`);
+    setPendingFeeHeads(res.data || []);
+  } catch (err) {
+    console.error("Error fetching pending fee heads:", err);
+    setPendingFeeHeads([]);
+  }
 
-  // IMPORTANT: set it in paymentData so your input reads the value
-  setPaymentData(prev => ({
-    ...prev,
-    prevPending: prevPending
-  }));
-
-  console.log("Student:", studentCode, "Previous Pending Amount:", prevPending);
-} catch (err) {
-  console.error("Error fetching previous pending:", err);
-  setPreviousPending(0);
-  setPendingAmount(0);
-  setShowPreviousPending(false);
-
-  setPaymentData(prev => ({ ...prev, prevPending: 0 }));
-}
-
-
-
-try {
-  const res = await axios.get(`http://localhost:5000/api/payments/pending-fee-heads/${studentCode}`);
-  setPendingFeeHeads(res.data || []); // array of { feeHeadName, originalAmount, pendingAmount }
-} catch (err) {
-  console.error("Error fetching pending fee heads:", err);
-  setPendingFeeHeads([]);
-}
+  // Latest payment flags (disable Admission/Session if applied previously)
+  try {
+    const resFlags = await axios.get(`http://localhost:5000/api/payments/latest-payment-flags/${studentCode}`);
+    const flags = resFlags.data || { admissionScholarshipApplied: false, sessionScholarshipApplied: false };
+    setPaymentData(prev => ({
+      ...prev,
+      admissionScholarshipApplied: flags.admissionScholarshipApplied,
+      sessionScholarshipApplied: flags.sessionScholarshipApplied,
+    }));
+  } catch (err) {
+    console.error("Error fetching latest payment flags:", err);
+    setPaymentData(prev => ({
+      ...prev,
+      admissionScholarshipApplied: false,
+      sessionScholarshipApplied: false,
+    }));
+  }
 
   // Scholarships
   let scholarships = { admission: 0, session: 0 };
@@ -363,7 +368,7 @@ try {
     setStudentScholarships({ admission: 0, session: 0 });
   }
 
-  // Fetch fee heads for class
+  // Fetch fee heads for class and subtract scholarships only once
   try {
     const feesRes = await axios.get("http://localhost:5000/api/payments/class-fees", {
       params: { className: stu.admitClass, academicSession: stu.academicSession },
@@ -373,15 +378,22 @@ try {
       const orig = Number(fh.amount || 0);
       let reduced = orig;
       const name = (fh.feeHeadName || "").toLowerCase();
-      if (name.includes("admission")) reduced = orig - (scholarships.admission || 0);
-      else if (name.includes("session")) reduced = orig - (scholarships.session || 0);
+
+      // Apply scholarships only if not disabled by previous payment
+      if (name.includes("admission") && !paymentData.admissionScholarshipApplied) reduced = orig - (scholarships.admission || 0);
+      else if (name.includes("session") && !paymentData.sessionScholarshipApplied) reduced = orig - (scholarships.session || 0);
       if (reduced < 0) reduced = 0;
+
+      // Disable if scholarship applied previously
+      const disabled = (name.includes("admission") && paymentData.admissionScholarshipApplied) ||
+                       (name.includes("session") && paymentData.sessionScholarshipApplied);
 
       return {
         feeHead: fh.feeHeadName,
         originalAmount: orig,
         amount: reduced,
         distance: fh.distance || "",
+        disabled,
       };
     });
 
@@ -394,29 +406,19 @@ try {
   } catch (err) {
     console.error("Error fetching fee heads:", err);
   }
-try {
-      const res = await axios.get("http://localhost:5000/api/payments/new-receipt-id");
-      setPaymentData(prev => ({ ...prev, paymentId: res.data.paymentId }));
-    } catch (err) {
-      console.error("Error fetching new receipt ID:", err);
-    }
 
-setTuitionMonths([
-  { month: "January" },
-  { month: "February" },
-  { month: "March" },
-  { month: "April" },
-  { month: "May" },
-  { month: "June" },
-  { month: "July" },
-  { month: "August" },
-  { month: "September" },
-  { month: "October" },
-  { month: "November" },
-  { month: "December" },
-]);
+  try {
+    const res = await axios.get("http://localhost:5000/api/payments/new-receipt-id");
+    setPaymentData(prev => ({ ...prev, paymentId: res.data.paymentId }));
+  } catch (err) {
+    console.error("Error fetching new receipt ID:", err);
+  }
 
-
+  setTuitionMonths([
+    { month: "January" }, { month: "February" }, { month: "March" }, { month: "April" },
+    { month: "May" }, { month: "June" }, { month: "July" }, { month: "August" },
+    { month: "September" }, { month: "October" }, { month: "November" }, { month: "December" },
+  ]);
 };
 
 
@@ -431,33 +433,31 @@ const handleFeeHeadChange = (selectedHeads) => {
     const val = sh.value;
     const existing = paymentData.feeDetails.find(f => f.feeHead === val);
 
-if (val.toLowerCase() === "tuition fee") {
-  const existingTuition = paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "tuition fee");
-  updatedFeeDetails.push({
-    feeHead: "Tuition Fee",
-    selectedMonth: existingTuition?.selectedMonth || [], // preserve selected months
-    amount: existingTuition?.amount || 0,               // preserve amount
-    originalAmount: existingTuition?.originalAmount || 0, 
-    paymentStatus: existingTuition?.paymentStatus || "Full Payment",
-    amountPaid: existingTuition?.amountPaid || 0,
-    pendingAmount: existingTuition?.pendingAmount || 0,
-    lateFine: existingTuition?.lateFine || 0,
-  });
-}
-
-     else if (val.toLowerCase() === "transport") {
+    // Tuition Fee logic remains same
+    if (val.toLowerCase() === "tuition fee") {
+      const existingTuition = paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "tuition fee");
+      updatedFeeDetails.push({
+        feeHead: "Tuition Fee",
+        selectedMonth: existingTuition?.selectedMonth || [],
+        amount: existingTuition?.amount || 0,
+        originalAmount: existingTuition?.originalAmount || 0,
+        paymentStatus: existingTuition?.paymentStatus || "Full Payment",
+        amountPaid: existingTuition?.amountPaid || 0,
+        pendingAmount: existingTuition?.pendingAmount || 0,
+        lateFine: existingTuition?.lateFine || 0,
+      });
+    } 
+    // Transport logic remains same
+    else if (val.toLowerCase() === "transport") {
       let transportAmount = 0;
-      feeHeads
-        .filter(f => f.feeHead.toLowerCase() === "transport")
-        .forEach(f => {
-          if (f.distance.includes("-")) {
-            const [min, max] = f.distance.split("-").map(Number);
-            if (studentDistance >= min && studentDistance <= max) transportAmount = f.amount;
-          } else {
-            if (studentDistance === Number(f.distance)) transportAmount = f.amount;
-          }
-        });
-
+      feeHeads.filter(f => f.feeHead.toLowerCase() === "transport").forEach(f => {
+        if (f.distance.includes("-")) {
+          const [min, max] = f.distance.split("-").map(Number);
+          if (studentDistance >= min && studentDistance <= max) transportAmount = f.amount;
+        } else {
+          if (studentDistance === Number(f.distance)) transportAmount = f.amount;
+        }
+      });
       updatedFeeDetails.push({
         feeHead: "Transport",
         amount: transportAmount,
@@ -468,8 +468,9 @@ if (val.toLowerCase() === "tuition fee") {
         pendingAmount: existing?.pendingAmount ?? 0,
         lateFine: existing?.lateFine ?? 0,
       });
-
-    } else if (val.toLowerCase() === "other") {
+    } 
+    // Other fee head
+    else if (val.toLowerCase() === "other") {
       updatedFeeDetails.push({
         feeHead: "Other",
         otherName: existing?.otherName || "",
@@ -479,10 +480,18 @@ if (val.toLowerCase() === "tuition fee") {
         pendingAmount: existing?.pendingAmount ?? 0,
         lateFine: existing?.lateFine ?? 0,
       });
-
-    } else {
+    } 
+    // General fee heads
+    else {
       const feeOpt = feeHeads.find(f => f.feeHead === val);
       if (!feeOpt) return;
+
+      // Ensure disabled fee heads (admission/session) cannot be selected
+      if ((val.toLowerCase().includes("admission") && paymentData.admissionScholarshipApplied) ||
+          (val.toLowerCase().includes("session") && paymentData.sessionScholarshipApplied)) {
+        return; // skip adding, completely disabled
+      }
+
       updatedFeeDetails.push({
         feeHead: feeOpt.feeHead,
         originalAmount: feeOpt.originalAmount,
@@ -491,7 +500,7 @@ if (val.toLowerCase() === "tuition fee") {
         amountPaid: existing?.amountPaid ?? feeOpt.amount,
         pendingAmount: existing?.pendingAmount ?? 0,
         lateFine: existing?.lateFine ?? 0,
-        selectedMonth: "", 
+        selectedMonth: "",
       });
     }
   });
@@ -503,12 +512,17 @@ if (val.toLowerCase() === "tuition fee") {
     ...prev,
     feeDetails: updatedFeeDetails,
     totalAmount,
+    // Do NOT change scholarship flags here; keep previous applied state
+    admissionScholarshipApplied: prev.admissionScholarshipApplied,
+    sessionScholarshipApplied: prev.sessionScholarshipApplied,
   }));
 
   setCurrentFee(currentFee);
   setNetPayable(totalAmount - Number(discount || 0) + Number(lateFine || 0));
   setPendingAmount(totalAmount - currentFee + Number(lateFine || 0));
 };
+
+
 
 
 
@@ -741,7 +755,9 @@ const handleSubmit = async (e) => {
       cardNumber: paymentData.cardNumber || "",
       remarks: paymentData.remarks || "",
       user: paymentData.user || localStorage.getItem("userId") || "admin",
-      lateFine: Number(lateFine || 0),               // overall late fine
+      lateFine: Number(lateFine || 0),             
+      admissionScholarshipApplied: paymentData.admissionScholarshipApplied || false,
+  sessionScholarshipApplied: paymentData.sessionScholarshipApplied || false,
     };
 
     if (isEditMode) {
@@ -877,22 +893,28 @@ const handleSubmit = async (e) => {
 {/* ================== Fee Heads ================== */}
 <label className="flex flex-col text-sm font-semibold text-black col-span-2 mb-2">
   Fee Heads
-<Select
-  isMulti
-  options={[
-    ...Array.from(new Set(feeHeads.map(fh => fh.feeHead))).map(fh => ({ value: fh, label: fh })),
-    { value: "Other", label: "Other" },
-  ]}
-  onChange={handleFeeHeadChange} // ✅ use your function here
-  value={paymentData.feeDetails.map(f =>
-    f.feeHead === "Other" ? { value: "Other", label: "Other" } : { value: f.feeHead, label: f.feeHead }
-  )}
-  placeholder="Select Fee Heads..."
-  isSearchable
-  className="mb-2"
-/>
-
+  <Select
+    isMulti
+    options={[
+      ...Array.from(new Set(feeHeads.map(fh => fh.feeHead))).map(fh => ({
+        value: fh,
+        label: fh,
+        isDisabled:
+          (fh === "Admission Fee" && paymentData.admissionScholarshipApplied) ||
+          (fh === "Session Fee" && paymentData.sessionScholarshipApplied),
+      })),
+      { value: "Other", label: "Other" },
+    ]}
+    onChange={handleFeeHeadChange} // ✅ use your function here
+    value={paymentData.feeDetails.map(f =>
+      f.feeHead === "Other" ? { value: "Other", label: "Other" } : { value: f.feeHead, label: f.feeHead }
+    )}
+    placeholder="Select Fee Heads..."
+    isSearchable
+    className="mb-2"
+  />
 </label>
+
 
 {paymentData.feeDetails.map((f) => (
   <div key={f.feeHead} className="col-span-1 border p-2 rounded mb-2">
@@ -1059,9 +1081,7 @@ const handleSubmit = async (e) => {
       placeholder="Enter Late Fine"
       className="border border-gray-400 p-1 rounded"
     />
-
     </label>
-
         {showPreviousPending && (
       <div className="flex items-end gap-2">
         <div className="flex flex-col text-sm font-semibold text-black">
@@ -1082,8 +1102,6 @@ const handleSubmit = async (e) => {
         </button>
       </div>
     )}
-
-
   {showPendingModal && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div className="bg-white p-5 rounded w-auto">
@@ -1124,7 +1142,6 @@ const handleSubmit = async (e) => {
     </div>
   </div>
 )}
-
 
           {/* Total Amount */}
           <label className="flex flex-col text-sm font-semibold text-black">

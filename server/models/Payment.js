@@ -22,6 +22,9 @@ const paymentSchema = new mongoose.Schema(
     section: { type: String, default: "" },
     rollNo: { type: String, default: "" },
     feeDetails: [feeDetailSchema],
+    admissionScholarshipApplied: { type: Boolean, default: false },
+    sessionScholarshipApplied: { type: Boolean, default: false },
+
     date: { type: String, default: new Date().toISOString().split("T")[0] },
     totalAmount: { type: Number, required: true, default: 0 },
     currentFee: { type: Number, default: 0 },
