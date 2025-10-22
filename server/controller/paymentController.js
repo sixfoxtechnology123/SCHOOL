@@ -367,32 +367,7 @@ const deletePayment = async (req, res) => {
   }
 };
 
-// ================== Get Previous Pending ==================
-const getPreviousPending = async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    if (!studentId) return res.status(400).json({ error: "studentId required" });
 
-    let studentDoc = null;
-    if (studentId.match(/^[0-9a-fA-F]{24}$/)) {
-      studentDoc = await Student.findById(studentId).lean();
-    } else {
-      studentDoc = await Student.findOne({ studentId }).lean();
-    }
-
-    if (!studentDoc) return res.status(404).json({ error: "Student not found" });
-
-    const lastPayment = await Payment.findOne({ student: studentDoc.studentId })
-      .sort({ date: -1, _id: -1 })
-      .lean();
-    const previousPending = lastPayment ? Number(lastPayment.pendingAmount || 0) : 0;
-
-    return res.json({ studentId: studentDoc.studentId, previousPending });
-  } catch (err) {
-    console.error("Error fetching previous pending:", err);
-    return res.status(500).json({ error: err.message || "Failed to fetch previous pending" });
-  }
-};
 
 // ================== Get Fee Amount ==================
 const getFeeAmount = async (req, res) => {
@@ -478,6 +453,65 @@ const getFeeStructureByClassAndSession = async (req, res) => {
   }
 };
 
+
+// GET /api/payments/previous-pending/:student
+const getPreviousPending = async (req, res) => {
+  try {
+    const { student } = req.params;
+    if (!student) return res.status(400).json({ message: "Student required" });
+
+    const latestPayment = await Payment.findOne({ student })
+      .sort({ date: -1 })
+      .lean();
+
+    if (!latestPayment)
+      return res.status(200).json({ previousPending: 0, lastPaymentId: null });
+
+    return res.status(200).json({
+      previousPending: latestPayment.totalPendingAmount || 0,
+      lastPaymentId: latestPayment.paymentId,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+// Get latest pending fee heads for a student
+const getPendingFeeHeads = async (req, res) => {
+  try {
+    const studentId = req.params.studentId;
+
+    //  Fetch latest payment record for the student
+    const latestPayment = await Payment.findOne({ student: studentId })
+      .sort({ createdAt: -1 }) // or _id: -1 if createdAt not available
+      .lean();
+
+    if (!latestPayment) {
+      return res.json([]); // no payments found
+    }
+
+    //  Extract only fee heads with "Pending" status
+    const pendingHeads = (latestPayment.feeDetails || [])
+      .filter(fd => fd.paymentStatus?.toLowerCase() === "pending")
+      .map(fd => ({
+        feeHeadName: fd.feeHead,
+        originalAmount: fd.originalAmount || 0,
+        pendingAmount: fd.pendingAmount || 0,
+      }));
+
+    //  Return the pending fee head list
+    res.json(pendingHeads);
+  } catch (err) {
+    console.error("Error fetching pending fee heads:", err);
+    res.status(500).json({ message: "Error fetching latest pending fee heads" });
+  }
+};
+
+
+
+
+
 // ================== Export All ==================
 module.exports = {
   getAllPayments,
@@ -495,4 +529,6 @@ module.exports = {
   getClassFeeStructure,
   getFeeStructureByClassAndSession,
   populateFeeAmounts,
+  generateNextPaymentId,
+  getPendingFeeHeads,
 };

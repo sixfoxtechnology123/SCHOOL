@@ -28,6 +28,7 @@ const PaymentsMaster = () => {
   const [amountPaid, setAmountPaid] = useState("");
   const [pendingAmount, setPendingAmount] = useState(0);
   const [netPayable, setNetPayable] = useState(0);
+   const [showPreviousPending, setShowPreviousPending] = useState(false);
 
   const [tuitionMonths, setTuitionMonths] = useState([]); 
   const [selectedMonth, setSelectedMonth] = useState(""); 
@@ -47,6 +48,9 @@ const PaymentsMaster = () => {
   const [initialStudentOptions, setInitialStudentOptions] = useState([]);
   const [lateFine, setLateFine] = useState(' ');
   const [totalPaid, setTotalPaid] = useState(0);
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [pendingFeeHeads, setPendingFeeHeads] = useState([]);
+
 
 
   const [paymentStatus, setPaymentStatus] = useState("Full Payment");
@@ -93,10 +97,10 @@ const fetchDropdownData = async () => {
 
     let studentsData = stuRes.data || [];
 
-    // --- 1️⃣ Sort students by latest (descending by _id) ---
+    // --- Sort students by latest (descending by _id) ---
     studentsData.sort((a, b) => (a._id < b._id ? 1 : -1));
 
-    // --- 2️⃣ Remove duplicates by studentId ---
+    // ---Remove duplicates by studentId ---
     const uniqueStudents = [];
     const seenIds = new Set();
     studentsData.forEach(s => {
@@ -106,7 +110,7 @@ const fetchDropdownData = async () => {
       }
     });
 
-    // --- 3️⃣ Map to dropdown options ---
+    // ---  Map to dropdown options ---
     const stuOpts = uniqueStudents.map((s) => {
       const fullName = [s.firstName, s.lastName].filter(Boolean).join(" ");
       return {
@@ -122,11 +126,11 @@ const fetchDropdownData = async () => {
       };
     });
 
-    // --- 4️⃣ Classes ---
+    // ---  Classes ---
     const classData = Array.from(new Set((classRes.data || []).filter(Boolean))).sort();
     const classOpts = classData.map((c) => ({ value: c, label: c }));
 
-    // --- 5️⃣ Sections ---
+    // ---  Sections ---
     const sectionsData = sectionRes.data || [];
     const secOpts = sectionsData.map((s) => ({
       value: s.section,
@@ -134,7 +138,7 @@ const fetchDropdownData = async () => {
       className: s.className,
     }));
 
-    // --- 6️⃣ Set state ---
+    // ---  Set state ---
     setStudents(uniqueStudents);
     setStudentOptions(stuOpts);
     setInitialStudentOptions(stuOpts);
@@ -238,12 +242,17 @@ useEffect(() => {
     setStudentOptions(filteredStudents);
   };
 
+
+
+
 const handleStudentChange = async (selected) => {
   if (!selected) {
+     
     setPaymentData({
       paymentId: "",
       date: new Date().toISOString().split("T")[0],
       student: "",
+      studentName: "",
       admitClass: "",
       section: "",
       rollNo: "",
@@ -254,6 +263,7 @@ const handleStudentChange = async (selected) => {
       cardNumber: "",
       remarks: "",
       user: paymentData.user,
+      prevPending: 0,
     });
     setPreviousPending(0);
     setCurrentFee(0);
@@ -264,16 +274,21 @@ const handleStudentChange = async (selected) => {
     setStudentScholarships({ admission: 0, session: 0 });
     setFeeHeads([]);
     setSelectedFeeHeads([]);
+    setShowPreviousPending(false);
     return;
   }
 
   const stu = initialStudentOptions.find(s => s.value === selected.value);
   if (!stu) return;
+    const studentCode = stu.fullData.studentId || stu.student || stu.value; // make sure it matches backend
+  const studentName = [stu.fullData.firstName, stu.fullData.lastName].filter(Boolean).join(" ") || stu.fullData.studentName;
+
 
   // Set basic student info
   setPaymentData(prev => ({
     ...prev,
     student: stu.value,
+    studentName: studentName,
     rollNo: stu.rollNo,
     admitClass: stu.admitClass,
     section: stu.section,
@@ -296,6 +311,39 @@ const handleStudentChange = async (selected) => {
     console.error("Error fetching previous pending:", err);
     setPreviousPending(0);
   }
+  try {
+  const res = await axios.get(`http://localhost:5000/api/payments/previous-pending/${studentCode}`);
+  const prevPending = res.data?.previousPending || 0;
+
+  setPreviousPending(prevPending);
+  setPendingAmount(prevPending);
+  setShowPreviousPending(prevPending > 0);
+
+  // IMPORTANT: set it in paymentData so your input reads the value
+  setPaymentData(prev => ({
+    ...prev,
+    prevPending: prevPending
+  }));
+
+  console.log("Student:", studentCode, "Previous Pending Amount:", prevPending);
+} catch (err) {
+  console.error("Error fetching previous pending:", err);
+  setPreviousPending(0);
+  setPendingAmount(0);
+  setShowPreviousPending(false);
+
+  setPaymentData(prev => ({ ...prev, prevPending: 0 }));
+}
+
+
+
+try {
+  const res = await axios.get(`http://localhost:5000/api/payments/pending-fee-heads/${studentCode}`);
+  setPendingFeeHeads(res.data || []); // array of { feeHeadName, originalAmount, pendingAmount }
+} catch (err) {
+  console.error("Error fetching pending fee heads:", err);
+  setPendingFeeHeads([]);
+}
 
   // Scholarships
   let scholarships = { admission: 0, session: 0 };
@@ -346,7 +394,12 @@ const handleStudentChange = async (selected) => {
   } catch (err) {
     console.error("Error fetching fee heads:", err);
   }
-
+try {
+      const res = await axios.get("http://localhost:5000/api/payments/new-receipt-id");
+      setPaymentData(prev => ({ ...prev, paymentId: res.data.paymentId }));
+    } catch (err) {
+      console.error("Error fetching new receipt ID:", err);
+    }
 
 setTuitionMonths([
   { month: "January" },
@@ -1008,6 +1061,69 @@ const handleSubmit = async (e) => {
     />
 
     </label>
+
+        {showPreviousPending && (
+      <div className="flex items-end gap-2">
+        <div className="flex flex-col text-sm font-semibold text-black">
+          <label>Previous Total Pending</label>
+          <input
+            type="number"
+            value={paymentData.prevPending}
+            readOnly
+            className="border rounded p-1 w-40 bg-gray-100 cursor-not-allowed"
+          />
+        </div>
+        <button
+          type="button"
+          className="bg-blue-500 text-white px-3 py-0 rounded h-fit"
+          onClick={() => setShowPendingModal(true)}
+        >
+          View
+        </button>
+      </div>
+    )}
+
+
+  {showPendingModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-5 rounded w-auto">
+      <h2 className="text-lg font-semibold mb-4">Previous Pending Details</h2>
+      <table className="w-full border">
+        <thead>
+          <tr className="border-1">
+            <th className="p-2 text-left font-medium">Fee Head</th>
+            <th className="p-2 text-left font-medium">Original Amount</th>
+            <th className="p-2 text-left font-medium">Pending Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          {pendingFeeHeads.length > 0 ? (
+            pendingFeeHeads.map((fh, idx) => (
+              <tr key={idx} className="border-2">
+                <td className="p-1">{fh.feeHeadName}</td>
+                <td className="p-1 text-center">{fh.originalAmount}</td>
+                <td className="p-1 text-center">{fh.pendingAmount}</td>
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={3} className="p-2 text-center">No pending fee heads</td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+     <div className="flex justify-end mt-4">
+  <button
+    className="bg-red-500 text-white px-3 py-0 rounded"
+    onClick={() => setShowPendingModal(false)}
+  >
+    Close
+  </button>
+</div>
+
+    </div>
+  </div>
+)}
 
 
           {/* Total Amount */}

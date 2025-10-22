@@ -5,6 +5,8 @@ const Student = require("../models/Student"); // your Student model
 const FeeMonth = require("../models/FeeStructure"); // your Student model
 
 const controller = require("../controller/paymentController");
+const { generateNextPaymentId } = require("../controller/paymentController");
+
 const Payment = require("../models/Payment");
 
 // Payment Routes
@@ -20,8 +22,9 @@ router.get("/feestructure", controller.getFeeStructureByClassAndSession);
 router.get("/sections", controller.getSectionsByClass);
 router.get("/students-by-class-section", controller.getStudentsByClassAndSection);
 router.get("/classes", controller.getAllClasses);
-router.get("/pending/:studentId", controller.getPreviousPending);
-
+router.get("/previous-pending/:student", controller.getPreviousPending);
+// New route to get pending fee heads
+router.get("/pending-fee-heads/:studentId", controller.getPendingFeeHeads);
 
 // GET scholarship by admission number
 router.get("/scholarships/:admissionNo", async (req, res) => {
@@ -83,6 +86,15 @@ router.get('/months', async (req, res) => {
   }
 });
 
+router.get("/new-receipt-id", async (req, res) => {
+  try {
+    const newId = await generateNextPaymentId();
+    res.json({ paymentId: newId });
+  } catch (err) {
+    console.error("Error generating new receipt ID:", err);
+    res.status(500).json({ error: "Failed to generate receipt ID" });
+  }
+});
 
 
 module.exports = router;
