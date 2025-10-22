@@ -8,7 +8,7 @@ const Header = ({ onLogout }) => {
   return (
     <div className="bg-gray-100 shadow p-3 flex justify-between items-center mb-2 rounded-lg">
       <h1 className="text-xl font-bold text-blue-700">
-        CENTRAL PUBLIC SCHOOL FEES MANAGEMENT
+        cccCENTRAL PUBLIC SCHOOL FEES MANAGEMENT
       </h1>
       
       <div className="flex gap-2">
