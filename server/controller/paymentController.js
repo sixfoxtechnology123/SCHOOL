@@ -312,8 +312,32 @@ const createPayment = async (req, res) => {
     if (!req.body.paymentId) req.body.paymentId = await generateNextPaymentId();
     await populateFeeAmounts(req.body);
 
+    // ✅ Find latest payment for this student in same session
+    const latestPayment = await Payment.findOne({
+      student: req.body.student,
+      academicSession: req.body.academicSession,
+    })
+      .sort({ date: -1 })
+      .lean();
+
+    // ✅ Determine scholarship flags based on previous receipt
+    let admissionScholarshipApplied = req.body.admissionScholarshipApplied || false;
+    let sessionScholarshipApplied = req.body.sessionScholarshipApplied || false;
+
+    if (latestPayment) {
+      // If previously applied in same session, keep true permanently
+      if (latestPayment.admissionScholarshipApplied) admissionScholarshipApplied = true;
+      if (latestPayment.sessionScholarshipApplied) sessionScholarshipApplied = true;
+    }
+
+    // ✅ Apply the final flags before saving
+    req.body.admissionScholarshipApplied = admissionScholarshipApplied;
+    req.body.sessionScholarshipApplied = sessionScholarshipApplied;
+
+    // ✅ Save payment
     const payment = new Payment(req.body);
     await payment.save();
+
     await logActivity(`Added Payment for ${payment.studentName} | PaymentId: ${payment.paymentId}`);
     res.status(201).json(payment);
   } catch (err) {
@@ -321,6 +345,7 @@ const createPayment = async (req, res) => {
     res.status(500).json({ error: err.message || "Failed to create payment" });
   }
 };
+
 // ================== Update Payment ==================
 const updatePayment = async (req, res) => {
   try {
@@ -508,41 +533,42 @@ const getPendingFeeHeads = async (req, res) => {
 };
 
 
-
+// ======= controller/paymentController.js =======
 const getLatestPaymentFlags = async (req, res) => {
   try {
     const studentId = req.params.studentId;
+    const { academicSession } = req.query; // <-- frontend should send it
 
-    // Fetch latest payment of this student
-    const latestPayment = await Payment.findOne({ student: studentId })
-      .sort({ date: -1 }) // latest first
+    // Find latest payment of this student in SAME session
+    const latestPayment = await Payment.findOne({
+      student: studentId,
+      academicSession: academicSession,
+    })
+      .sort({ date: -1 })
       .lean();
 
     if (!latestPayment) {
+      // new session → no old receipt
       return res.json({
         admissionScholarshipApplied: false,
         sessionScholarshipApplied: false,
       });
     }
 
-    // Check feeDetails if admission or session fee already paid
-    const admissionFeePaid = latestPayment.feeDetails.some(fd =>
-      (fd.feeHead || "").toLowerCase().includes("admission")
-    );
-
-    const sessionFeePaid = latestPayment.feeDetails.some(fd =>
-      (fd.feeHead || "").toLowerCase().includes("session")
-    );
-
-    res.json({
-      admissionScholarshipApplied: admissionFeePaid,
-      sessionScholarshipApplied: sessionFeePaid,
+    return res.json({
+      admissionScholarshipApplied: latestPayment.admissionScholarshipApplied,
+      sessionScholarshipApplied: latestPayment.sessionScholarshipApplied,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Error fetching latest payment flags:", err);
+    res.status(500).json({
+      admissionScholarshipApplied: false,
+      sessionScholarshipApplied: false,
+    });
   }
 };
+
+
 
 
 // ================== Export All ==================

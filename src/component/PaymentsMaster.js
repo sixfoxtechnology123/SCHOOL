@@ -50,6 +50,7 @@ const PaymentsMaster = () => {
   const [totalPaid, setTotalPaid] = useState(0);
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [pendingFeeHeads, setPendingFeeHeads] = useState([]);
+  const [disableAdmissionSession, setDisableAdmissionSession] = useState(false);
 
 
 
@@ -243,7 +244,7 @@ useEffect(() => {
   };
 
 
-// ========================== HANDLE STUDENT CHANGE ==========================
+// ======= Replace your existing handleStudentChange with this exact function =======
 const handleStudentChange = async (selected) => {
   if (!selected) {
     setPaymentData({
@@ -275,19 +276,23 @@ const handleStudentChange = async (selected) => {
     setFeeHeads([]);
     setSelectedFeeHeads([]);
     setShowPreviousPending(false);
+    setDisableAdmissionSession(false);
     return;
   }
 
-  const stu = initialStudentOptions.find(s => s.value === selected.value);
+  const stu = initialStudentOptions.find((s) => s.value === selected.value);
   if (!stu) return;
-  const studentCode = stu.fullData.studentId || stu.student || stu.value;
-  const studentName = [stu.fullData.firstName, stu.fullData.lastName].filter(Boolean).join(" ") || stu.fullData.studentName;
 
-  // Set basic student info
-  setPaymentData(prev => ({
+  const studentCode = stu.fullData.studentId || stu.student || stu.value;
+  const studentName =
+    [stu.fullData.firstName, stu.fullData.lastName].filter(Boolean).join(" ") ||
+    stu.fullData.studentName;
+
+  // Set basic student info immediately
+  setPaymentData((prev) => ({
     ...prev,
     student: stu.value,
-    studentName: studentName,
+    studentName,
     rollNo: stu.rollNo,
     admitClass: stu.admitClass,
     section: stu.section,
@@ -296,66 +301,80 @@ const handleStudentChange = async (selected) => {
     totalAmount: 0,
   }));
 
-  const studentDistance = Number(stu.distanceFromSchool || 0);
-  setPaymentData(prev => ({ ...prev, studentDistance }));
+  // 1) fetch latest-payment-flags and keep them in local vars so we don't rely on async setState
+  let admissionApplied = false;
+  let sessionApplied = false;
+  try {
+   const res = await axios.get(
+  `http://localhost:5000/api/payments/latest-payment-flags/${studentCode}`,
+  { params: { academicSession: stu.academicSession } } //  send session
+);
 
-  // Previous pending
-  let prevPending = 0;
-  try {
-    const res = await axios.get(`http://localhost:5000/api/payments/pending/${stu.value}`);
-    prevPending = res.data?.previousPending || 0;
-    setPreviousPending(prevPending);
+    admissionApplied = !!res.data?.admissionScholarshipApplied;
+    sessionApplied = !!res.data?.sessionScholarshipApplied;
+
+    // set into state so UI / submit payload have correct values
+    setPaymentData((prev) => ({
+      ...prev,
+      admissionScholarshipApplied: admissionApplied,
+      sessionScholarshipApplied: sessionApplied,
+    }));
+
+    // disable toggle (optional)
+    setDisableAdmissionSession(admissionApplied || sessionApplied);
   } catch (err) {
-    console.error("Error fetching previous pending:", err);
-    setPreviousPending(0);
+    console.error("Error checking scholarship flags:", err);
+    admissionApplied = false;
+    sessionApplied = false;
+    setPaymentData((prev) => ({
+      ...prev,
+      admissionScholarshipApplied: false,
+      sessionScholarshipApplied: false,
+    }));
+    setDisableAdmissionSession(false);
   }
+
+  // student distance
+  const studentDistance = Number(stu.distanceFromSchool || 0);
+  setPaymentData((prev) => ({ ...prev, studentDistance }));
+
+  // previous pending
   try {
-    const res = await axios.get(`http://localhost:5000/api/payments/previous-pending/${studentCode}`);
+    const res = await axios.get(
+      `http://localhost:5000/api/payments/previous-pending/${studentCode}`
+    );
     const prevPending = res.data?.previousPending || 0;
     setPreviousPending(prevPending);
     setPendingAmount(prevPending);
     setShowPreviousPending(prevPending > 0);
-    setPaymentData(prev => ({ ...prev, prevPending }));
+    setPaymentData((prev) => ({ ...prev, prevPending }));
   } catch (err) {
     console.error("Error fetching previous pending:", err);
     setPreviousPending(0);
     setPendingAmount(0);
     setShowPreviousPending(false);
-    setPaymentData(prev => ({ ...prev, prevPending: 0 }));
+    setPaymentData((prev) => ({ ...prev, prevPending: 0 }));
   }
 
+  // pending fee heads
   try {
-    const res = await axios.get(`http://localhost:5000/api/payments/pending-fee-heads/${studentCode}`);
+    const res = await axios.get(
+      `http://localhost:5000/api/payments/pending-fee-heads/${studentCode}`
+    );
     setPendingFeeHeads(res.data || []);
   } catch (err) {
     console.error("Error fetching pending fee heads:", err);
     setPendingFeeHeads([]);
   }
 
-  // Latest payment flags (disable Admission/Session if applied previously)
-  try {
-    const resFlags = await axios.get(`http://localhost:5000/api/payments/latest-payment-flags/${studentCode}`);
-    const flags = resFlags.data || { admissionScholarshipApplied: false, sessionScholarshipApplied: false };
-    setPaymentData(prev => ({
-      ...prev,
-      admissionScholarshipApplied: flags.admissionScholarshipApplied,
-      sessionScholarshipApplied: flags.sessionScholarshipApplied,
-    }));
-  } catch (err) {
-    console.error("Error fetching latest payment flags:", err);
-    setPaymentData(prev => ({
-      ...prev,
-      admissionScholarshipApplied: false,
-      sessionScholarshipApplied: false,
-    }));
-  }
-
-  // Scholarships
+  // scholarships amounts
   let scholarships = { admission: 0, session: 0 };
   try {
     const admissionNo = stu.admissionNo || stu.label.split("-").pop().trim();
     if (admissionNo) {
-      const schRes = await axios.get(`http://localhost:5000/api/payments/scholarships/${admissionNo}`);
+      const schRes = await axios.get(
+        `http://localhost:5000/api/payments/scholarships/${admissionNo}`
+      );
       const schData = schRes.data || {};
       scholarships = {
         admission: Number(schData.scholarshipForAdmissionFee || 0),
@@ -368,48 +387,65 @@ const handleStudentChange = async (selected) => {
     setStudentScholarships({ admission: 0, session: 0 });
   }
 
-  // Fetch fee heads for class and subtract scholarships only once
+  // 2) fetch class fee heads and use the locally fetched flags (admissionApplied/sessionApplied)
   try {
     const feesRes = await axios.get("http://localhost:5000/api/payments/class-fees", {
       params: { className: stu.admitClass, academicSession: stu.academicSession },
     });
 
-    const feeHeadOptions = (feesRes.data || []).map(fh => {
+    const feeHeadOptions = (feesRes.data || []).map((fh) => {
+      const name = (fh.feeHeadName || "").toLowerCase();
       const orig = Number(fh.amount || 0);
       let reduced = orig;
-      const name = (fh.feeHeadName || "").toLowerCase();
 
-      // Apply scholarships only if not disabled by previous payment
-      if (name.includes("admission") && !paymentData.admissionScholarshipApplied) reduced = orig - (scholarships.admission || 0);
-      else if (name.includes("session") && !paymentData.sessionScholarshipApplied) reduced = orig - (scholarships.session || 0);
+      // If admission/session already applied (from DB flags), mark disabled and keep amount as orig
+      if (name.includes("admission") && admissionApplied) {
+        return {
+          feeHead: fh.feeHeadName,
+          originalAmount: orig,
+          amount: orig,
+          distance: fh.distance || "",
+          disabled: true,
+        };
+      }
+      if (name.includes("session") && sessionApplied) {
+        return {
+          feeHead: fh.feeHeadName,
+          originalAmount: orig,
+          amount: orig,
+          distance: fh.distance || "",
+          disabled: true,
+        };
+      }
+
+      // otherwise apply scholarship amounts (if any)
+      if (name.includes("admission") && !admissionApplied) reduced = orig - (scholarships.admission || 0);
+      else if (name.includes("session") && !sessionApplied) reduced = orig - (scholarships.session || 0);
       if (reduced < 0) reduced = 0;
-
-      // Disable if scholarship applied previously
-      const disabled = (name.includes("admission") && paymentData.admissionScholarshipApplied) ||
-                       (name.includes("session") && paymentData.sessionScholarshipApplied);
 
       return {
         feeHead: fh.feeHeadName,
         originalAmount: orig,
         amount: reduced,
         distance: fh.distance || "",
-        disabled,
+        disabled: false,
       };
     });
 
     setFeeHeads(feeHeadOptions);
     setSelectedFeeHeads([]);
-    setPaymentData(prev => ({ ...prev, feeDetails: [] }));
+    setPaymentData((prev) => ({ ...prev, feeDetails: [] }));
     setCurrentFee(0);
     setNetPayable(0);
-    setPendingAmount(prevPending);
+    setPendingAmount(0);
   } catch (err) {
     console.error("Error fetching fee heads:", err);
   }
 
+  // new receipt id
   try {
     const res = await axios.get("http://localhost:5000/api/payments/new-receipt-id");
-    setPaymentData(prev => ({ ...prev, paymentId: res.data.paymentId }));
+    setPaymentData((prev) => ({ ...prev, paymentId: res.data.paymentId }));
   } catch (err) {
     console.error("Error fetching new receipt ID:", err);
   }
@@ -426,16 +462,34 @@ const handleFeeHeadChange = (selectedHeads) => {
   const selected = selectedHeads || [];
   const updatedFeeDetails = [];
 
-  const stu = initialStudentOptions.find(s => s.value === paymentData.student);
-  const studentDistance = stu ? Number(stu.distanceFromSchool || 0) : 0;
+  const stu = initialStudentOptions.find(
+    (s) => s.value === paymentData.student
+  );
+  const studentDistance = stu
+    ? Number(stu.distanceFromSchool || 0)
+    : 0;
 
-  selected.forEach(sh => {
+  selected.forEach((sh) => {
     const val = sh.value;
-    const existing = paymentData.feeDetails.find(f => f.feeHead === val);
+    const existing = paymentData.feeDetails.find(
+      (f) => f.feeHead === val
+    );
 
-    // Tuition Fee logic remains same
+    // 🔹 Prevent adding Admission/Session if already applied
+    if (
+      (val.toLowerCase().includes("admission") &&
+        paymentData.admissionScholarshipApplied) ||
+      (val.toLowerCase().includes("session") &&
+        paymentData.sessionScholarshipApplied)
+    ) {
+      return;
+    }
+
+    // Tuition Fee
     if (val.toLowerCase() === "tuition fee") {
-      const existingTuition = paymentData.feeDetails.find(f => f.feeHead.toLowerCase() === "tuition fee");
+      const existingTuition = paymentData.feeDetails.find(
+        (f) => f.feeHead.toLowerCase() === "tuition fee"
+      );
       updatedFeeDetails.push({
         feeHead: "Tuition Fee",
         selectedMonth: existingTuition?.selectedMonth || [],
@@ -446,18 +500,25 @@ const handleFeeHeadChange = (selectedHeads) => {
         pendingAmount: existingTuition?.pendingAmount || 0,
         lateFine: existingTuition?.lateFine || 0,
       });
-    } 
-    // Transport logic remains same
+    }
+    // Transport
     else if (val.toLowerCase() === "transport") {
       let transportAmount = 0;
-      feeHeads.filter(f => f.feeHead.toLowerCase() === "transport").forEach(f => {
-        if (f.distance.includes("-")) {
-          const [min, max] = f.distance.split("-").map(Number);
-          if (studentDistance >= min && studentDistance <= max) transportAmount = f.amount;
-        } else {
-          if (studentDistance === Number(f.distance)) transportAmount = f.amount;
-        }
-      });
+      feeHeads
+        .filter((f) => f.feeHead.toLowerCase() === "transport")
+        .forEach((f) => {
+          if (f.distance.includes("-")) {
+            const [min, max] = f.distance.split("-").map(Number);
+            if (
+              studentDistance >= min &&
+              studentDistance <= max
+            )
+              transportAmount = f.amount;
+          } else {
+            if (studentDistance === Number(f.distance))
+              transportAmount = f.amount;
+          }
+        });
       updatedFeeDetails.push({
         feeHead: "Transport",
         amount: transportAmount,
@@ -468,8 +529,8 @@ const handleFeeHeadChange = (selectedHeads) => {
         pendingAmount: existing?.pendingAmount ?? 0,
         lateFine: existing?.lateFine ?? 0,
       });
-    } 
-    // Other fee head
+    }
+    // Other
     else if (val.toLowerCase() === "other") {
       updatedFeeDetails.push({
         feeHead: "Other",
@@ -480,17 +541,11 @@ const handleFeeHeadChange = (selectedHeads) => {
         pendingAmount: existing?.pendingAmount ?? 0,
         lateFine: existing?.lateFine ?? 0,
       });
-    } 
+    }
     // General fee heads
     else {
-      const feeOpt = feeHeads.find(f => f.feeHead === val);
+      const feeOpt = feeHeads.find((f) => f.feeHead === val);
       if (!feeOpt) return;
-
-      // Ensure disabled fee heads (admission/session) cannot be selected
-      if ((val.toLowerCase().includes("admission") && paymentData.admissionScholarshipApplied) ||
-          (val.toLowerCase().includes("session") && paymentData.sessionScholarshipApplied)) {
-        return; // skip adding, completely disabled
-      }
 
       updatedFeeDetails.push({
         feeHead: feeOpt.feeHead,
@@ -505,26 +560,25 @@ const handleFeeHeadChange = (selectedHeads) => {
     }
   });
 
-  const totalAmount = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
-  const currentFee = updatedFeeDetails.reduce((sum, f) => sum + Number(f.amountPaid || 0), 0);
+  const totalAmount = updatedFeeDetails.reduce(
+    (sum, f) => sum + Number(f.amount || 0),
+    0
+  );
+  const currentFee = updatedFeeDetails.reduce(
+    (sum, f) => sum + Number(f.amountPaid || 0),
+    0
+  );
 
-  setPaymentData(prev => ({
+  setPaymentData((prev) => ({
     ...prev,
     feeDetails: updatedFeeDetails,
     totalAmount,
-    // Do NOT change scholarship flags here; keep previous applied state
-    admissionScholarshipApplied: prev.admissionScholarshipApplied,
-    sessionScholarshipApplied: prev.sessionScholarshipApplied,
   }));
 
   setCurrentFee(currentFee);
   setNetPayable(totalAmount - Number(discount || 0) + Number(lateFine || 0));
   setPendingAmount(totalAmount - currentFee + Number(lateFine || 0));
 };
-
-
-
-
 
 
 // Handle Other Fee Input
@@ -896,16 +950,22 @@ const handleSubmit = async (e) => {
   <Select
     isMulti
     options={[
-      ...Array.from(new Set(feeHeads.map(fh => fh.feeHead))).map(fh => ({
-        value: fh,
-        label: fh,
-        isDisabled:
-          (fh === "Admission Fee" && paymentData.admissionScholarshipApplied) ||
-          (fh === "Session Fee" && paymentData.sessionScholarshipApplied),
-      })),
+      //  Make sure fee heads are unique by name only
+      ...feeHeads
+        .filter(
+          (fh, index, self) =>
+            index === self.findIndex(f => f.feeHead?.toLowerCase() === fh.feeHead?.toLowerCase())
+        )
+        .map(fh => ({
+          value: fh.feeHead,
+          label: fh.feeHead,
+          isDisabled:
+            (fh.feeHead?.toLowerCase().includes("admission") && paymentData.admissionScholarshipApplied) ||
+            (fh.feeHead?.toLowerCase().includes("session") && paymentData.sessionScholarshipApplied),
+        })),
       { value: "Other", label: "Other" },
     ]}
-    onChange={handleFeeHeadChange} // ✅ use your function here
+    onChange={handleFeeHeadChange}
     value={paymentData.feeDetails.map(f =>
       f.feeHead === "Other" ? { value: "Other", label: "Other" } : { value: f.feeHead, label: f.feeHead }
     )}
@@ -914,6 +974,8 @@ const handleSubmit = async (e) => {
     className="mb-2"
   />
 </label>
+
+
 
 
 {paymentData.feeDetails.map((f) => (
