@@ -765,7 +765,8 @@ const handleSubmit = async (e) => {
                     <option value="GN">GN</option>
                     <option value="SC">SC</option>
                     <option value="ST">ST</option>
-                    <option value="OBC">OBC</option>
+                    <option value="OBC">OBC-1</option>
+                    <option value="OBC">OBC-2</option>
                   </select>
                 </label>
                 <label>
@@ -780,32 +781,47 @@ const handleSubmit = async (e) => {
                 </label>
           
               <label>
-                Height
+                Height (CM)
                 <input
+                type="number"
                   name="height"
                   value={studentData.height}
                   onChange={handleChange}
                   className="border bg-gray-100 p-0 rounded w-full"
+                  placeholder="Enter Height"
                 />
               </label>
               <label>
-                Weight
+                Weight (KG)
                 <input
+                type="number"
                   name="weight"
                   value={studentData.weight}
                   onChange={handleChange}
                   className="border bg-gray-100 p-0 rounded w-full"
+                  placeholder="Enter Waight"
                 />
               </label>
               <label>
                 Blood Group
-                <input
+                <select
                   name="bloodGroup"
                   value={studentData.bloodGroup}
                   onChange={handleChange}
                   className="border bg-gray-100 p-0 rounded w-full"
-                />
+                >
+                  <option value="">Select Blood Group</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
               </label>
+
               <label>
                 No. of Brothers
                 <input
@@ -871,9 +887,11 @@ const handleSubmit = async (e) => {
                 <label>
                     Scholarship(Admission Fee)
                     <input
+                    type="number"
                       name="scholarshipForAdmissionFee"
                       value={studentData.scholarshipForAdmissionFee}
                       onChange={handleChange}
+                      placeholder="Enter Amount"
                       className="border bg-gray-100 p-0 rounded w-full"
                     />
                   </label>
@@ -881,9 +899,11 @@ const handleSubmit = async (e) => {
                   <label>
                     Scholarship(Session Fee)
                     <input
+                    type="number"
                       name="scholarshipForSessionFee"
                       value={studentData.scholarshipForSessionFee}
                       onChange={handleChange}
+                      placeholder="Enter Amount"
                       className="border bg-gray-100 p-0 rounded w-full"
                     />
                   </label>
@@ -970,8 +990,16 @@ const handleSubmit = async (e) => {
                   <input
                     name="emergencyContact"
                     value={studentData.emergencyContact}
-                    onChange={handleChange}
+                     onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow only numbers, and max 10 digits
+                      if (/^\d{0,10}$/.test(value)) {
+                        handleChange(e);
+                      }
+                    }}
+                    maxLength="10"
                     className="border bg-gray-100 p-0 rounded w-full"
+                    placeholder="Enter 10-digit number"
                   />
                 </label>
                 <label>
