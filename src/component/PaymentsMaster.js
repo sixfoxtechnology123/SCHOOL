@@ -62,18 +62,35 @@ const PaymentsMaster = () => {
 
 
 useEffect(() => {
-  const paid = Number(amountPaid || 0);
+  const paid = Number(paymentData.amountPaid || 0);
   const fine = Number(lateFine || 0);
   const disc = Number(discount || 0);
-
-  const totalPaidWithFine = paid + fine;
-  setTotalPaid(totalPaidWithFine);
-
-  // Net payable = total fee (currentFee + previousPending) + lateFine - discount
   const totalFee = previousPending + currentFee + fine;
-  setNetPayable(totalFee - disc);
-  setPendingAmount(totalFee - disc - totalPaidWithFine);
-}, [amountPaid, lateFine, discount, currentFee, previousPending]);
+  const totalPaidWithFine = paid + fine;
+
+  if (paymentData.paymentStatus === "Pending") {
+    // Pending → net payable = amountPaid - discount
+    const net = Math.max(paid - disc, 0);
+    setNetPayable(net);
+    setPendingAmount(totalFee - net);
+  } else {
+    // Full Payment → normal logic
+    const net = totalFee - disc;
+    setNetPayable(net);
+    setPendingAmount(net - totalPaidWithFine);
+  }
+
+  setTotalPaid(totalPaidWithFine);
+}, [
+  paymentData.amountPaid,
+  paymentData.paymentStatus,
+  lateFine,
+  discount,
+  currentFee,
+  previousPending,
+]);
+
+
 
 
   const location = useLocation();
@@ -335,11 +352,12 @@ const handleStudentChange = async (selected) => {
     const res = await axios.get(
       `http://localhost:5000/api/payments/previous-pending/${studentCode}`
     );
-    const prevPending = res.data?.previousPending || 0;
+     const prevPending = (res.data?.previousPending || 0) + (res.data?.overallPendingAmount || 0);
+     const overallPendingAmount = res.data?.overallPendingAmount || 0;
     setPreviousPending(prevPending);
     setPendingAmount(prevPending);
     setShowPreviousPending(prevPending > 0);
-    setPaymentData((prev) => ({ ...prev, prevPending }));
+    setPaymentData((prev) => ({ ...prev, prevPending ,overallPendingAmount}));
   } catch (err) {
     console.error("Error fetching previous pending:", err);
     setPreviousPending(0);
@@ -687,30 +705,40 @@ const recalcTotals = (feeDetails) => {
     setTotalPaid(0);
     setPendingAmount(0);
     setNetPayable(0);
-    setPaymentData(prev => ({ ...prev, totalAmount: 0, feeDetails: [] }));
+    setPaymentData((prev) => ({ ...prev, totalAmount: 0, feeDetails: [] }));
     return;
   }
 
-  // Total of fee heads
-  const totalFeeHeads = feeDetails.reduce((sum, f) => sum + Number(f.amount || 0), 0);
+  const totalFeeHeads = feeDetails.reduce(
+    (sum, f) => sum + Number(f.amount || 0),
+    0
+  );
 
-  // Total actually paid (amountPaid + lateFine)
-  const currentFee = feeDetails.reduce((sum, f) => sum + Number(f.amountPaid || 0), 0);
+  const currentFee = feeDetails.reduce(
+    (sum, f) => sum + Number(f.amountPaid || 0),
+    0
+  );
   const totalPaidWithFine = currentFee + Number(lateFine || 0);
-
   const pending = totalFeeHeads + Number(lateFine || 0) - totalPaidWithFine;
   const net = totalFeeHeads + Number(lateFine || 0) - Number(discount || 0);
 
   setCurrentFee(currentFee);
   setTotalPaid(totalPaidWithFine);
   setPendingAmount(pending);
-  setNetPayable(net);
+  setNetPayable(
+    paymentData.paymentStatus === "Pending"
+      ? paymentData.amountPaid || 0
+      : net
+  );
 
-  setPaymentData(prev => ({
+  setPaymentData((prev) => ({
     ...prev,
     totalAmount: totalFeeHeads,
-    feeDetails: feeDetails,
-    netPayable: net
+    feeDetails,
+    netPayable:
+      prev.paymentStatus === "Pending"
+        ? prev.amountPaid || 0
+        : net,
   }));
 };
 
@@ -799,7 +827,7 @@ try {
     let scholarshipAmount = 0;
     const name = f.feeHead?.toLowerCase() || "";
 
-    // ✅ Apply scholarships
+    //  Apply scholarships
     if (name.includes("admission")) {
       scholarshipAmount = Number(studentScholarships.admission || 0);
       finalAmount = totalOriginal - scholarshipAmount;
@@ -807,7 +835,7 @@ try {
       scholarshipAmount = Number(studentScholarships.session || 0);
       finalAmount = totalOriginal - scholarshipAmount;
     } 
-    // ✅ For "Other" fee head: keep both same
+    //  For "Other" fee head: keep both same
     else if (name.includes("other")) {
       scholarshipAmount = 0;
       finalAmount = totalOriginal; // same as originalAmount
@@ -832,34 +860,43 @@ try {
     };
   });
 
+const payload = {
+  student: paymentData.student,
+  rollNo: paymentData.rollNo,
+  admitClass: paymentData.admitClass,
+  section: paymentData.section,
+  academicSession: paymentData.academicSession,
+  feeDetails: feeDetailsForBackend,
+  previousPending: Number(previousPending || 0),
+  currentFee: Number(currentFee || 0),
+  totalAmount: Number(paymentData.totalAmount || 0),
+  discount: Number(discount || 0),
+
+netPayable: Number(netPayable || 0),
 
 
+  // Store amountPaid depending on payment status
+  amountPaid:
+    paymentData.paymentStatus === "Pending"
+      ? Number(paymentData.amountPaid || 0)
+      : Number(paymentData.totalAmount || 0),
 
+  overallPendingAmount:
+    paymentData.paymentStatus === "Pending"
+      ? Math.max(Number(paymentData.totalAmount || 0) - Number(paymentData.amountPaid || 0), 0)
+      : 0,
 
-    const payload = {
-      student: paymentData.student,
-      rollNo: paymentData.rollNo,
-      admitClass: paymentData.admitClass,
-      section: paymentData.section,
-      academicSession: paymentData.academicSession,
-      feeDetails: feeDetailsForBackend,
-      previousPending: Number(previousPending || 0),
-      currentFee: Number(currentFee || 0),           // use frontend state
-      totalAmount: Number(paymentData.totalAmount || 0), // use frontend state
-      discount: Number(discount || 0),
-      netPayable: Number(netPayable || 0),           // use frontend state
-      amountPaid: Number(totalPaid || 0),            // use frontend state
-      pendingAmount: Number(pendingAmount || 0),     // use frontend state
-      paymentStatus,
-      paymentMode: paymentData.paymentMode,
-      transactionId: paymentData.transactionId || "",
-      cardNumber: paymentData.cardNumber || "",
-      remarks: paymentData.remarks || "",
-      user: paymentData.user || localStorage.getItem("userId") || "admin",
-      lateFine: Number(lateFine || 0),             
-      admissionScholarshipApplied: paymentData.admissionScholarshipApplied || false,
+  paymentStatus: paymentData.paymentStatus,
+  paymentMode: paymentData.paymentMode,
+  transactionId: paymentData.transactionId || "",
+  cardNumber: paymentData.cardNumber || "",
+  remarks: paymentData.remarks || "",
+  user: paymentData.user || localStorage.getItem("userId") || "admin",
+  lateFine: Number(lateFine || 0),
+  admissionScholarshipApplied: paymentData.admissionScholarshipApplied || false,
   sessionScholarshipApplied: paymentData.sessionScholarshipApplied || false,
-    };
+};
+
 
     if (isEditMode) {
       await axios.put(`http://localhost:5000/api/payments/${paymentData._id}`, payload);
@@ -885,6 +922,39 @@ setUsedMonths({ tuition: [...newTuition], transport: [...newTransport] });
   }
 };
 
+// ================== TOTAL CALCULATIONS ==================
+const totalOriginal = pendingFeeHeads.reduce(
+  (sum, fh) =>
+    sum +
+    (String(fh.feeHead || "").toLowerCase().includes("other")
+      ? Number(fh.amount || 0)
+      : Number(fh.originalAmount || 0)),
+  0
+);
+
+const totalScholarship = pendingFeeHeads.reduce(
+  (sum, fh) =>
+    sum +
+    (fh.originalAmount && fh.amount
+      ? Number(fh.originalAmount) - Number(fh.amount)
+      : 0),
+  0
+);
+
+const totalPayable = pendingFeeHeads.reduce(
+  (sum, fh) => sum + Number(fh.amount || 0),
+  0
+);
+
+const totalamount = pendingFeeHeads.reduce(
+  (sum, fh) => sum + Number(fh.amountPaid || 0),
+  0
+);
+
+const totalPending = pendingFeeHeads.reduce(
+  (sum, fh) => sum + Number(fh.pendingAmount || 0),
+  0
+);
 
   return (
     <div className="min-h-screen bg-zinc-300 flex justify-center">
@@ -1320,6 +1390,31 @@ setUsedMonths({ tuition: [...newTuition], transport: [...newTransport] });
                       </td>
                     </tr>
                   )}
+                  {/* <tr className="bg-gray-100 font-semibold">
+                    <td className="text-center border p-2">Total</td>
+                    <td className="text-center border p-2">{totalOriginal}</td>
+                    <td className="text-center border p-2">{totalScholarship}</td>
+                    <td className="text-center border p-2">{totalPayable}</td>
+                    <td className="text-center border p-2">{totalamount}</td>
+                    <td className="text-center border p-2">{totalPending}</td>
+                  </tr> */}
+                   <tr className="bg-gray-100 font-semibold">
+                    <td className="text-center border p-2">Total</td>
+                    <td className="text-center border p-2"></td>
+                    <td className="text-center border p-2"></td>
+                    <td className="text-center border p-2"></td>
+                    <td className="text-center border p-2"></td>
+                    <td className="text-center border p-2">{totalPending}</td>
+                  </tr>
+                  <tr className="bg-yellow-100 font-semibold">
+                  <td colSpan={5} className="text-right p-2 border border-gray-400">
+                    Previous Pending Amount
+                  </td>
+                  <td className="text-center p-2 border border-gray-400">
+                    {Number(paymentData.overallPendingAmount || 0)}
+                  </td>
+                </tr>
+
                 </tbody>
               </table>
 
@@ -1345,8 +1440,85 @@ setUsedMonths({ tuition: [...newTuition], transport: [...newTransport] });
               readOnly
               className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
             />
-
           </label>
+
+{/* ================== PAYMENT STATUS ================== */}
+<label className="flex flex-col text-sm font-semibold text-black">
+  Payment Status
+  <select
+    value={paymentData.paymentStatus}
+    onChange={(e) => {
+      const newStatus = e.target.value;
+      setPaymentData((prev) => {
+        if (newStatus === "Pending") {
+          return {
+            ...prev,
+            paymentStatus: newStatus,
+            amountPaid: "",
+            netPayable: 0,
+            overallPendingAmount: 0,
+          };
+        } else {
+          return {
+            ...prev,
+            paymentStatus: newStatus,
+            amountPaid: prev.totalAmount,
+            netPayable: prev.totalAmount,
+            overallPendingAmount: 0,
+          };
+        }
+      });
+    }}
+    className="border border-gray-400 p-1 rounded"
+  >
+    <option value="Full Payment">Full Payment</option>
+    <option value="Pending">Pending</option>
+  </select>
+</label>
+
+{/* ================== AMOUNT PAID + OVERALL PENDING ================== */}
+{paymentData.paymentStatus === "Pending" && (
+  <div className="flex flex-row items-end gap-4 w-full col-span-2">
+    {/* Amount Paid */}
+    <div className="flex flex-col w-full text-sm font-semibold text-black">
+      <label>Amount Paid</label>
+      <input
+        type="number"
+        value={paymentData.amountPaid || ""}
+        onChange={(e) => {
+          const paidValue = Number(e.target.value) || 0;
+          const totalFee =
+            (previousPending || 0) +
+            (currentFee || 0) +
+            (lateFine || 0);
+
+          const pending = totalFee - paidValue;
+
+          setPaymentData((prev) => ({
+            ...prev,
+            amountPaid: paidValue,
+            netPayable: paidValue,
+            overallPendingAmount: pending > 0 ? pending : 0,
+          }));
+        }}
+        placeholder="Enter paid amount"
+        className="border border-gray-400 p-1 rounded"
+      />
+    </div>
+
+    {/* Overall Pending Amount */}
+    <div className="flex flex-col w-full text-sm font-semibold text-black">
+      <label>Total Pending Amount</label>
+      <input
+        type="number"
+        value={paymentData.overallPendingAmount || 0}
+        readOnly
+        className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
+      />
+    </div>
+  </div>
+)}
+
 
         {/* Discount */}
     <label className="flex flex-col text-sm font-semibold text-black">

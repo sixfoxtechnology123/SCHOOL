@@ -288,18 +288,37 @@ finalFeeDetails.push({
 
 //  Correct calculations
 paymentBody.totalFee = Number(currentFee + lateFine + previousPending);
-paymentBody.netPayable = Math.max(paymentBody.totalFee - paymentBody.discount, 0);
+//  Respect frontend-calculated netPayable (includes discount)
+const frontendNetPayable = Number(paymentBody.netPayable || 0);
+const calculatedNetPayable = Math.max(paymentBody.totalFee - paymentBody.discount, 0);
+
+// If frontend sends correct netPayable (after discount), keep it
+paymentBody.netPayable = frontendNetPayable > 0 ? frontendNetPayable : calculatedNetPayable;
 paymentBody.totalPaidAmount = paymentBody.netPayable;
 paymentBody.totalPendingAmount = paymentBody.feeDetails.reduce(
   (sum, f) => sum + Number(f.pendingAmount || 0),
   0
 );
 
-paymentBody.amountPaid = paymentBody.totalPaidAmount;
-paymentBody.pendingAmount = paymentBody.totalPendingAmount;
+// Apply payment status & pending logic from frontend
+const isPending = paymentBody.paymentStatus === "Pending";
+const frontendPaid = Number(paymentBody.amountPaid || 0);
+const totalFee = Number(paymentBody.totalFee || 0);
 
-// Payment status
-paymentBody.paymentStatus = paymentBody.totalPendingAmount > 0 ? "Pending" : "Full Payment";
+if (isPending) {
+  // Keep frontend discount logic
+  paymentBody.amountPaid = frontendPaid;
+  paymentBody.netPayable = Number(paymentBody.netPayable || 0); // keep frontend netPayable (after discount)
+  paymentBody.overallPendingAmount = Math.max(paymentBody.totalFee - frontendPaid, 0);
+} else {
+  // For full payment, store frontend-calculated netPayable (discount already applied)
+  paymentBody.amountPaid = Number(paymentBody.netPayable || paymentBody.totalFee || 0);
+  paymentBody.netPayable = Number(paymentBody.netPayable || 0);
+  paymentBody.overallPendingAmount = 0;
+}
+
+paymentBody.paymentStatus = isPending ? "Pending" : "Full Payment";
+
 // ====== Set Scholarship Flags Based on Selected Fee Heads ======
 paymentBody.admissionScholarshipApplied = paymentBody.feeDetails.some(fd => 
   (fd.feeHead || "").toLowerCase() === "admission fee"
@@ -320,7 +339,7 @@ const createPayment = async (req, res) => {
     if (!req.body.paymentId) req.body.paymentId = await generateNextPaymentId();
     await populateFeeAmounts(req.body);
 
-    // ✅ Find latest payment for this student in same session
+    //  Find latest payment for this student in same session
     const latestPayment = await Payment.findOne({
       student: req.body.student,
       academicSession: req.body.academicSession,
@@ -328,7 +347,7 @@ const createPayment = async (req, res) => {
       .sort({ date: -1 })
       .lean();
 
-    // ✅ Determine scholarship flags based on previous receipt
+    //  Determine scholarship flags based on previous receipt
     let admissionScholarshipApplied = req.body.admissionScholarshipApplied || false;
     let sessionScholarshipApplied = req.body.sessionScholarshipApplied || false;
 
@@ -338,11 +357,11 @@ const createPayment = async (req, res) => {
       if (latestPayment.sessionScholarshipApplied) sessionScholarshipApplied = true;
     }
 
-    // ✅ Apply the final flags before saving
+    //  Apply the final flags before saving
     req.body.admissionScholarshipApplied = admissionScholarshipApplied;
     req.body.sessionScholarshipApplied = sessionScholarshipApplied;
 
-    // ✅ Save payment
+    // Save payment
     const payment = new Payment(req.body);
     await payment.save();
 
@@ -497,10 +516,11 @@ const getPreviousPending = async (req, res) => {
       .lean();
 
     if (!latestPayment)
-      return res.status(200).json({ previousPending: 0, lastPaymentId: null });
+      return res.status(200).json({ previousPending: 0,overallPendingAmount: 0, lastPaymentId: null });
 
     return res.status(200).json({
       previousPending: latestPayment.totalPendingAmount || 0,
+       overallPendingAmount: latestPayment.overallPendingAmount || 0,
       lastPaymentId: latestPayment.paymentId,
     });
   } catch (err) {

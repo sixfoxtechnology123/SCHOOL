@@ -31,11 +31,23 @@ const paymentSchema = new mongoose.Schema(
     currentFee: { type: Number, default: 0 },
     lateFine: { type: Number, default: 0 },  
     totalFee: { type: Number, default: 0 }, 
+    paymentStatus: {
+      type: String,
+      enum: ["Full Payment", "Pending"],
+      default: "Full Payment",
+    },
+    amountPaid: {
+      type: Number,
+      default: 0,
+    },
+    overallPendingAmount: { type: Number, default: 0 },
+
     discount: { type: Number, default: 0 },
     netPayable: { type: Number, default: 0 },
 
     totalPaidAmount: { type: Number, default: 0 },    // total paid amount
     totalPendingAmount: { type: Number, default: 0 },
+
     paymentMode: {
       type: String,
       enum: ["Cash", "Card", "UPI", "NetBanking", "No Payment"],
