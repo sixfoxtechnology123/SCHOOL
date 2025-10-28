@@ -662,7 +662,6 @@ const handleFeeHeadPaymentStatusChange = (feeHead, status) => {
 };
 
 
-
 // ===== Amount Paid Change (for Pending) =====
 const handleFeeHeadAmountPaidChange = (feeHead, val) => {
   setPaymentData(prev => {
@@ -680,8 +679,6 @@ const handleFeeHeadAmountPaidChange = (feeHead, val) => {
     return { ...prev, feeDetails: updatedFeeDetails };
   });
 };
-
-
 
 
 const recalcTotals = (feeDetails) => {
@@ -716,9 +713,6 @@ const recalcTotals = (feeDetails) => {
     netPayable: net
   }));
 };
-
-
-
 
 
   const handleRouteChange = async (routeId) => {
@@ -793,22 +787,54 @@ const handleSubmit = async (e) => {
     return;
   }
 
-  try {
-    // Fee details including late fine per fee head
-    const feeDetailsForBackend = (paymentData.feeDetails || []).map(f => ({
+try {
+  const feeDetailsForBackend = (paymentData.feeDetails || []).map((f) => {
+    const selectedMonths = Array.isArray(f.selectedMonth)
+      ? f.selectedMonth.filter((m) => m)
+      : [];
+    const monthCount = selectedMonths.length || 1;
+    const totalOriginal = Number(f.originalAmount || f.amount || 0) * monthCount;
+
+    let finalAmount = totalOriginal;
+    let scholarshipAmount = 0;
+    const name = f.feeHead?.toLowerCase() || "";
+
+    // ✅ Apply scholarships
+    if (name.includes("admission")) {
+      scholarshipAmount = Number(studentScholarships.admission || 0);
+      finalAmount = totalOriginal - scholarshipAmount;
+    } else if (name.includes("session")) {
+      scholarshipAmount = Number(studentScholarships.session || 0);
+      finalAmount = totalOriginal - scholarshipAmount;
+    } 
+    // ✅ For "Other" fee head: keep both same
+    else if (name.includes("other")) {
+      scholarshipAmount = 0;
+      finalAmount = totalOriginal; // same as originalAmount
+    }
+
+    if (finalAmount < 0) finalAmount = 0;
+
+    return {
       feeHead: f.feeHead,
-      originalAmount: Number(f.originalAmount || 0),
-      amount: Number(f.amount || 0),
+      originalAmount: totalOriginal,
+      amount: finalAmount,
+      scholarshipAmount,
+      appliedScholarship: scholarshipAmount,
       amountPaid: Number(f.amountPaid || 0),
       pendingAmount: Number(f.pendingAmount || 0),
       paymentStatus: f.paymentStatus || "Full Payment",
       lateFine: Number(f.lateFine || 0),
       otherName: f.otherName || "",
-      distance: f.distance || 0,    // add this
-      //routeId: f.routeId || "", 
-       ...(f.feeHead.toLowerCase() === "tuition" ? { month: f.selectedMonth } : {}),
-       selectedMonth: Array.isArray(f.selectedMonth) ? f.selectedMonth.filter(m => m) : [],
-    }));
+      distance: f.distance || 0,
+      ...(name.includes("tuition") ? { month: selectedMonths } : {}),
+      selectedMonth: selectedMonths,
+    };
+  });
+
+
+
+
 
     const payload = {
       student: paymentData.student,
@@ -858,7 +884,7 @@ setUsedMonths({ tuition: [...newTuition], transport: [...newTransport] });
     toast.error("Error saving receipt. Check console.");
   }
 };
-console.log("Used months debug:", usedMonths);
+
 
   return (
     <div className="min-h-screen bg-zinc-300 flex justify-center">
@@ -1035,7 +1061,7 @@ console.log("Used months debug:", usedMonths);
   isMulti
   options={tuitionMonths.map(m => ({ value: m.month, label: m.month }))}
   value={(f.selectedMonth || []).map(m => ({ value: m, label: m }))}
-  isOptionDisabled={(option) => (usedMonths.tuition || []).includes(option.value)} // ✅ disable already used
+  isOptionDisabled={(option) => (usedMonths.tuition || []).includes(option.value)} //  disable already used
   onChange={(selectedOptions) => {
     const months = selectedOptions.map(o => o.value);
     const perMonthFee = feeHeads.find(fh => fh.feeHead.toLowerCase() === "tuition fee")?.amount || 0;
@@ -1072,7 +1098,7 @@ console.log("Used months debug:", usedMonths);
   isMulti
   options={tuitionMonths.map(m => ({ value: m.month, label: m.month }))}
   value={(f.selectedMonth || []).map(m => ({ value: m, label: m }))}
-  isOptionDisabled={(option) => (usedMonths.transport || []).includes(option.value)} // ✅ disable already used
+  isOptionDisabled={(option) => (usedMonths.transport || []).includes(option.value)} // disable already used
   onChange={(selectedOptions) => {
     const months = selectedOptions.map(o => o.value);
     const perMonthFee = Number(f.originalAmount || 0);
@@ -1229,46 +1255,86 @@ console.log("Used months debug:", usedMonths);
         </button>
       </div>
     )}
-  {showPendingModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div className="bg-white p-5 rounded w-auto">
-      <h2 className="text-lg font-semibold mb-4">Previous Pending Details</h2>
-      <table className="w-full border">
-        <thead>
-          <tr className="border-1">
-            <th className="p-2 text-left font-medium">Fee Head</th>
-            <th className="p-2 text-left font-medium">Original Amount</th>
-            <th className="p-2 text-left font-medium">Pending Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pendingFeeHeads.length > 0 ? (
-            pendingFeeHeads.map((fh, idx) => (
-              <tr key={idx} className="border-2">
-                <td className="p-1">{fh.feeHeadName}</td>
-                <td className="p-1 text-center">{fh.originalAmount}</td>
-                <td className="p-1 text-center">{fh.pendingAmount}</td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan={3} className="p-2 text-center">No pending fee heads</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-     <div className="flex justify-end mt-4">
-  <button
-    className="bg-red-500 text-white px-3 py-0 rounded"
-    onClick={() => setShowPendingModal(false)}
-  >
-    Close
-  </button>
-</div>
+    
+        {showPendingModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-5 rounded w-auto">
+              <h2 className="text-lg font-semibold mb-4">Previous Pending Details</h2>
 
-    </div>
-  </div>
-)}
+              <table className="w-full border-collapse border border-black text-sm">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border border-gray-400 p-2 text-center">Fee Head</th>
+                    <th className="border border-gray-400 p-2 text-center">Original Amount</th>
+                    <th className="border border-gray-400 p-2 text-center">Scholarship</th>
+                    <th className="border border-gray-400 p-2 text-center">Payble Amount</th>
+                    <th className="border border-gray-400 p-2 text-center">Paid Amount</th>
+                    <th className="border border-gray-400 p-2 text-center">Pending Amount</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {pendingFeeHeads.length > 0 ? (
+                    pendingFeeHeads.map((fh, idx) => {
+                      const scholarship =
+                        fh.originalAmount && fh.amount
+                          ? fh.originalAmount - fh.amount
+                          : 0;
+
+                      const netAmount = fh.amount || 0;
+
+                      return (
+                        <tr key={idx} className="border-2">
+                          <td className="p-1 text-center">{fh.feeHeadName}</td>
+
+                          {/* Original Amount (for 'other' fee head show amount instead of original) */}
+                          <td className="p-1 text-center">
+                            {fh.feeHead?.toLowerCase().includes("other")
+                              ? fh.amount
+                              : fh.originalAmount ?? 0}
+
+                          </td>
+
+                          {/* Scholarship */}
+                          <td className="p-1 text-center">
+                              {scholarship > 0 ? scholarship : "--"}
+                          </td>
+
+
+
+                          {/* Net Amount */}
+                          <td className="p-1 text-center">{netAmount}</td>
+
+                          {/* Paid Amount */}
+                          <td className="p-1 text-center">{fh.amountPaid || 0}</td>
+
+                          {/* Pending Amount */}
+                          <td className="p-1 text-center">{fh.pendingAmount || 0}</td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan={6} className="p-2 text-center text-gray-500">
+                        No pending fee heads
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+
+              <div className="flex justify-end mt-4">
+                <button
+                  className="bg-red-500 text-white px-3 py-1 rounded"
+                  onClick={() => setShowPendingModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
 
           {/* Total Amount */}
           <label className="flex flex-col text-sm font-semibold text-black">

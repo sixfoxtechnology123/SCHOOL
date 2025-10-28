@@ -245,7 +245,14 @@ async function populateFeeAmounts(paymentBody) {
     total += Number(amount);
     totalLateFine += Number(f.lateFine || 0);
 
-    finalFeeDetails.push({ ...f, amount });
+finalFeeDetails.push({
+  ...f,
+  amount,
+  scholarshipAmount: Number(f.appliedScholarship || 0), 
+});
+
+
+
   }
 
  const sanitizedFeeDetails = finalFeeDetails
@@ -260,6 +267,7 @@ async function populateFeeAmounts(paymentBody) {
       lateFine: Number(fd.lateFine || 0),
       otherName: fd.otherName || "",
       appliedScholarship: Number(fd.appliedScholarship || 0),
+      scholarshipAmount: Number(fd.appliedScholarship || 0),
       routeId: fd.routeId || "",
       distance: fd.distance || "",
      selectedMonth: Array.isArray(fd.selectedMonth) && fd.selectedMonth.length > 0
@@ -501,30 +509,43 @@ const getPreviousPending = async (req, res) => {
   }
 };
 
-// Get latest pending fee heads for a student
+//  Get latest pending fee heads for a student
 const getPendingFeeHeads = async (req, res) => {
   try {
     const studentId = req.params.studentId;
 
-    //  Fetch latest payment record for the student
+    // Fetch latest payment record for the student
     const latestPayment = await Payment.findOne({ student: studentId })
-      .sort({ createdAt: -1 }) // or _id: -1 if createdAt not available
+      .sort({ createdAt: -1 })
       .lean();
 
     if (!latestPayment) {
-      return res.json([]); // no payments found
+      return res.json([]);
     }
 
-    //  Extract only fee heads with "Pending" status
+    // Prepare pending fee heads
     const pendingHeads = (latestPayment.feeDetails || [])
       .filter(fd => fd.paymentStatus?.toLowerCase() === "pending")
       .map(fd => ({
         feeHeadName: fd.feeHead,
-        originalAmount: fd.originalAmount || 0,
+        // 🔹 If fee head is "Other", show 'amount' instead of 'originalAmount'
+        originalAmount: fd.feeHead?.toLowerCase().includes("other")
+          ? fd.amount || 0
+          : fd.originalAmount || 0,
+          
+          amount: fd.amount || 0, 
+
+        scholarshipAmount:
+        typeof fd.scholarshipAmount === "number"
+          ? fd.scholarshipAmount
+          : (fd.originalAmount || 0) - (fd.amount || 0),
+
+        amountPaid:fd.amountPaid || 0,
+
         pendingAmount: fd.pendingAmount || 0,
+
       }));
 
-    //  Return the pending fee head list
     res.json(pendingHeads);
   } catch (err) {
     console.error("Error fetching pending fee heads:", err);

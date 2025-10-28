@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const feeDetailSchema = new mongoose.Schema({
   feeHead: { type: String, required: true },
   originalAmount: { type: Number, default: 0 }, // original fee
+  scholarshipAmount: { type: Number, default: 0 },
   amount: { type: Number, required: true },     // actual fee
   paymentStatus: { type: String, enum: ["Full Payment", "Pending"], default: "Full Payment" },
   amountPaid: { type: Number, default: 0 },
