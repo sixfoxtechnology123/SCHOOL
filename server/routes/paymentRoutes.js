@@ -25,9 +25,8 @@ router.get("/classes", controller.getAllClasses);
 router.get("/previous-pending/:student", controller.getPreviousPending);
 router.get("/pending-fee-heads/:studentId", controller.getPendingFeeHeads);
 router.get("/latest-payment-flags/:studentId", controller.getLatestPaymentFlags);
-
 router.get("/scholarship/:studentId/:academicSession", controller.getLatestPaymentFlags);
-
+router.get("/used-months/:studentId/:academicSession", controller.getUsedMonths);
 
 // GET scholarship by admission number
 router.get("/scholarships/:admissionNo", async (req, res) => {

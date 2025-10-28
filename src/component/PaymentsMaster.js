@@ -28,8 +28,7 @@ const PaymentsMaster = () => {
   const [amountPaid, setAmountPaid] = useState("");
   const [pendingAmount, setPendingAmount] = useState(0);
   const [netPayable, setNetPayable] = useState(0);
-   const [showPreviousPending, setShowPreviousPending] = useState(false);
-
+  const [showPreviousPending, setShowPreviousPending] = useState(false);
   const [tuitionMonths, setTuitionMonths] = useState([]); 
   const [selectedMonth, setSelectedMonth] = useState(""); 
   const [classes, setClasses] = useState([]);
@@ -40,7 +39,6 @@ const PaymentsMaster = () => {
   const [routes, setRoutes] = useState([]);
   const [showRouteDropdown, setShowRouteDropdown] = useState(false);
   const [selectedRoute, setSelectedRoute] = useState("");
-
   const [classOptions, setClassOptions] = useState([]);
   const [sectionOptions, setSectionOptions] = useState([]);
   const [studentOptions, setStudentOptions] = useState([]);
@@ -51,19 +49,17 @@ const PaymentsMaster = () => {
   const [showPendingModal, setShowPendingModal] = useState(false);
   const [pendingFeeHeads, setPendingFeeHeads] = useState([]);
   const [disableAdmissionSession, setDisableAdmissionSession] = useState(false);
-
-
-
   const [paymentStatus, setPaymentStatus] = useState("Full Payment");
-    // --- Fee Heads State ---
-const [selectedFeeHeads, setSelectedFeeHeads] = useState([]);
-const [isOtherSelected, setIsOtherSelected] = useState(false);
-const [otherName, setOtherName] = useState("");
-const [otherAmount, setOtherAmount] = useState('');
-const [studentScholarships, setStudentScholarships] = useState({
-  admission: 0,
-  session: 0
-});
+  const [selectedFeeHeads, setSelectedFeeHeads] = useState([]);
+  const [isOtherSelected, setIsOtherSelected] = useState(false);
+  const [otherName, setOtherName] = useState("");
+  const [otherAmount, setOtherAmount] = useState('');
+  const [studentScholarships, setStudentScholarships] = useState({
+    admission: 0,
+    session: 0
+  });
+  const [usedMonths, setUsedMonths] = useState({ tuition: [], transport: [] });
+
 
 useEffect(() => {
   const paid = Number(amountPaid || 0);
@@ -78,10 +74,6 @@ useEffect(() => {
   setNetPayable(totalFee - disc);
   setPendingAmount(totalFee - disc - totalPaidWithFine);
 }, [amountPaid, lateFine, discount, currentFee, previousPending]);
-
-
-
-
 
 
   const location = useLocation();
@@ -367,6 +359,22 @@ const handleStudentChange = async (selected) => {
     setPendingFeeHeads([]);
   }
 
+if (stu && stu.fullData && stu.fullData.studentId && stu.academicSession) {
+  try {
+    const res = await axios.get(
+      `http://localhost:5000/api/payments/used-months/${stu.fullData.studentId}/${stu.academicSession}`
+    );
+
+    console.log("Fetched used months from backend:", res.data);
+    setUsedMonths(res.data || { tuition: [], transport: [] });
+  } catch (err) {
+    console.error("Error fetching used months:", err);
+  }
+}
+
+
+
+
   // scholarships amounts
   let scholarships = { admission: 0, session: 0 };
   try {
@@ -502,34 +510,47 @@ const handleFeeHeadChange = (selectedHeads) => {
       });
     }
     // Transport
-    else if (val.toLowerCase() === "transport") {
-      let transportAmount = 0;
-      feeHeads
-        .filter((f) => f.feeHead.toLowerCase() === "transport")
-        .forEach((f) => {
-          if (f.distance.includes("-")) {
-            const [min, max] = f.distance.split("-").map(Number);
-            if (
-              studentDistance >= min &&
-              studentDistance <= max
-            )
-              transportAmount = f.amount;
-          } else {
-            if (studentDistance === Number(f.distance))
-              transportAmount = f.amount;
-          }
-        });
-      updatedFeeDetails.push({
-        feeHead: "Transport",
-        amount: transportAmount,
-        originalAmount: transportAmount,
-        distance: studentDistance,
-        paymentStatus: existing?.paymentStatus || "Full Payment",
-        amountPaid: existing?.amountPaid ?? transportAmount,
-        pendingAmount: existing?.pendingAmount ?? 0,
-        lateFine: existing?.lateFine ?? 0,
-      });
-    }
+else if (val.toLowerCase() === "transport") {
+  let perMonthRate = 0;
+  feeHeads
+    .filter((f) => f.feeHead.toLowerCase() === "transport")
+    .forEach((f) => {
+      if (f.distance.includes("-")) {
+        const [min, max] = f.distance.split("-").map(Number);
+        if (studentDistance >= min && studentDistance <= max) perMonthRate = f.amount;
+      } else {
+        if (studentDistance === Number(f.distance)) perMonthRate = f.amount;
+      }
+    });
+
+  // 🔹 Find existing transport fee (to preserve months & calculated amount)
+  const existingTransport = paymentData.feeDetails.find(
+    (f) => f.feeHead.toLowerCase() === "transport"
+  );
+
+  const selectedMonths = existingTransport?.selectedMonth || [];
+  const totalAmount = perMonthRate * selectedMonths.length;
+
+  updatedFeeDetails.push({
+    feeHead: "Transport",
+    amount: totalAmount,
+    originalAmount: perMonthRate, // per-month rate
+    distance: studentDistance,
+    selectedMonth: selectedMonths, // <-- preserve previous months
+    paymentStatus: existingTransport?.paymentStatus || "Full Payment",
+    amountPaid:
+      existingTransport?.paymentStatus === "Full Payment"
+        ? totalAmount
+        : existingTransport?.amountPaid ?? 0,
+    pendingAmount:
+      existingTransport?.paymentStatus === "Full Payment"
+        ? 0
+        : totalAmount - (existingTransport?.amountPaid ?? 0),
+    lateFine: existingTransport?.lateFine ?? 0,
+  });
+}
+
+
     // Other
     else if (val.toLowerCase() === "other") {
       updatedFeeDetails.push({
@@ -822,6 +843,14 @@ const handleSubmit = async (e) => {
       toast.success("Receipt saved successfully!");
       await fetchNextPaymentId();
     }
+    const newTuition = new Set(usedMonths.tuition || []);
+const newTransport = new Set(usedMonths.transport || []);
+(feeDetailsForBackend || []).forEach(fd => {
+  const months = Array.isArray(fd.selectedMonth) ? fd.selectedMonth : [];
+  if (fd.feeHead.toLowerCase().includes("tuition")) months.forEach(m => newTuition.add(m));
+  if (fd.feeHead.toLowerCase().includes("transport")) months.forEach(m => newTransport.add(m));
+});
+setUsedMonths({ tuition: [...newTuition], transport: [...newTransport] });
 
     navigate("/PaymentsList", { replace: true });
   } catch (err) {
@@ -829,6 +858,7 @@ const handleSubmit = async (e) => {
     toast.error("Error saving receipt. Check console.");
   }
 };
+console.log("Used months debug:", usedMonths);
 
   return (
     <div className="min-h-screen bg-zinc-300 flex justify-center">
@@ -1001,42 +1031,77 @@ const handleSubmit = async (e) => {
 {f.feeHead.toLowerCase().includes("tuition") && (
   <label className="flex flex-col text-sm font-semibold text-black mt-1 required">
     Month
-    <Select
-      isMulti
-      options={tuitionMonths.map(m => ({ value: m.month, label: m.month }))}
-      value={(f.selectedMonth || []).map(m => ({ value: m, label: m }))}
-      onChange={(selectedOptions) => {
-        const months = selectedOptions.map(o => o.value);
+<Select
+  isMulti
+  options={tuitionMonths.map(m => ({ value: m.month, label: m.month }))}
+  value={(f.selectedMonth || []).map(m => ({ value: m, label: m }))}
+  isOptionDisabled={(option) => (usedMonths.tuition || []).includes(option.value)} // ✅ disable already used
+  onChange={(selectedOptions) => {
+    const months = selectedOptions.map(o => o.value);
+    const perMonthFee = feeHeads.find(fh => fh.feeHead.toLowerCase() === "tuition fee")?.amount || 0;
 
-        // Get tuition fee per month from feeHeads
-        const perMonthFee = feeHeads.find(fh => fh.feeHead.toLowerCase() === "tuition fee")?.amount || 0;
+    const updatedFeeDetails = paymentData.feeDetails.map(fd => {
+      if (fd.feeHead.toLowerCase() === "tuition fee") {
+        const totalAmount = months.length * perMonthFee;
+        return {
+          ...fd,
+          selectedMonth: months,
+          amount: totalAmount,
+          originalAmount: perMonthFee,
+          amountPaid: fd.paymentStatus === "Full Payment" ? totalAmount : 0,
+          pendingAmount: fd.paymentStatus === "Full Payment" ? 0 : totalAmount,
+        };
+      }
+      return fd;
+    });
 
-        const updatedFeeDetails = paymentData.feeDetails.map(fd => {
-          if (fd.feeHead.toLowerCase() === "tuition fee") {
-            const totalAmount = months.length * perMonthFee; // multiply
-            return {
-              ...fd,
-              selectedMonth: months,
-              amount: totalAmount,
-              originalAmount: perMonthFee, // original per month fee
-              amountPaid: fd.paymentStatus === "Full Payment" ? totalAmount : 0,
-              pendingAmount: fd.paymentStatus === "Full Payment" ? 0 : totalAmount,
-            };
-          }
-          return fd;
-        });
+    setPaymentData(prev => ({ ...prev, feeDetails: updatedFeeDetails }));
+    recalcTotals(updatedFeeDetails);
+  }}
+  className="p-1 rounded border-gray-400"
+/>
 
-        setPaymentData(prev => ({ ...prev, feeDetails: updatedFeeDetails }));
-        recalcTotals(updatedFeeDetails); // recalc total, netPayable, pending
-      }}
-      className="p-1 rounded border-gray-400"
-    />
   </label>
 )}
 
 
+{f.feeHead.toLowerCase() === "transport" && (
+  <label className="flex flex-col text-sm font-semibold text-black mt-1 required">
+    Month
+<Select
+  isMulti
+  options={tuitionMonths.map(m => ({ value: m.month, label: m.month }))}
+  value={(f.selectedMonth || []).map(m => ({ value: m, label: m }))}
+  isOptionDisabled={(option) => (usedMonths.transport || []).includes(option.value)} // ✅ disable already used
+  onChange={(selectedOptions) => {
+    const months = selectedOptions.map(o => o.value);
+    const perMonthFee = Number(f.originalAmount || 0);
+    const totalAmount = months.length * perMonthFee;
+
+    const updatedFeeDetails = paymentData.feeDetails.map(fd => {
+      if (fd.feeHead.toLowerCase() === "transport") {
+        const amountPaid = fd.paymentStatus === "Full Payment" ? totalAmount : (fd.amountPaid || 0);
+        const pending = fd.paymentStatus === "Full Payment" ? 0 : totalAmount - (fd.amountPaid || 0);
+        return {
+          ...fd,
+          selectedMonth: months,
+          amount: totalAmount,
+          amountPaid,
+          pendingAmount: pending,
+        };
+      }
+      return fd;
+    });
+
+    setPaymentData(prev => ({ ...prev, feeDetails: updatedFeeDetails }));
+    recalcTotals(updatedFeeDetails);
+  }}
+  className="p-1 rounded border-gray-400"
+/>
 
 
+  </label>
+)}
     {/* Amount */}
     <label className="flex flex-col text-sm font-semibold text-black mt-1">
       Amount

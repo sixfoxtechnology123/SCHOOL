@@ -568,8 +568,53 @@ const getLatestPaymentFlags = async (req, res) => {
   }
 };
 
+const getUsedMonths = async (req, res) => {
+  try {
+    const { studentId, academicSession } = req.params;
+   // console.log("Incoming used-months request:", { studentId, academicSession });
 
+    // Find all payments by student code (like "G0114")
+    const payments = await Payment.find({
+      student: studentId, // not _id
+      academicSession: academicSession,
+    }).lean();
 
+    //console.log("Payments found:", payments.length);
+
+    const usedMonths = {
+      tuition: new Set(),
+      transport: new Set(),
+    };
+
+    for (const payment of payments) {
+      if (Array.isArray(payment.feeDetails)) {
+        for (const fee of payment.feeDetails) {
+          if (Array.isArray(fee.selectedMonth) && fee.selectedMonth.length > 0) {
+            if (fee.feeHead.toLowerCase().includes("tuition")) {
+              fee.selectedMonth.forEach((m) => usedMonths.tuition.add(m));
+            }
+            if (fee.feeHead.toLowerCase().includes("transport")) {
+              fee.selectedMonth.forEach((m) => usedMonths.transport.add(m));
+            }
+          }
+        }
+      }
+    }
+
+    const result = {
+      tuition: Array.from(usedMonths.tuition),
+      transport: Array.from(usedMonths.transport),
+    };
+
+    // console.log("Computed months:", result);
+    res.json(result);
+  } catch (err) {
+    console.error("Error fetching used months:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+module.exports = { getUsedMonths };
 
 // ================== Export All ==================
 module.exports = {
@@ -591,4 +636,5 @@ module.exports = {
   generateNextPaymentId,
   getPendingFeeHeads,
   getLatestPaymentFlags,
+  getUsedMonths,
 };
