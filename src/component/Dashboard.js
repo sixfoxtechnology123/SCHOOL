@@ -1,13 +1,13 @@
-// pages/Layout.js
+// pages/Dashboard.js
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Sidebar from "../component/Sidebar";
-import Header from "../component/Header";
+import Sidebar from "./Sidebar";
+import Header from "./Header";
 import { FaUserGraduate, FaMoneyBill, FaFileInvoice } from "react-icons/fa";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-const Layout = () => {
+const Dashboard = () => {
   const navigate = useNavigate();
 
   // Dashboard states
@@ -15,14 +15,54 @@ const Layout = () => {
   const [outstandingAmount, setOutstandingAmount] = useState(0);
   const [todaysCollection, setTodaysCollection] = useState(0);
   const [activities, setActivities] = useState([]);
-  const [filterDate, setFilterDate] = useState(""); // Date filter state
+  const [filterDate, setFilterDate] = useState("");
+  const [hasDashboardAccess, setHasDashboardAccess] = useState(false);
+
+  const normalize = (s) =>
+    (typeof s === "string" ? s : "")
+      .trim()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]/gi, "")
+      .toLowerCase();
+
+  useEffect(() => {
+    const admin = JSON.parse(localStorage.getItem("adminData") || "null") || {};
+    const role = admin.role || "";
+
+    // Admin role always has access
+    if (role.toLowerCase() === "admin") {
+      setHasDashboardAccess(true);
+      return;
+    }
+
+    let perms = [];
+
+    if (Array.isArray(admin.permissions)) {
+      perms = admin.permissions.map((p) =>
+        typeof p === "string" ? normalize(p) : normalize(p.permission || p.name || "")
+      );
+    } else if (
+      admin.permissions &&
+      typeof admin.permissions === "object" &&
+      !Array.isArray(admin.permissions)
+    ) {
+      perms = Object.keys(admin.permissions)
+        .filter((k) => admin.permissions[k])
+        .map(normalize);
+    }
+
+    // ✅ Check if "Dashboard" permission exists
+    if (perms.includes("dashboard")) {
+      setHasDashboardAccess(true);
+    }
+  }, []);
 
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
   };
 
-  // Fetch total students
+  // ---- DATA FETCHING ----
   const fetchTotalStudents = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/students");
@@ -32,18 +72,19 @@ const Layout = () => {
     }
   };
 
-  // Fetch outstanding dues
   const fetchOutstandingDues = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/reports/outstanding-fees");
-      const total = res.data.reduce((sum, item) => sum + (Number(item.pendingAmount) || 0), 0);
+      const total = res.data.reduce(
+        (sum, item) => sum + (Number(item.pendingAmount) || 0),
+        0
+      );
       setOutstandingAmount(total);
     } catch (err) {
       console.error("Error fetching outstanding dues:", err);
     }
   };
 
-  // Fetch today's collection
   const fetchTodaysCollection = async () => {
     try {
       const today = new Date().toISOString().split("T")[0];
@@ -62,7 +103,6 @@ const Layout = () => {
     }
   };
 
-  // Fetch all activities from backend
   const fetchActivities = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/activities");
@@ -73,12 +113,29 @@ const Layout = () => {
   };
 
   useEffect(() => {
-    fetchTotalStudents();
-    fetchOutstandingDues();
-    fetchTodaysCollection();
-    fetchActivities();
-  }, []);
+    if (hasDashboardAccess) {
+      fetchTotalStudents();
+      fetchOutstandingDues();
+      fetchTodaysCollection();
+      fetchActivities();
+    }
+  }, [hasDashboardAccess]);
 
+  // ---- IF USER HAS NO DASHBOARD PERMISSION ----
+  if (!hasDashboardAccess) {
+    return (
+      <div className="flex min-h-screen flex-col md:flex-row">
+        <Sidebar />
+        <main className="flex-1 bg-gray-100 flex items-center justify-center">
+          <h2 className="text-gray-600 text-xl font-semibold">
+            Access Denied: You don’t have permission to view the Dashboard.
+          </h2>
+        </main>
+      </div>
+    );
+  }
+
+  // ---- MAIN DASHBOARD ----
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar />
@@ -89,9 +146,7 @@ const Layout = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
             <FaMoneyBill size={30} className="text-green-800 mb-2" />
-            <h2 className="text-lg font-semibold text-green-800">
-              Today's Collections
-            </h2>
+            <h2 className="text-lg font-semibold text-green-800">Today's Collections</h2>
             <p className="text-2xl font-bold text-green-800">
               ₹ {todaysCollection.toLocaleString("en-IN")}
             </p>
@@ -100,9 +155,7 @@ const Layout = () => {
           <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
             <FaUserGraduate size={30} className="text-green-800 mb-2" />
             <button onClick={() => navigate("/StudentList")}>
-              <h2 className="text-lg font-semibold text-green-800">
-                Total Students
-              </h2>
+              <h2 className="text-lg font-semibold text-green-800">Total Students</h2>
             </button>
             <p className="text-2xl font-bold text-green-800">{totalStudents}</p>
           </div>
@@ -110,9 +163,7 @@ const Layout = () => {
           <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
             <FaFileInvoice size={30} className="text-green-800 mb-2" />
             <button onClick={() => navigate("/OutstandingFees")}>
-              <h2 className="text-lg font-semibold text-green-800">
-                Outstanding Dues
-              </h2>
+              <h2 className="text-lg font-semibold text-green-800">Outstanding Dues</h2>
             </button>
             <p className="text-2xl font-bold text-green-800">
               ₹ {outstandingAmount.toLocaleString("en-IN")}
@@ -194,16 +245,13 @@ const Layout = () => {
               activities
                 .filter((act) => {
                   if (!filterDate) return true;
-
-                  // act.timestamp is "dd/mm/yyyy" or "dd/mm/yyyy hh:mm:ss"
-                  const parts = act.timestamp.split(" ")[0].split("/"); // ["dd", "mm", "yyyy"]
+                  const parts = act.timestamp.split(" ")[0].split("/");
                   if (parts.length !== 3) return false;
-
                   const actDate = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(
                     2,
                     "0"
-                  )}`; // "yyyy-mm-dd"
-                  return actDate === filterDate; // filterDate is "yyyy-mm-dd"
+                  )}`;
+                  return actDate === filterDate;
                 })
                 .map((act) => (
                   <li key={act._id} className="border-b border-gray-200 py-1">
@@ -222,4 +270,4 @@ const Layout = () => {
   );
 };
 
-export default Layout;
+export default Dashboard;

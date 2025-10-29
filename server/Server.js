@@ -1,36 +1,39 @@
 import dotenv from "dotenv";
 import cors from "cors";
 import express from "express";
-import http from "http";  // for socket.io
+import http from "http";
 import { Server } from "socket.io";
+import path from "path";
+import bcrypt from "bcryptjs";
 import connectDB from "./db/db.js";
+import Admin from "./models/Admin.js";
 
-// Load env
 dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Serve static files
+app.use("/uploads", express.static(path.join(path.resolve(), "uploads")));
 
 // Connect DB
 connectDB();
-
-const app = express();
-app.use(express.json());
-app.use(cors());
 
 // Create server and socket.io
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "*", // change to your frontend URL in production
+    origin: "*",
     methods: ["GET", "POST", "DELETE"],
   },
 });
 
-// Make io accessible in routes
 app.set("socketio", io);
 
 // ===== Socket.io connection =====
 io.on("connection", (socket) => {
   console.log("New client connected:", socket.id);
-
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
   });
@@ -51,12 +54,8 @@ import transportReportRoutes from "./routes/transportReportRoutes.js";
 import feeHeadreportRoutes from "./routes/feeheadsreportRoutes.js";
 import studentPaymentHistoryRoutes from "./routes/studentpaymenthistoryRoutes.js";
 import outstandingRoutes from "./routes/outstandingFeesRoutes.js";
-
-// New Activity Routes
 import activityRoutes from "./routes/activityRoutes.js";
-
-
-
+import adminManagementRoutes from "./routes/adminManagementRoutes.js";
 
 app.use("/api/classes", classRoutes);
 app.use("/api/feeheads", feeHeadRoutes);
@@ -66,17 +65,48 @@ app.use("/api/transportroutes", transportRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/students", studentRoutes);
 app.use("/api/payments", paymentRoutes);
-
 app.use("/api/transport-report", transportReportRoutes);
 app.use("/api/reports", dailyCollectionRoutes);
 app.use("/api/reports", classSummaryRoutes);
 app.use("/api/reports", feeHeadreportRoutes);
 app.use("/api/reports", studentPaymentHistoryRoutes);
 app.use("/api/reports", outstandingRoutes);
-
-// New Activity Log route
 app.use("/api/activities", activityRoutes);
+app.use("/api/adminManagement", adminManagementRoutes);
 
-// ===== START SERVER =====
-const PORT = process.env.PORT || 5001;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// ===== Create Default Admin =====
+const createDefaultAdmin = async () => {
+  try {
+    const adminExists = await Admin.findOne({ userId: "admin" });
+    if (!adminExists) {
+      const hashedPassword = await bcrypt.hash("admin123", 10);
+      await Admin.create({
+        userId: "admin",
+        name: "Main Admin",
+        password: hashedPassword,
+        role: "Admin",
+        profileImage: "",
+      });
+      console.log("Default admin created → userId: admin | password: admin123");
+    } else {
+      console.log("Default admin already exists in database");
+    }
+  } catch (err) {
+    console.error("Error creating default admin:", err);
+  }
+};
+
+// ===== Start Server =====
+const startServer = async () => {
+  try {
+    await createDefaultAdmin();
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () =>
+      console.log(`Server running on port ${PORT}`)
+    );
+  } catch (err) {
+    console.error("Server failed to start:", err);
+  }
+};
+
+startServer();

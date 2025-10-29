@@ -17,7 +17,7 @@ import StudentList from "./component/StudentList";
 import StudentMaster from "./component/StudentMaster";
 import PaymentsMaster from "./component/PaymentsMaster";
 import PaymentsList from "./component/PaymentsList";
-import Layout from "./component/Layout";
+import Dashboard from "./component/Dashboard";
 import Sidebar from "./component/Sidebar";
 import Header from "./component/Header";
 import DailyCollection from "./reports/DailyCollection";
@@ -31,6 +31,10 @@ import ReportsDashboard from "./reports/ReportsDashboard";
 import IdCardForm from "./component/IdCardForm";
 import UdiseForm from "./component/UdiseForm";
 import { Toaster } from "react-hot-toast";
+import AdminManagement from "./rollebased/AdminManagement";
+import AdminLogin from "./rollebased/AdminLogin";
+import EditProfile from "./rollebased/EditProfile";
+import ChangePassword from "./rollebased/ChangePassword";
 
 
 
@@ -41,7 +45,6 @@ function App() {
     <Routes>
    
       <Route path="/HomePage" element={<HomePage/>} />
-      <Route path="/" element={<Layout/>} />
       <Route path="/ClassesMaster" element={<ClassesMaster />} />
       <Route path="/ClassesList" element={<ClassesList />} />
       <Route path="/FeeHeadsMaster" element={<FeeHeadsMaster/>} />
@@ -59,7 +62,7 @@ function App() {
       <Route path="/PaymentsMaster" element={<PaymentsMaster/>} />
       <Route path="/PaymentsList" element={<PaymentsList/>} />
       <Route path="/Sidebar" element={<Sidebar/>} />
-      <Route path="/Layout" element={<Layout/>} />
+      <Route path="/Dashboard" element={<Dashboard/>} />
       <Route path="/Header" element={<Header/>} />
       <Route path="/DailyCollection" element={<DailyCollection/>} />
       <Route path="/DailyCollectionUser" element={<DailyCollectionUser/>} />
@@ -69,8 +72,12 @@ function App() {
       <Route path="/FeeHeadsReport" element={<FeeHeadsReport/>} />
       <Route path="/TransportReport" element={<TransportReport/>} />
       <Route path="/ReportsDashboard" element={<ReportsDashboard/>} />
+      <Route path="/AdminManagement" element={<AdminManagement/>} />
       <Route path="/IdCardForm" element={<IdCardForm/>} />
       <Route path="/UdiseForm" element={<UdiseForm/>} />
+      <Route path="/" element={<AdminLogin/>} />
+      <Route path="/EditProfile" element={<EditProfile/>} />
+      <Route path="/ChangePassword" element={<ChangePassword/>} />
 
     </Routes>
         <Toaster

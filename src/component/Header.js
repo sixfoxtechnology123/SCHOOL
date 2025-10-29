@@ -14,7 +14,7 @@ const Header = ({ onLogout }) => {
       <div className="flex gap-2">
         {/* Home Button */}
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/Layout")}
           className="bg-blue-500 text-white px-4 py-1 rounded-lg shadow hover:bg-blue-600 transition"
         >
           Home
@@ -22,7 +22,7 @@ const Header = ({ onLogout }) => {
 
         {/* Logout Button */}
         <button
-          onClick={onLogout}
+         onClick={() => navigate("/")}
           className="bg-blue-700 text-white px-4 py-1 rounded-lg shadow hover:bg-blue-800 transition"
         >
           Logout
