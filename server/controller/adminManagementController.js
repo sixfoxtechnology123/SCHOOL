@@ -17,9 +17,9 @@ const createDefaultAdmin = async () => {
         permissions: ["ALL"], // Main admin can see all permissions
         isDefault: true,
       });
-      console.log("Default Main Admin created: admin / admin123");
+      //console.log("Default Main Admin created: admin / admin123");
     } else {
-      console.log("ℹDefault Main Admin already exists");
+      //console.log("ℹDefault Main Admin already exists");
     }
   } catch (err) {
     console.error("Error creating default admin:", err.message);

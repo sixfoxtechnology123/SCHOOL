@@ -56,6 +56,9 @@ import studentPaymentHistoryRoutes from "./routes/studentpaymenthistoryRoutes.js
 import outstandingRoutes from "./routes/outstandingFeesRoutes.js";
 import activityRoutes from "./routes/activityRoutes.js";
 import adminManagementRoutes from "./routes/adminManagementRoutes.js";
+import adminRoutes from "./routes/adminRoutes.js";
+
+
 
 app.use("/api/classes", classRoutes);
 app.use("/api/feeheads", feeHeadRoutes);
@@ -73,6 +76,8 @@ app.use("/api/reports", studentPaymentHistoryRoutes);
 app.use("/api/reports", outstandingRoutes);
 app.use("/api/activities", activityRoutes);
 app.use("/api/adminManagement", adminManagementRoutes);
+app.use("/api/admin", adminRoutes);
+
 
 // ===== Create Default Admin =====
 const createDefaultAdmin = async () => {
@@ -87,9 +92,9 @@ const createDefaultAdmin = async () => {
         role: "Admin",
         profileImage: "",
       });
-      console.log("Default admin created → userId: admin | password: admin123");
+      //console.log("Default admin created → userId: admin | password: admin123");
     } else {
-      console.log("Default admin already exists in database");
+      //console.log("Default admin already exists in database");
     }
   } catch (err) {
     console.error("Error creating default admin:", err);

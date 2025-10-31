@@ -7,7 +7,9 @@ const jwt = require("jsonwebtoken");
 const path = require("path");
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || "secretkey";
+require("dotenv").config();
+const JWT_SECRET = process.env.JWT_SECRET;
+
 
 // Mask password
 const maskAdmin = (adminDoc) => {
@@ -63,7 +65,7 @@ router.post("/login", async (req, res) => {
       success: true,
       token,
       admin: maskAdmin(admin),
-      permissions: admin.permissions, // ✅ Add this
+      permissions: admin.permissions,
     });
   } catch (err) {
     console.error(err);

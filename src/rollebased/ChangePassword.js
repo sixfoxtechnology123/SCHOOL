@@ -22,14 +22,15 @@ const ChangePassword = () => {
       setMessage("New password and confirm password do not match");
       return;
     }
+try {
+  const token = localStorage.getItem("token");
+  const res = await axios.put(
+    "http://localhost:5000/api/admin/change-password",
+    { currentPassword, newPassword },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
 
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.put(
-        "http://localhost:5000/api/admin/change-password",
-        { currentPassword, newPassword },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+
       setMessage(res.data.message);
       setCurrentPassword("");
       setNewPassword("");
