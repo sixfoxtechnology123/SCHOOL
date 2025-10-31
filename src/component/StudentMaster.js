@@ -825,6 +825,7 @@ const handleSubmit = async (e) => {
               <label>
                 No. of Brothers
                 <input
+                type="number"
                   name="brothers"
                   value={studentData.brothers}
                   onChange={handleChange}
@@ -834,6 +835,7 @@ const handleSubmit = async (e) => {
               <label>
                 No. of Sisters
                 <input
+                 type="number"
                   name="sisters"
                   value={studentData.sisters}
                   onChange={handleChange}
@@ -978,10 +980,12 @@ const handleSubmit = async (e) => {
                   <label>
                     Distance From School (km)
                     <input
+                    type="number"
                       name="distanceFromSchool"
                       value={studentData.distanceFromSchool}
                       onChange={handleChange}
                       className="border bg-gray-100 p-0 rounded w-full"
+                      placeholder="Enter distance"
                     />
                   </label>
                 )}
@@ -1052,7 +1056,14 @@ const handleSubmit = async (e) => {
                   <input
                     name="fatherPhone"
                     value={studentData.fatherPhone}
-                    onChange={handleChange}
+                      onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow only numbers, and max 10 digits
+                      if (/^\d{0,10}$/.test(value)) {
+                        handleChange(e);
+                      }
+                    }}
+                    placeholder="Enter 10-digit number"
                     className="border bg-gray-100 p-0 rounded w-full"
                   />
                 </label>
@@ -1106,7 +1117,14 @@ const handleSubmit = async (e) => {
                   <input
                     name="motherPhone"
                     value={studentData.motherPhone}
-                    onChange={handleChange}
+                     onChange={(e) => {
+                      const value = e.target.value;
+                      // Allow only numbers, and max 10 digits
+                      if (/^\d{0,10}$/.test(value)) {
+                        handleChange(e);
+                      }
+                    }}
+                    placeholder="Enter 10-digit number"
                     className="border bg-gray-100 p-0 rounded w-full"
                   />
                 </label>
@@ -1166,6 +1184,7 @@ const handleSubmit = async (e) => {
                 <label>
                   Total Family Income (Yearly)
                   <input
+                  type="number"
                     name="familyIncome"
                     value={studentData.familyIncome}
                     onChange={handleChange}
