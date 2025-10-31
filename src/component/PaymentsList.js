@@ -434,7 +434,10 @@ const deletePayment = async (id) => {
           </td>
 
         
-          <td className="border border-green-600">{p.totalPendingAmount}</td>
+          <td className="border border-green-600">
+  {(p.totalPendingAmount || 0) + (p.overallPendingAmount || 0)}
+</td>
+
 
           {/* <td className="border border-green-600">
             ₹

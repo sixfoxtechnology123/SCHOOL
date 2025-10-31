@@ -8,19 +8,31 @@ const getOutstandingFees = async (req, res) => {
       { $sort: { student: 1, _id: -1 } },
 
       // Step 2: Group by student — take the first (latest) receipt
-      {
-        $group: {
-          _id: "$student",
-          studentId: { $first: "$student" },
-          studentName: { $first: "$studentName" },
-          class: { $first: "$admitClass" },
-          section: { $first: "$section" },
-          rollNo: { $first: "$rollNo" },
-          pendingAmount: { $first: "$pendingAmount" },
-          latestPaymentId: { $first: "$paymentId" },
-          latestDate: { $first: "$date" }
-        }
-      },
+   {
+  $group: {
+    _id: "$student",
+    studentId: { $first: "$student" },
+    studentName: { $first: "$studentName" },
+    class: { $first: "$admitClass" },
+    section: { $first: "$section" },
+    rollNo: { $first: "$rollNo" },
+    totalPendingAmount: { $first: "$totalPendingAmount" },
+    overallPendingAmount: { $first: "$overallPendingAmount" },
+    latestPaymentId: { $first: "$paymentId" },
+    latestDate: { $first: "$date" }
+  }
+},
+{
+  $addFields: {
+    pendingAmount: {
+      $add: [
+        { $ifNull: ["$totalPendingAmount", 0] },
+        { $ifNull: ["$overallPendingAmount", 0] }
+      ]
+    }
+  }
+},
+
 
       // Step 3: Only keep students whose latest receipt has pending > 0
       { $match: { pendingAmount: { $gt: 0 } } },
