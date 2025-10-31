@@ -256,9 +256,18 @@ const permissionsList = {
                   }
                   className="border border-green-300 p-1 rounded w-full"
                 >
-                  <option value="HR">HR</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Employee">Employee</option>
+                  <option value="School Secretary / Personal Secretary to the Principal">
+                      School Secretary / Personal Secretary to the Principal
+                    </option>
+                    <option value="Receptionist">Receptionist</option>
+                    <option value="Office Administrator">Office Administrator</option>
+                    <option value="Back Office Executive">Back Office Executive</option>
+                    <option value="Accounts Clerk">Accounts Clerk</option>
+                    <option value="Admissions Counselor">Admissions Counselor</option>
+                    <option value="HR Administrator">HR Administrator</option>
+                    <option value="School Coordinator">School Coordinator</option>
+                    <option value="Librarian">Librarian</option>
+
                 </select>
               </div>
             </div>
