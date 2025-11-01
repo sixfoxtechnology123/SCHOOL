@@ -69,19 +69,25 @@ exports.createFeeHead = async (req, res) => {
 exports.updateFeeHead = async (req, res) => {
   try {
     const { id } = req.params;
-    const payload = { ...req.body };
+    const { feeHeadName, feeType, description } = req.body;
 
-    if (payload.feeHeadId) delete payload.feeHeadId; // ID cannot change
+    // check duplicate (exclude current record)
+    const exists = await FeeHead.findOne({ feeHeadName, _id: { $ne: id } });
+    if (exists) {
+      return res.status(400).json({ error: "This Fee Head already Exists" });
+    }
 
+    const payload = { feeHeadName, feeType, description };
     const updated = await FeeHead.findByIdAndUpdate(id, payload, { new: true });
     if (!updated) return res.status(404).json({ error: "Fee Head not found" });
 
-    await logActivity(`Updated Fee Head: ${updated.feeHeadName}`); // Activity logged
+    await logActivity(`Updated Fee Head: ${updated.feeHeadName}`);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to update fee head" });
   }
 };
+
 
 // DELETE fee head
 exports.deleteFeeHead = async (req, res) => {

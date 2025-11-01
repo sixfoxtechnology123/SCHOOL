@@ -70,18 +70,25 @@ exports.createSession = async (req, res) => {
 exports.updateSession = async (req, res) => {
   try {
     const { id } = req.params;
-    const payload = { ...req.body };
+    const { year, startDate, endDate } = req.body;
 
-    if (payload.sessionId) delete payload.sessionId;
+    // check if same year already exists (exclude current record)
+    const exists = await AcademicSession.findOne({ year, _id: { $ne: id } });
+    if (exists) {
+      return res.status(400).json({ error: "This session already Exists" });
+    }
 
+    const payload = { year, startDate, endDate };
     const updated = await AcademicSession.findByIdAndUpdate(id, payload, { new: true });
     if (!updated) return res.status(404).json({ error: "Session not found" });
+
     await logActivity(`Updated Academic Session: ${updated.year}`);
     res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message || "Failed to update session" });
   }
 };
+
 
 // DELETE session
 exports.deleteSession = async (req, res) => {
