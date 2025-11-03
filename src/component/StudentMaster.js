@@ -94,6 +94,19 @@ const handleFileChange = (e, type) => {
   }
 };
 
+const fetchStudentIdBySession = async (session) => {
+  if (!session) return;
+  try {
+    const res = await axios.get(`http://localhost:5000/api/students/latest/${session}`);
+    const nextId = res.data?.studentId || "";
+    setStudentData((prev) => ({ ...prev, studentId: nextId }));
+    console.log("✅ Updated studentId for session:", session, "→", nextId);
+  } catch (err) {
+    console.error("Error fetching student ID by session:", err);
+  }
+};
+
+
  const fetchNextAdmissionNo = async () => {
   try {
     const res = await axios.get("http://localhost:5000/api/students/latest-admission");
@@ -270,8 +283,14 @@ useEffect(() => {
 
       } else {
         // --- NEW ADMISSION ---
-        await fetchNextStudentId();       // generate studentId
-        await fetchNextAdmissionNo();     // generate admissionNo
+       const savedSession = localStorage.getItem("selectedAcademicSession") || "";
+        if (savedSession) {
+          await fetchStudentIdBySession(savedSession); // 👈 generate ID for saved session
+        } else {
+          await fetchNextStudentId(); // fallback if no session saved
+        }
+        await fetchNextAdmissionNo();
+
 
         // Use default academic session from localStorage if exists (optional)
         const defaultSession = localStorage.getItem("selectedAcademicSession") || "";
@@ -489,25 +508,32 @@ const handleSubmit = async (e) => {
 
 
                     {/* Academic Session */}
-                    <label>
-                      Academic Session
-                      <select
-                        className="border bg-gray-100 p-0 rounded w-full"
-                        name="academicSession"
-                        value={studentData.academicSession}
-                        onChange={handleChange}
-                        required
-                      >
-                        <option value="">--Select Academic Session--</option>
-                        {academicSessions.map((session) => (
-                          <option key={session._id} value={session.year}>
-                            {session.year}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+               <label>
+                  Academic Session
+                  <select
+                    className="border bg-gray-100 p-0 rounded w-full"
+                    name="academicSession"
+                    value={studentData.academicSession}
+                    onChange={(e) => {
+                      const selected = e.target.value;
+                      setStudentData((prev) => ({ ...prev, academicSession: selected }));
+                      localStorage.setItem("selectedAcademicSession", selected);
+                      fetchStudentIdBySession(selected); // 🔥 send to backend immediately
+                    }}
+                    required
+                  >
+                    <option value="">--Select Academic Session--</option>
+                    {academicSessions.map((session) => (
+                      <option key={session._id} value={session.year}>
+                        {session.year}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
 
                     {/* Student ID */}
+                    
                <label>
                     Student ID
                     <input

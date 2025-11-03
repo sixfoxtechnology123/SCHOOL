@@ -4,9 +4,9 @@ import AcademicSession from "../models/AcademicSession.js";
 import logActivity from "../utils/logActivity.js";
 
 
-const PREFIX = "G";
+//const PREFIX = "G";
 const PAD = 4;
-const START_NUM = 101;
+const START_NUM = 2291;
 
 // ===== Generate Next Admission Number =====
 async function generateNextAdmissionNo() {
@@ -37,28 +37,38 @@ async function generateNextAdmissionNo() {
   }
 }
 
+async function generateNextStudentId(session) {
+  console.log("🎯 Session received:", session);
 
-
-// ===== Generate Next Student ID =====
-async function generateNextStudentId() {
-  const lastStudent = await StudentMaster.aggregate([
-    { $match: { studentId: { $regex: `^${PREFIX}\\d+$` } } },
-    {
-      $addFields: {
-        numId: { $toInt: { $substr: ["$studentId", PREFIX.length, -1] } }
-      }
-    },
-    { $sort: { numId: -1 } },
-    { $limit: 1 }
-  ]);
-
-  if (!lastStudent.length) {
-    return `${PREFIX}${String(START_NUM).padStart(PAD, "0")}`;
+  // 1️⃣ Dynamically compute prefix from session
+  let prefix = '';
+  if (session) {
+    const startYear = parseInt(session.split("-")[0]);
+    if (!isNaN(startYear)) {
+      prefix = String.fromCharCode(65 + (startYear - 2019)); // A=2019, B=2020, etc.
+    }
   }
 
-  const nextNum = lastStudent[0].numId + 1;
-  return `${PREFIX}${String(nextNum).padStart(PAD, "0")}`;
+  // 2️⃣ Get the latest student globally (any session)
+  const latestStudent = await StudentMaster.findOne({})
+    .sort({ _id: -1 })
+    .select("studentId");
+
+  let nextNum = 2291; // start from 101
+  if (latestStudent && latestStudent.studentId) {
+    const lastNum = parseInt(latestStudent.studentId.slice(1));
+    if (!isNaN(lastNum)) {
+      nextNum = lastNum + 1; // continue numbering globally
+    }
+  }
+
+  // 3️⃣ Generate new ID: session prefix + global counter
+  const newId = `${prefix}${String(nextNum).padStart(3, "0")}`;
+  console.log(`✅ Generated Registration No for ${session}: ${newId}`);
+
+  return newId;
 }
+
 
 // ===== Generate Next Roll No =====
 async function generateNextRollNo(admitClass, section) {
@@ -137,9 +147,11 @@ const nextAdmissionNo = await generateNextAdmissionNo();
 
     let finalStudentId = studentId;
 
-    if (admissionType === "new admission") {
-      finalStudentId = await generateNextStudentId();
-    }  else if (admissionType === "re-admission") {
+   if (admissionType === "new admission") {
+  finalStudentId = await generateNextStudentId(req.body.academicSession);
+}
+
+   else if (admissionType === "re-admission") {
         if (!finalStudentId) {
           return res.status(400).json({ message: "Student ID is required for re-admission" });
         }
@@ -484,3 +496,16 @@ export const getLatestStudentByStudentId = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+export const getLatestStudentBySession = async (req, res) => {
+  try {
+    const { session } = req.params;
+    console.log(" Incoming session from frontend:", session);
+
+    const newId = await generateNextStudentId(session);
+    res.json({ studentId: newId });
+  } catch (error) {
+    console.error("Error fetching latest student ID by session:", error);
+    res.status(500).json({ message: "Failed to generate ID" });
+  }
+};
+
