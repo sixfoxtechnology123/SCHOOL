@@ -6,11 +6,11 @@ const AdminManagement = require("../models/adminManagementModel");
 // ======================= CREATE DEFAULT MAIN ADMIN =======================
 const createDefaultAdmin = async () => {
   try {
-    const existingAdmin = await AdminManagement.findOne({ userId: "admin" });
+    const existingAdmin = await AdminManagement.findOne({ userId: "sixfoxtechnology12@gmail.com" });
     if (!existingAdmin) {
-      const hashedPassword = await bcrypt.hash("admin123", 10);
+      const hashedPassword = await bcrypt.hash("sixfox123", 10);
       await AdminManagement.create({
-        userId: "admin",
+        userId: "sixfoxtechnology12@gmail.com",
         name: "Main Admin", // <-- Always Main Admin
         password: hashedPassword,
         role: "Admin",
