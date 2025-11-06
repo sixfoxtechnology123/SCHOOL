@@ -8,10 +8,12 @@ exports.getDailyCollections = async (req, res) => {
           _id: "$date",
           students: {
             $push: {
-              name: "$studentName",       // use stored studentName
-              class: "$admitClass",       // use stored class
+              studentId: "$student", 
+              name: "$studentName",
+              class: "$admitClass",
               section: "$section",
-              rollNo: "$rollNo"
+              rollNo: "$rollNo",
+              amountPaid: "$amountPaid" // <-- add this
             },
           },
           totalAmount: { $sum: "$amountPaid" },
@@ -26,7 +28,7 @@ exports.getDailyCollections = async (req, res) => {
           _id: 0,
         },
       },
-      { $sort: { date: 1 } },
+      { $sort: { date: -1 } }, // <-- latest date first
     ]);
 
     res.json(records);

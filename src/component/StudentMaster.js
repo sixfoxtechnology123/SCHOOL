@@ -100,7 +100,7 @@ const fetchStudentIdBySession = async (session) => {
     const res = await axios.get(`http://localhost:5000/api/students/latest/${session}`);
     const nextId = res.data?.studentId || "";
     setStudentData((prev) => ({ ...prev, studentId: nextId }));
-    console.log("✅ Updated studentId for session:", session, "→", nextId);
+    console.log(" Updated studentId for session:", session, "→", nextId);
   } catch (err) {
     console.error("Error fetching student ID by session:", err);
   }
@@ -285,7 +285,7 @@ useEffect(() => {
         // --- NEW ADMISSION ---
        const savedSession = localStorage.getItem("selectedAcademicSession") || "";
         if (savedSession) {
-          await fetchStudentIdBySession(savedSession); // 👈 generate ID for saved session
+          await fetchStudentIdBySession(savedSession); //  generate ID for saved session
         } else {
           await fetchNextStudentId(); // fallback if no session saved
         }
@@ -507,107 +507,122 @@ const handleSubmit = async (e) => {
                         </label>
 
 
-                    {/* Academic Session */}
-               <label>
-                  Academic Session
-                  <select
-                    className="border bg-gray-100 p-0 rounded w-full"
-                    name="academicSession"
-                    value={studentData.academicSession}
-                    onChange={(e) => {
-                      const selected = e.target.value;
-                      setStudentData((prev) => ({ ...prev, academicSession: selected }));
-                      localStorage.setItem("selectedAcademicSession", selected);
-                      fetchStudentIdBySession(selected); // 🔥 send to backend immediately
-                    }}
-                    required
-                  >
-                    <option value="">--Select Academic Session--</option>
-                    {academicSessions.map((session) => (
-                      <option key={session._id} value={session.year}>
-                        {session.year}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                        {/* Academic Session */}
+              <label>
+                Academic Session
+                <select
+                  className="border bg-gray-100 p-0 rounded w-full"
+                  name="academicSession"
+                  value={studentData.academicSession}
+                  onChange={(e) => {
+                    const selected = e.target.value;
+                    setStudentData((prev) => ({ ...prev, academicSession: selected }));
+                    localStorage.setItem("selectedAcademicSession", selected);
 
+                    //  Only change student ID for NEW ADMISSION
+                    if (admissionType === "new admission") {
+                      fetchStudentIdBySession(selected); // send to backend immediately
+                    }
+                  }}
+                  required
+                >
+                  <option value="">--Select Academic Session--</option>
+                  {academicSessions.map((session) => (
+                    <option key={session._id} value={session.year}>
+                      {session.year}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-                    {/* Student ID */}
-                    
-               <label>
-                    Student ID
-                    <input
-                      name="studentId"
-                      value={studentData.studentId}
-                      readOnly={admissionType === "new admission"} // read-only only for new admission
-                      className={`border p-0 rounded w-full ${admissionType === "new admission" ? 'bg-gray-200 cursor-not-allowed' : 'bg-white'}`}
-                      onChange={(e) => {
-                        if (admissionType === "re-admission") {
-                          setStudentData(prev => ({ ...prev, studentId: e.target.value.toUpperCase() }));
-                        }
-                      }}
-                   onKeyDown={async (e) => {
-                      if (admissionType === "re-admission" && e.key === "Enter") {
-                        e.preventDefault();
-                        const id = studentData.studentId.toUpperCase();
-                        if (!id) return;
+              {/* Student ID */}
+              <label>
+                Student ID
+                <input
+                  name="studentId"
+                  value={studentData.studentId}
+                  readOnly={admissionType === "new admission"} // read-only only for new admission
+                  className={`border p-0 rounded w-full ${
+                    admissionType === "new admission"
+                      ? "bg-gray-200 cursor-not-allowed"
+                      : "bg-white"
+                  }`}
+                  onChange={(e) => {
+                    if (admissionType === "re-admission") {
+                      setStudentData((prev) => ({
+                        ...prev,
+                        studentId: e.target.value.toUpperCase(),
+                      }));
+                    }
+                  }}
+                  onKeyDown={async (e) => {
+                    if (admissionType === "re-admission" && e.key === "Enter") {
+                      e.preventDefault();
+                      const id = studentData.studentId.toUpperCase();
+                      if (!id) return;
 
-                        try {
-                          const res = await axios.get(
-                            `http://localhost:5000/api/students/by-studentId/${id}`
-                          );
+                      try {
+                        const res = await axios.get(
+                          `http://localhost:5000/api/students/by-studentId/${id}`
+                        );
 
-                          if (res.data) {
-                            // Populate form
-                            setStudentData(res.data);
+                        if (res.data) {
+                          // Populate form
+                          setStudentData(res.data);
 
-                            // Always fetch sections if class exists
-                            if (res.data.admitClass) fetchSections(res.data.admitClass);
+                          // Always fetch sections if class exists
+                          if (res.data.admitClass) fetchSections(res.data.admitClass);
 
-                            // Fetch all photos
-                            const fetchPhoto = async (type, setPreview) => {
-                              try {
-                                const photoRes = await fetch(
-                                  `http://localhost:5000/api/students/students/${res.data.studentId}/photo/${type}`
-                                );
-                                if (photoRes.ok) {
-                                  const blob = await photoRes.blob();
-                                  const url = URL.createObjectURL(blob);
-                                  setPreview(url);
-                                }
-                              } catch (error) {
-                                console.error(`Failed to load ${type}:`, error);
+                          // Fetch all photos
+                          const fetchPhoto = async (type, setPreview) => {
+                            try {
+                              const photoRes = await fetch(
+                                `http://localhost:5000/api/students/students/${res.data.studentId}/photo/${type}`
+                              );
+                              if (photoRes.ok) {
+                                const blob = await photoRes.blob();
+                                const url = URL.createObjectURL(blob);
+                                setPreview(url);
                               }
-                            };
+                            } catch (error) {
+                              console.error(`Failed to load ${type}:`, error);
+                            }
+                          };
 
-                            fetchPhoto("childPhoto", setPreviewChild);
-                            fetchPhoto("fatherPhoto", setPreviewFather);
-                            fetchPhoto("motherPhoto", setPreviewMother);
-                            fetchPhoto("otherDocument", setPreviewOther);
+                          fetchPhoto("childPhoto", setPreviewChild);
+                          fetchPhoto("fatherPhoto", setPreviewFather);
+                          fetchPhoto("motherPhoto", setPreviewMother);
+                          fetchPhoto("otherDocument", setPreviewOther);
 
-                            // Force Submit button (treat as new record)
-                            setIsEditMode(false);
+                          // Force Submit button (treat as new record)
+                          setIsEditMode(false);
 
-                            // Generate new admission number for re-admission
-                            fetchNextAdmissionNo();
+                          // Generate new admission number for re-admission
+                          fetchNextAdmissionNo();
 
-                            toast.success("Student data fetched successfully! Fill additional info and submit as new.");
-                          } else {
-                            toast.error(`Student ID "${id}" does not exist. Please try another ID.`);
-                          }
-                        } catch (err) {
-                          if (err.response?.status === 404) {
-                            toast.error(`Student ID "${id}" does not exist. Please try another ID.`);
-                          } else {
-                            console.error("Error fetching student:", err.response || err);
-                            toast.error("Failed to fetch student data.");
-                          }
+                          toast.success(
+                            "Student data fetched successfully! Fill additional info and submit as new."
+                          );
+                        } else {
+                          toast.error(
+                            `Student ID "${id}" does not exist. Please try another ID.`
+                          );
+                        }
+                      } catch (err) {
+                        if (err.response?.status === 404) {
+                          toast.error(
+                            `Student ID "${id}" does not exist. Please try another ID.`
+                          );
+                        } else {
+                          console.error("Error fetching student:", err.response || err);
+                          toast.error("Failed to fetch student data.");
                         }
                       }
-                    }}
+                    }
+                  }}
+                />
+              </label>
 
-                    />
-                  </label>
 
                   {/* Admission No */}
             <label>Admission No
@@ -791,8 +806,8 @@ const handleSubmit = async (e) => {
                     <option value="GN">GN</option>
                     <option value="SC">SC</option>
                     <option value="ST">ST</option>
-                    <option value="OBC">OBC-1</option>
-                    <option value="OBC">OBC-2</option>
+                    <option value="OBC-1">OBC-1</option>
+                    <option value="OBC-2">OBC-2</option>
                   </select>
                 </label>
                 <label>

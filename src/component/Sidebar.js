@@ -173,30 +173,30 @@ const Sidebar = () => {
           icon: FaBook,
           permission: "Class_Wise_Summary_Report",
         },
-        {
-          name: "Student Payment History",
-          path: "/StudentPaymentHistory",
-          icon: FaHistory,
-          permission: "Student_Payment_History_Report",
-        },
+        // {
+        //   name: "Student Payment History",
+        //   path: "/StudentPaymentHistory",
+        //   icon: FaHistory,
+        //   permission: "Student_Payment_History_Report",
+        // },
         {
           name: "Outstanding Fees",
           path: "/OutstandingFees",
           icon: FaExclamationTriangle,
           permission: "Outstanding_Fees_Report",
         },
-        {
-          name: "Fee Head Summary",
-          path: "/FeeHeadsReport",
-          icon: FaListAlt,
-          permission: "FeeHead_Summary_Report",
-        },
-        {
-          name: "Transport Fees",
-          path: "/TransportReport",
-          icon: FaBus,
-          permission: "Transport_Fees_Report",
-        },
+        // {
+        //   name: "Fee Head Summary",
+        //   path: "/FeeHeadsReport",
+        //   icon: FaListAlt,
+        //   permission: "FeeHead_Summary_Report",
+        // },
+        // {
+        //   name: "Transport Fees",
+        //   path: "/TransportReport",
+        //   icon: FaBus,
+        //   permission: "Transport_Fees_Report",
+        // },
       ],
     },
     {

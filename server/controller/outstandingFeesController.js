@@ -4,40 +4,32 @@ const Payment = require("../models/Payment");
 const getOutstandingFees = async (req, res) => {
   try {
     const outstanding = await Payment.aggregate([
-      // Step 1: Sort by student and _id descending (latest first)
       { $sort: { student: 1, _id: -1 } },
-
-      // Step 2: Group by student — take the first (latest) receipt
-   {
-  $group: {
-    _id: "$student",
-    studentId: { $first: "$student" },
-    studentName: { $first: "$studentName" },
-    class: { $first: "$admitClass" },
-    section: { $first: "$section" },
-    rollNo: { $first: "$rollNo" },
-    totalPendingAmount: { $first: "$totalPendingAmount" },
-    overallPendingAmount: { $first: "$overallPendingAmount" },
-    latestPaymentId: { $first: "$paymentId" },
-    latestDate: { $first: "$date" }
-  }
-},
-{
-  $addFields: {
-    pendingAmount: {
-      $add: [
-        { $ifNull: ["$totalPendingAmount", 0] },
-        { $ifNull: ["$overallPendingAmount", 0] }
-      ]
-    }
-  }
-},
-
-
-      // Step 3: Only keep students whose latest receipt has pending > 0
+      {
+        $group: {
+          _id: "$student",
+          studentId: { $first: "$student" },
+          studentName: { $first: "$studentName" },
+          class: { $first: "$admitClass" },
+          section: { $first: "$section" },
+          rollNo: { $first: "$rollNo" },
+          totalPendingAmount: { $first: "$totalPendingAmount" },
+          overallPendingAmount: { $first: "$overallPendingAmount" },
+          latestPaymentId: { $first: "$paymentId" },
+          latestDate: { $first: "$date" }
+        }
+      },
+      {
+        $addFields: {
+          pendingAmount: {
+            $add: [
+              { $ifNull: ["$totalPendingAmount", 0] },
+              { $ifNull: ["$overallPendingAmount", 0] }
+            ]
+          }
+        }
+      },
       { $match: { pendingAmount: { $gt: 0 } } },
-
-      // Step 4: Shape output
       {
         $project: {
           _id: 0,
@@ -51,8 +43,6 @@ const getOutstandingFees = async (req, res) => {
           latestDate: 1
         }
       },
-
-      // Step 5: Optional: sort for display
       { $sort: { class: 1, section: 1, rollNo: 1 } }
     ]);
 
@@ -63,4 +53,38 @@ const getOutstandingFees = async (req, res) => {
   }
 };
 
-module.exports = { getOutstandingFees };
+// Get fee details for a specific student
+const getStudentFeeDetails = async (req, res) => {
+  try {
+    const studentId = req.params.studentId;
+
+    const latestPayment = await Payment.find({ student: studentId })
+      .sort({ _id: -1 })
+      .limit(1);
+
+    if (!latestPayment || latestPayment.length === 0) {
+      return res.status(404).json({ message: "Student not found" });
+    }
+
+    const payment = latestPayment[0];
+
+    const feeDetails = payment.feeDetails.map((f) => ({
+      feeHead: f.feeHead,
+      originalAmount: f.originalAmount,
+      scholarshipAmount: f.scholarshipAmount,
+      amountPaid: f.amountPaid,
+      pendingAmount: f.pendingAmount
+    }));
+
+    res.json({
+      studentName: payment.studentName,
+      overallPendingAmount: payment.overallPendingAmount,
+      feeDetails
+    });
+  } catch (err) {
+    console.error("Error fetching student fee details:", err);
+    res.status(500).json({ message: "Server Error" });
+  }
+};
+
+module.exports = { getOutstandingFees, getStudentFeeDetails };

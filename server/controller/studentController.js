@@ -38,9 +38,9 @@ async function generateNextAdmissionNo() {
 }
 
 async function generateNextStudentId(session) {
-  console.log("🎯 Session received:", session);
+  //console.log(" Session received:", session);
 
-  // 1️⃣ Dynamically compute prefix from session
+  // Dynamically compute prefix from session
   let prefix = '';
   if (session) {
     const startYear = parseInt(session.split("-")[0]);
@@ -49,7 +49,7 @@ async function generateNextStudentId(session) {
     }
   }
 
-  // 2️⃣ Get the latest student globally (any session)
+  //  Get the latest student globally (any session)
   const latestStudent = await StudentMaster.findOne({})
     .sort({ _id: -1 })
     .select("studentId");
@@ -62,10 +62,9 @@ async function generateNextStudentId(session) {
     }
   }
 
-  // 3️⃣ Generate new ID: session prefix + global counter
+  //  Generate new ID: session prefix + global counter
   const newId = `${prefix}${String(nextNum).padStart(3, "0")}`;
-  console.log(`✅ Generated Registration No for ${session}: ${newId}`);
-
+  //console.log(` Generated Registration No for ${session}: ${newId}`);
   return newId;
 }
 
@@ -499,7 +498,7 @@ export const getLatestStudentByStudentId = async (req, res) => {
 export const getLatestStudentBySession = async (req, res) => {
   try {
     const { session } = req.params;
-    console.log(" Incoming session from frontend:", session);
+    //console.log(" Incoming session from frontend:", session);
 
     const newId = await generateNextStudentId(session);
     res.json({ studentId: newId });
