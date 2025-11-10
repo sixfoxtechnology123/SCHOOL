@@ -19,7 +19,7 @@ export default function AdminManagement() {
     userId: "",
     name: "",
     password: "",
-    role: "HR",
+    role: "",
     permissions: [],
   });
 
@@ -132,7 +132,7 @@ const permissionsList = {
         userId: "",
         name: "",
         password: "",
-        role: "HR",
+        role: "",
         permissions: [],
       });
     } catch (err) {
@@ -256,6 +256,7 @@ const permissionsList = {
                   }
                   className="border border-green-300 p-1 rounded w-full"
                 >
+                   <option>----Select----</option>
                   <option value="School Secretary / Personal Secretary to the Principal">
                       School Secretary / Personal Secretary to the Principal
                     </option>

@@ -56,7 +56,8 @@ const paymentSchema = new mongoose.Schema(
     transactionId: { type: String, default: "" },
     cardNumber: { type: String, default: "" },
     remarks: { type: String, default: "" },
-    user: { type: String, required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // user ID
+    collectedBy: String, 
   },
   { timestamps: true }
 );

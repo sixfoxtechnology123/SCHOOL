@@ -452,7 +452,7 @@ const deletePayment = async (id) => {
           <td className="border border-green-600">{formatDDMMYYYY(p.date)}</td>
           <td className="border border-green-600">{p.paymentMode}</td>
           {/* <td className="border border-green-600">{p.remarks || "-"}</td> */}
-          <td className="border border-green-600">{p.user || "-"}</td>
+          <td className="border border-green-600">{p.collectedBy || "-"}</td>
           <td className="border border-green-600">
             <div className="flex justify-center gap-4">
               <button

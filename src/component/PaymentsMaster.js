@@ -4,7 +4,7 @@ import BackButton from "../component/BackButton";
 import { useLocation, useNavigate } from "react-router-dom";
 import Select from "react-select";
 import toast from "react-hot-toast";
-
+const adminData = JSON.parse(localStorage.getItem("adminData")) || {};
 const PaymentsMaster = () => {
   const [paymentData, setPaymentData] = useState({
     paymentId: "",
@@ -19,7 +19,8 @@ const PaymentsMaster = () => {
     transactionId: "",
     cardNumber: "",
     remarks: "",
-    user: localStorage.getItem("userId") || "admin",
+    user: adminData._id || "",
+    collectedBy: adminData.name || "",
   });
 
   const [previousPending, setPreviousPending] = useState('');
@@ -60,7 +61,14 @@ const PaymentsMaster = () => {
   });
   const [usedMonths, setUsedMonths] = useState({ tuition: [], transport: [] });
 
-
+useEffect(() => {
+    const adminData = JSON.parse(localStorage.getItem("adminData")) || {};
+    setPaymentData(prev => ({
+      ...prev,
+      user: adminData._id || "",
+      collectedBy: adminData.name || "",
+    }));
+  }, []);
 useEffect(() => {
   const paid = Number(paymentData.amountPaid || 0);
   const fine = Number(lateFine || 0);
@@ -859,7 +867,7 @@ try {
       selectedMonth: selectedMonths,
     };
   });
-
+const currentUser = JSON.parse(localStorage.getItem("adminData"));
 const payload = {
   student: paymentData.student,
   rollNo: paymentData.rollNo,
@@ -891,7 +899,8 @@ netPayable: Number(netPayable || 0),
   transactionId: paymentData.transactionId || "",
   cardNumber: paymentData.cardNumber || "",
   remarks: paymentData.remarks || "",
-  user: paymentData.user || localStorage.getItem("userId") || "admin",
+   user: currentUser?._id || "admin",
+  collectedBy: currentUser?.name || "Admin",
   lateFine: Number(lateFine || 0),
   admissionScholarshipApplied: paymentData.admissionScholarshipApplied || false,
   sessionScholarshipApplied: paymentData.sessionScholarshipApplied || false,
@@ -1621,8 +1630,8 @@ const totalPending = pendingFeeHeads.reduce(
             Collected By
             <input
               type="text"
-              name="user"
-              value={paymentData.user}
+              name="collectedBy"
+    value={paymentData.collectedBy}
               readOnly
               className="border border-gray-400 p-1 rounded bg-gray-100 cursor-not-allowed"
             />

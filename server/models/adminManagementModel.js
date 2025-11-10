@@ -5,7 +5,7 @@ const adminManagementSchema = new mongoose.Schema(
     userId: { type: String, required: true, unique: true },
     name: { type: String, required: true },
     password: { type: String, required: true },
-    role: { type: String, enum: ["Admin", "HR", "Manager", "Employee"], default: "HR" },
+    role: { type: String, default:"" },
     permissions: [{ type: String }],
     isDefault: { type: Boolean, default: false },  // main admin flag
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "AdminManagement", default: null } // ✅ who created

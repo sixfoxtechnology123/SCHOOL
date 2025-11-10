@@ -107,7 +107,7 @@ const createUser = async (req, res) => {
       userId,
       name,
       password: hashed,
-      role: role || "HR",
+      role: role || "",
       permissions: permissions || [],
       createdBy: req.user?.id || null, // optional: track creator
       isDefault: false, // not main admin
