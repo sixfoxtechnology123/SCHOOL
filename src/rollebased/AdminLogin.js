@@ -90,7 +90,7 @@ const AdminLogin = () => {
       <button
         type="button"
         onClick={() => setShowPassword(!showPassword)}
-        className="absolute right-3 top-10 text-white"
+        className="absolute right-3 top-10 text-black"
       >
         {showPassword ? <FaEyeSlash /> : <FaEye />}
       </button>
