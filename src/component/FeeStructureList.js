@@ -90,21 +90,26 @@ const deleteFee = async (id, className, feeHeadName) => {
   }
 };
 
-// -----------------------------------------
+// Reset to first page when filter changes
+useEffect(() => {
+  setCurrentPage(1);
+}, [filterClass, filterSession, searchTerm]);
 
 // Filter fees based on search term, class, and session filters
 const filteredFees = fees.filter(fee =>
-  (
-    fee.className?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fee.feeHeadName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    fee.academicSession?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) &&
-  (filterSession ? fee.academicSession === filterSession : true) &&
-  (filterClass ? fee.classId === filterClass : true)
+  (fee.className?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+   fee.feeHeadName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+   fee.academicSession?.toLowerCase().includes(searchTerm.toLowerCase()))
+  &&
+  (filterSession ? fee.academicSession?.toString() === filterSession : true)
+  &&
+ (filterClass ? fee.className?.toString() === filterClass : true)
+
 );
 
 const startIndex = (currentPage - 1) * perPage;
 const paginatedFees = filteredFees.slice(startIndex, startIndex + perPage);
+
 
 
   return (
@@ -127,17 +132,17 @@ const paginatedFees = filteredFees.slice(startIndex, startIndex + perPage);
                   className="flex-1 min-w-[270px] border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
                 />
 
-                {/* Class Filter */}
-                <select
-                  value={filterClass}
-                  onChange={(e) => setFilterClass(e.target.value)}
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
-                >
-                  <option value="">All Classes</option>
-                  {allClasses.map((c) => (
-                    <option key={c.classId} value={c.classId}>{c.className}</option>
-                  ))}
-                </select>
+              <select
+                    value={filterClass}
+                    onChange={(e) => setFilterClass(e.target.value)}
+                    className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  >
+                    <option value="">All Classes</option>
+                    {allClasses.map((c) => (
+                      <option key={c.classId} value={c.className}>{c.className}</option>
+                    ))}
+                  </select>
+
 
                 {/* Session Filter */}
                 <select

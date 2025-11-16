@@ -550,14 +550,14 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
       <div className="flex-1 overflow-y-auto p-3">
         <Header />
         <div className="p-2 bg-white  shadow-md rounded-md">
-          <div className="bg-green-50  border border-green-300 rounded-lg shadow-md p-2 mb-4">
+          <div className="bg-blue-50  border border-blue-300 rounded-lg shadow-md p-2 mb-4">
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                  {/* Left: Back Button */}
             <div className="flex items-center gap-2">
                   <BackButton />
                 </div>
-              <h2 className="text-xl font-bold text-green-800">Students</h2>
+              <h2 className="text-xl font-bold text-blue-800">Students</h2>
                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 w-full">
                 {/* Center & Right: Filters + Clear Icon in a row */}
                 <div className="flex items-center gap-1 md:gap-2 w-full md:w-auto">
@@ -566,7 +566,7 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
                   <select
                     value={filterSession}
                     onChange={(e) => setFilterSession(e.target.value)}
-                    className="border border-green-500 rounded-l px-1 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="border border-blue-500 rounded-l px-1 py-0 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   >
                     <option value="">All Sessions</option>
                     {sessions.map((s) => (
@@ -580,7 +580,7 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
                   <select
                     value={filterClass}
                     onChange={(e) => setFilterClass(e.target.value)}
-                    className="border border-green-500 px-1 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="border border-blue-500 px-1 py-0 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   >
                     <option value="">All Classes</option>
                     {classes.map((cls) => (
@@ -593,7 +593,7 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
                     value={filterSection}
                     onChange={(e) => setFilterSection(e.target.value)}
                     disabled={!filterClass || sections.length === 0}
-                    className="border border-green-500 rounded-r px-1 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="border border-blue-500 rounded-r px-1 py-0 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   >
                     <option value="">All Sections</option>
                     {sections.map((sec) => (
@@ -620,13 +620,13 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
                     placeholder="Search by Student ID, ADM No or Name"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-                    className="w-full border border-green-500 rounded px-1 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="w-full border border-blue-500 rounded px-1 py-0 focus:outline-none focus:ring-2 focus:ring-blue-400"
                   />
 
                   {/* Print Button */}
                   <button
                     onClick={generateStudentsListPDF}
-                    className="bg-green-600 text-white px-4 py-0 rounded hover:bg-green-700"
+                    className="bg-blue-600 text-white px-4 py-0 rounded hover:bg-blue-700"
                   >
                     Print
                   </button>
@@ -634,9 +634,9 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
                   {/* New Register Button */}
                   <button
                     onClick={() => navigate("/StudentMaster")}
-                    className="bg-green-600 hover:bg-green-700 text-white px-4 py-0 rounded font-semibold whitespace-nowrap"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-0 rounded font-semibold whitespace-nowrap"
                   >
-                    New Register
+                    New/Re-Admission
                   </button>
                   
                 </div>
@@ -646,35 +646,35 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
 
 
 
-          <table className="w-full table-auto border border-green-500 text-sm">
-            <thead className="bg-green-100">
+          <table className="w-full table-auto border border-blue-500 text-sm">
+            <thead className="bg-blue-100">
               <tr>
-                <th className="border border-green-500 px-1 py-1">SL No</th>
-                <th className="border border-green-500 px-1 py-1">Student ID</th>
-                <th className="border border-green-500 px-1 py-1">Session</th>
-                <th className="border border-green-500 px-1 py-1">ADM No.</th>
-                <th className="border border-green-500 px-1 py-1">Name</th>
-                <th className="border border-green-500 px-1 py-1">Admission Type</th>
-                <th className="border border-green-500 px-1 py-1">Class</th>
-                <th className="border border-green-500 px-1 py-1">Sec</th>
-                <th className="border border-green-500 px-1 py-1">Roll</th>
-                {/* <th className="border border-green-500 px-1 py-1">DOB</th> */}
-                <th className="border border-green-500 px-1 py-1">Father</th>
-                <th className="border border-green-500 px-1 py-1">Mother</th>
-                {/* <th className="border border-green-500 px-1 py-1">Phone No</th> */}
-                <th className="border border-green-500 px-1 py-1">Action</th>
+                <th className="border border-blue-500 px-1 py-1">SL No</th>
+                <th className="border border-blue-500 px-1 py-1">Student ID</th>
+                <th className="border border-blue-500 px-1 py-1">Session</th>
+                <th className="border border-blue-500 px-1 py-1">ADM No.</th>
+                <th className="border border-blue-500 px-1 py-1">Name</th>
+                <th className="border border-blue-500 px-1 py-1">Admission Type</th>
+                <th className="border border-blue-500 px-1 py-1">Class</th>
+                <th className="border border-blue-500 px-1 py-1">Sec</th>
+                <th className="border border-blue-500 px-1 py-1">Roll</th>
+                {/* <th className="border border-blue-500 px-1 py-1">DOB</th> */}
+                <th className="border border-blue-500 px-1 py-1">Father</th>
+                <th className="border border-blue-500 px-1 py-1">Mother</th>
+                {/* <th className="border border-blue-500 px-1 py-1">Phone No</th> */}
+                <th className="border border-blue-500 px-1 py-1">Action</th>
               </tr>
             </thead>
             <tbody className="text-center">
               {filteredStudents.length > 0 ? (
                 paginatedStudents.map((stu,index) => (
                   <tr key={stu._id} className="hover:bg-gray-100 transition">
-                    <td className="border border-green-500 px-1 py-1">{startIndex+index+1}</td>
-                    <td className="border border-green-500 px-1 py-1">{stu.studentId}</td>
-                    <td className="border border-green-500 px-1 py-1">{stu.academicSession}</td>
-                    <td className="border border-green-500 px-1 py-1">{stu.admissionNo}</td>
-                    <td className="border border-green-500 px-1 py-1">{getName(stu)}</td>
-                     <td className="border border-green-500 px-1 py-1">
+                    <td className="border border-blue-500 px-1 py-1">{startIndex+index+1}</td>
+                    <td className="border border-blue-500 px-1 py-1">{stu.studentId}</td>
+                    <td className="border border-blue-500 px-1 py-1">{stu.academicSession}</td>
+                    <td className="border border-blue-500 px-1 py-1">{stu.admissionNo}</td>
+                    <td className="border border-blue-500 px-1 py-1">{getName(stu)}</td>
+                     <td className="border border-blue-500 px-1 py-1">
                       {stu.admissionType
                         ? stu.admissionType
                             .split(/[\s-]+/)                     // split by space or dash
@@ -682,14 +682,14 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
                             .join(" ")                            // join with space
                         : ""}
                     </td>
-                    <td className="border border-green-500 px-1 py-1">{getClass(stu)}</td>
-                    <td className="border border-green-500 px-1 py-1">{stu.section || ""}</td>
-                    <td className="border border-green-500 px-1 py-1">{stu.rollNo || ""}</td>
-                    {/* <td className="border border-green-500 px-1 py-1">{formatDOB(stu.dob)}</td> */}
-                    <td className="border border-green-500 px-1 py-1">{stu.fatherName || ""}</td>
-                    <td className="border border-green-500 px-1 py-1">{stu.motherName || ""}</td>
-                    {/* <td className="border border-green-500 px-1 py-1">{getPhone(stu)}</td> */}
-                   <td className="border border-green-500 px-1 py-1">
+                    <td className="border border-blue-500 px-1 py-1">{getClass(stu)}</td>
+                    <td className="border border-blue-500 px-1 py-1">{stu.section || ""}</td>
+                    <td className="border border-blue-500 px-1 py-1">{stu.rollNo || ""}</td>
+                    {/* <td className="border border-blue-500 px-1 py-1">{formatDOB(stu.dob)}</td> */}
+                    <td className="border border-blue-500 px-1 py-1">{stu.fatherName || ""}</td>
+                    <td className="border border-blue-500 px-1 py-1">{stu.motherName || ""}</td>
+                    {/* <td className="border border-blue-500 px-1 py-1">{getPhone(stu)}</td> */}
+                   <td className="border border-blue-500 px-1 py-1">
                   <div className="flex justify-center items-center gap-2">
                     {/* Edit */}
                     <button
@@ -714,7 +714,7 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
                     {/* Print */}
                     <button
                       onClick={() => generatePDF(stu)}
-                      className="text-green-600 hover:text-green-800"
+                      className="text-blue-600 hover:text-blue-800"
                       title="Print / View PDF"
                     >
                       <FaPrint />

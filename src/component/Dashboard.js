@@ -144,28 +144,28 @@ const Dashboard = () => {
 
         {/* Dashboard Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-          <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
-            <FaMoneyBill size={30} className="text-green-800 mb-2" />
-            <h2 className="text-lg font-semibold text-green-800">Today's Collections</h2>
-            <p className="text-2xl font-bold text-green-800">
+          <div className="bg-blue-50 p-6 rounded-2xl shadow border border-blue-300 hover:bg-blue-100 transition">
+            <FaMoneyBill size={30} className="text-blue-800 mb-2" />
+            <h2 className="text-lg font-semibold text-blue-800">Today's Collections</h2>
+            <p className="text-2xl font-bold text-blue-800">
               ₹ {todaysCollection.toLocaleString("en-IN")}
             </p>
           </div>
 
-          <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
-            <FaUserGraduate size={30} className="text-green-800 mb-2" />
+          <div className="bg-blue-50 p-6 rounded-2xl shadow border border-blue-300 hover:bg-blue-100 transition">
+            <FaUserGraduate size={30} className="text-blue-800 mb-2" />
             <button onClick={() => navigate("/StudentList")}>
-              <h2 className="text-lg font-semibold text-green-800">Total Students</h2>
+              <h2 className="text-lg font-semibold text-blue-800">Total Students</h2>
             </button>
-            <p className="text-2xl font-bold text-green-800">{totalStudents}</p>
+            <p className="text-2xl font-bold text-blue-800">{totalStudents}</p>
           </div>
 
-          <div className="bg-green-50 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition">
-            <FaFileInvoice size={30} className="text-green-800 mb-2" />
+          <div className="bg-blue-50 p-6 rounded-2xl shadow border border-blue-300 hover:bg-blue-100 transition">
+            <FaFileInvoice size={30} className="text-blue-800 mb-2" />
             <button onClick={() => navigate("/OutstandingFees")}>
-              <h2 className="text-lg font-semibold text-green-800">Outstanding Dues</h2>
+              <h2 className="text-lg font-semibold text-blue-800">Outstanding Dues</h2>
             </button>
-            <p className="text-2xl font-bold text-green-800">
+            <p className="text-2xl font-bold text-blue-800">
               ₹ {outstandingAmount.toLocaleString("en-IN")}
             </p>
           </div>
@@ -175,21 +175,21 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-6">
           <button
             onClick={() => navigate("/PaymentsList")}
-            className="bg-green-50 font-semibold text-green-800 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition"
+            className="bg-blue-50 font-semibold text-blue-800 p-6 rounded-2xl shadow border border-blue-300 hover:bg-blue-100 transition"
           >
             ➕ Collect Fees & 🧾 View Receipts
           </button>
 
           <button
             onClick={() => navigate("/OutstandingFees")}
-            className="bg-green-50 font-semibold text-green-800 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition"
+            className="bg-blue-50 font-semibold text-blue-800 p-6 rounded-2xl shadow border border-blue-300 hover:bg-blue-100 transition"
           >
             ⚠️ Outstanding Dues
           </button>
 
           <button
             onClick={() => navigate("/ReportsDashboard")}
-            className="bg-green-50 font-semibold text-green-800 p-6 rounded-2xl shadow border border-green-300 hover:bg-green-100 transition"
+            className="bg-blue-50 font-semibold text-blue-800 p-6 rounded-2xl shadow border border-blue-300 hover:bg-blue-100 transition"
           >
             📊 Reports
           </button>

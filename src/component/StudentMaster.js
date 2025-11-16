@@ -15,6 +15,7 @@ const formatDate = (date) => {
 };
 const today = new Date().toISOString().split("T")[0];
 const StudentMaster = () => {
+  const [studentErrors, setStudentErrors] = useState({});
   const [step, setStep] = useState(1);
   const [sameAddress, setSameAddress] = useState(false);
   const [studentData, setStudentData] = useState({
@@ -499,7 +500,7 @@ const handleSubmit = async (e) => {
                                 fetchNextStudentId(); // fill next ID automatically
                               }
                             }}
-                            className="border bg-gray-100 p-0 rounded w-full"
+                            className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                           >
                             <option value="new admission">New Admission</option>
                             <option value="re-admission">Re-Admission</option>
@@ -511,7 +512,7 @@ const handleSubmit = async (e) => {
               <label>
                 Academic Session
                 <select
-                  className="border bg-gray-100 p-0 rounded w-full"
+                  className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   name="academicSession"
                   value={studentData.academicSession}
                   onChange={(e) => {
@@ -542,7 +543,7 @@ const handleSubmit = async (e) => {
                   name="studentId"
                   value={studentData.studentId}
                   readOnly={admissionType === "new admission"} // read-only only for new admission
-                  className={`border p-0 rounded w-full ${
+                  className={`w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150 ${
                     admissionType === "new admission"
                       ? "bg-gray-200 cursor-not-allowed"
                       : "bg-white"
@@ -630,7 +631,7 @@ const handleSubmit = async (e) => {
                 name="admissionNo"
                 value={studentData.admissionNo}
                 readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150 cursor-not-allowed"
               />
             </label>
             <label>Admission Date
@@ -639,7 +640,7 @@ const handleSubmit = async (e) => {
                 name="admissionDate"
                 value={formatDate(studentData.admissionDate)} // DD-MM-YYYY
                 readOnly
-                className="border bg-gray-100 p-0 rounded w-full cursor-not-allowed"
+                className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150 cursor-not-allowed"
               />
             </label>
            {/* Admit Class */}
@@ -676,7 +677,7 @@ const handleSubmit = async (e) => {
                 }
 
                   }}
-                  className="border bg-gray-100 p-0 rounded w-full"
+                  className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                 >
                   <option value="">--Select Class--</option>
                   {classList.map((cls, index) => (
@@ -697,7 +698,7 @@ const handleSubmit = async (e) => {
                 placeholder="Previous School Name"
                 value={studentData.transferFrom}
                 onChange={handleChange}
-                className="border bg-gray-100 p-0 rounded w-full"
+                className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
               />
             </label>
           )}
@@ -740,7 +741,7 @@ const handleSubmit = async (e) => {
                       }
                     }
                   }}
-                  className="border bg-gray-100 p-0 rounded w-full"
+                  className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                 >
                   <option value="">--Select Section--</option>
                   {sections.map((sec, index) => (
@@ -758,7 +759,7 @@ const handleSubmit = async (e) => {
                   name="rollNo"
                   value={studentData.rollNo || ""}
                   readOnly
-                  className="border bg-gray-100 p-0 rounded w-full"
+                  className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                 />
               </label>
 
@@ -768,7 +769,7 @@ const handleSubmit = async (e) => {
                     name="firstName"
                     value={studentData.firstName}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
                 <label>
@@ -777,7 +778,7 @@ const handleSubmit = async (e) => {
                     name="lastName"
                     value={studentData.lastName}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
                 <label>
@@ -786,7 +787,7 @@ const handleSubmit = async (e) => {
                     name="gender"
                     value={studentData.gender}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   >
                     <option value="">--Select--</option>
                     <option value="MALE">Male</option>
@@ -800,7 +801,7 @@ const handleSubmit = async (e) => {
                     name="socialCaste"
                     value={studentData.socialCaste}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   >
                     <option value="">--Select--</option>
                     <option value="GN">GN</option>
@@ -817,7 +818,7 @@ const handleSubmit = async (e) => {
                     name="dob"
                     value={studentData.dob}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
           
@@ -828,7 +829,7 @@ const handleSubmit = async (e) => {
                   name="height"
                   value={studentData.height}
                   onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
+                  className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   placeholder="Enter Height"
                 />
               </label>
@@ -839,7 +840,7 @@ const handleSubmit = async (e) => {
                   name="weight"
                   value={studentData.weight}
                   onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
+                  className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   placeholder="Enter Waight"
                 />
               </label>
@@ -849,7 +850,7 @@ const handleSubmit = async (e) => {
                   name="bloodGroup"
                   value={studentData.bloodGroup}
                   onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
+                  className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                 >
                   <option value="">Select Blood Group</option>
                   <option value="A+">A+</option>
@@ -870,7 +871,7 @@ const handleSubmit = async (e) => {
                   name="brothers"
                   value={studentData.brothers}
                   onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
+                  className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                 />
               </label>
               <label>
@@ -880,7 +881,7 @@ const handleSubmit = async (e) => {
                   name="sisters"
                   value={studentData.sisters}
                   onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
+                  className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                 />
               </label>
               <label>
@@ -889,7 +890,7 @@ const handleSubmit = async (e) => {
                   name="nationality"
                   value={studentData.nationality}
                   onChange={handleChange}
-                  className="border bg-gray-100 p-0 rounded w-full"
+                  className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                 />
               </label>
              <div>
@@ -935,7 +936,7 @@ const handleSubmit = async (e) => {
                       value={studentData.scholarshipForAdmissionFee}
                       onChange={handleChange}
                       placeholder="Enter Amount"
-                      className="border bg-gray-100 p-0 rounded w-full"
+                      className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                     />
                   </label>
 
@@ -947,7 +948,7 @@ const handleSubmit = async (e) => {
                       value={studentData.scholarshipForSessionFee}
                       onChange={handleChange}
                       placeholder="Enter Amount"
-                      className="border bg-gray-100 p-0 rounded w-full"
+                      className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                     />
                   </label>
             </div>
@@ -962,8 +963,17 @@ const handleSubmit = async (e) => {
                   <input                  
                     name={field}
                     value={studentData.permanentAddress[field]}
-                    onChange={(e) => handleAddressChange(e, "permanentAddress")}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                  onChange={(e) => {
+                  const value = e.target.value;
+                  if (field === "pin") {
+                    if (/^\d{0,6}$/.test(value)) { // only digits, max 6
+                      handleAddressChange(e, "permanentAddress");
+                    }
+                  } else {
+                    handleAddressChange(e, "permanentAddress");
+                  }
+                }}
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </div>
               ))}
@@ -991,8 +1001,17 @@ const handleSubmit = async (e) => {
                     <input
                       name={field}
                       value={studentData.currentAddress[field]}
-                      onChange={(e) => handleAddressChange(e, "currentAddress")}
-                      className="border bg-gray-100 p-0 rounded w-full"
+                      onChange={(e) => {
+                          const value = e.target.value;
+                          if (field === "pin") {
+                            if (/^\d{0,6}$/.test(value)) { // only digits, max 6
+                              handleAddressChange(e, "currentAddress");
+                            }
+                          } else {
+                            handleAddressChange(e, "currentAddress");
+                          }
+                        }}
+                      className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                     />
                   </div>
                 ))}
@@ -1011,7 +1030,7 @@ const handleSubmit = async (e) => {
                     name="transportRequired"
                     value={studentData.transportRequired}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   >
                     <option>No</option>
                     <option>Yes</option>
@@ -1025,7 +1044,7 @@ const handleSubmit = async (e) => {
                       name="distanceFromSchool"
                       value={studentData.distanceFromSchool}
                       onChange={handleChange}
-                      className="border bg-gray-100 p-0 rounded w-full"
+                      className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                       placeholder="Enter distance"
                     />
                   </label>
@@ -1043,7 +1062,7 @@ const handleSubmit = async (e) => {
                       }
                     }}
                     maxLength="10"
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                     placeholder="Enter 10-digit number"
                   />
                 </label>
@@ -1053,7 +1072,7 @@ const handleSubmit = async (e) => {
                     name="emergencyPerson"
                     value={studentData.emergencyPerson}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
               </div>
@@ -1080,7 +1099,7 @@ const handleSubmit = async (e) => {
                     name="fatherName"
                     value={studentData.fatherName}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
                 <label>
@@ -1089,7 +1108,7 @@ const handleSubmit = async (e) => {
                     name="fatherOccupation"
                     value={studentData.fatherOccupation}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
                 <label>
@@ -1105,25 +1124,45 @@ const handleSubmit = async (e) => {
                       }
                     }}
                     placeholder="Enter 10-digit number"
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
-                <label>
-                  Father's Email
-                  <input
-                    name="fatherEmail"
-                    value={studentData.fatherEmail}
-                    onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
-                  />
-                </label>
+               <label>
+                    Father's Email
+                    <input
+                      name="fatherEmail"
+                      value={studentData.fatherEmail}
+                      onChange={(e) => {
+                        handleChange(e);
+                        const email = e.target.value;
+                        const regex = /^[^\s@]+@gmail\.com$/i; // case-insensitive
+                        if (email && !regex.test(email)) {
+                          setStudentErrors((prev) => ({
+                            ...prev,
+                            [e.target.name]: "Email must end with @gmail.com",
+                          }));
+                        } else {
+                          setStudentErrors((prev) => ({
+                            ...prev,
+                            [e.target.name]: "",
+                          }));
+                        }
+                      }}
+                      placeholder="....@gmail.com"
+                      className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
+                    />
+                    {studentErrors.fatherEmail && (
+                      <p className="text-red-500 text-sm">{studentErrors.fatherEmail}</p>
+                    )}
+                  </label>
+
                 <label>
                   Father's Nationality
                   <input
                     name="fatherNationality"
                     value={studentData.fatherNationality}
                     readOnly
-                    className="border bg-gray-200 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150 cursor-not-allowed bg-gray-100"
                   />
                 </label>
                 <label>
@@ -1132,7 +1171,7 @@ const handleSubmit = async (e) => {
                     name="fatherQualification"
                     value={studentData.fatherQualification}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
                 <label>
@@ -1141,7 +1180,7 @@ const handleSubmit = async (e) => {
                     name="motherName"
                     value={studentData.motherName}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
                 <label>
@@ -1150,7 +1189,7 @@ const handleSubmit = async (e) => {
                     name="motherOccupation"
                     value={studentData.motherOccupation}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
                 <label>
@@ -1166,25 +1205,45 @@ const handleSubmit = async (e) => {
                       }
                     }}
                     placeholder="Enter 10-digit number"
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
-                <label>
+              <label>
                   Mother's Email
                   <input
                     name="motherEmail"
                     value={studentData.motherEmail}
-                    onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                onChange={(e) => {
+                      handleChange(e);
+                      const email = e.target.value;
+                      const regex = /^[^\s@]+@gmail\.com$/i; // case-insensitive
+                      if (email && !regex.test(email)) {
+                        setStudentErrors((prev) => ({
+                          ...prev,
+                          [e.target.name]: "Email must end with @gmail.com",
+                        }));
+                      } else {
+                        setStudentErrors((prev) => ({
+                          ...prev,
+                          [e.target.name]: "",
+                        }));
+                      }
+                    }}
+                    placeholder="....@gmail.com"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
+                  {studentErrors.motherEmail && (
+                    <p className="text-red-500 text-sm">{studentErrors.motherEmail}</p>
+                  )}
                 </label>
+
                 <label>
                   Mother's Nationality
                   <input
                     name="motherNationality"
                     value={studentData.motherNationality}
                     readOnly
-                    className="border bg-gray-200 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150 cursor-not-allowed bg-gray-100"
                   />
                 </label>
                 <label>
@@ -1193,7 +1252,7 @@ const handleSubmit = async (e) => {
                     name="motherQualification"
                     value={studentData.motherQualification}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
               </div>
@@ -1205,7 +1264,7 @@ const handleSubmit = async (e) => {
                     name="bpl"
                     value={studentData.bpl}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   >
                     <option>No</option>
                     <option>Yes</option>
@@ -1218,7 +1277,7 @@ const handleSubmit = async (e) => {
                       name="bplNo"
                       value={studentData.bplNo}
                       onChange={handleChange}
-                      className="border bg-gray-100 p-0 rounded w-full"
+                      className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                     />
                   </label>
                 )}
@@ -1229,7 +1288,7 @@ const handleSubmit = async (e) => {
                     name="familyIncome"
                     value={studentData.familyIncome}
                     onChange={handleChange}
-                    className="border bg-gray-100 p-0 rounded w-full"
+                    className="w-full pl-2 pr-1 border border-gray-300 font-medium rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-300 focus:border-sky-400 transition-all duration-150"
                   />
                 </label>
               </div>
