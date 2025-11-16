@@ -5,8 +5,11 @@ import BackButton from "../component/BackButton";
 import Sidebar from "../component/Sidebar";
 import Header from "../component/Header";
 import { FaThLarge } from "react-icons/fa";
+import Pagination from "../component/Pagination";
 
 const ClassSummary = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
   const [data, setData] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [classes, setClasses] = useState([]);
@@ -55,6 +58,9 @@ const ClassSummary = () => {
     const matchSection = filterSection ? row.section?.trim().toUpperCase() === filterSection.trim().toUpperCase() : true;
     return matchSession && matchClass && matchSection;
   });
+  
+  const startIndex = (currentPage - 1) * perPage;
+const paginatedData = filteredData.slice(startIndex, startIndex + perPage);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -136,6 +142,7 @@ const ClassSummary = () => {
             <table className="w-full table-auto border border-green-500">
               <thead className="bg-green-100 text-sm">
                 <tr>
+                  <th className="border border-green-500 px-2 py-1">SL No</th>
                   <th className="border border-green-500 px-2 py-1">Class</th>
                   <th className="border border-green-500 px-2 py-1">Section</th>
                   <th className="border border-green-500 px-2 py-1">Session</th>
@@ -145,8 +152,9 @@ const ClassSummary = () => {
                 </tr>
               </thead>
               <tbody className="text-sm text-center">
-                {filteredData.length > 0 ? filteredData.map((row, idx) => (
+                {paginatedData.length > 0 ? filteredData.map((row, idx) => (
                   <tr key={idx} className="hover:bg-gray-100 transition">
+                    <td className="border border-green-500 px-2 py-1">{startIndex+idx+1}</td>
                     <td className="border border-green-500 px-2 py-1">{row.className || "-"}</td>
                     <td className="border border-green-500 px-2 py-1">{row.section || "-"}</td>
                     <td className="border border-green-500 px-2 py-1">{row.session || "-"}</td>
@@ -170,6 +178,12 @@ const ClassSummary = () => {
                 )}
               </tbody>
             </table>
+              <Pagination
+              total={filteredData.length}
+              perPage={perPage}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
           </div>
 
           {/* Modal */}

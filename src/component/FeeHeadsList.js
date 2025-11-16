@@ -7,8 +7,11 @@ import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
 import toast from "react-hot-toast";
+import Pagination from "../component/Pagination";
 
 const FeeHeadsList = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
   const [feeHeads, setFeeHeads] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,6 +40,8 @@ const FeeHeadsList = () => {
     }
   };
 
+const startIndex = (currentPage - 1) * perPage;
+const paginatedfeeHeads = feeHeads.slice(startIndex, startIndex + perPage);
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar/>
@@ -61,6 +66,7 @@ const FeeHeadsList = () => {
           <table className="w-full table-auto border border-green-500">
             <thead className="bg-green-100 text-sm">
               <tr>
+                <th className="border border-green-500  py-1">SL No</th>
                 <th className="border border-green-500 px-2 py-1">FeeHead ID</th>
                 <th className="border border-green-500 px-2 py-1">FeeHead Name</th>
                 {/* <th className="border border-green-500 px-2 py-1">Description</th> */}
@@ -69,8 +75,9 @@ const FeeHeadsList = () => {
             </thead>
             <tbody className="text-sm text-center">
               {feeHeads.length > 0 ? (
-                feeHeads.map((fh) => (
+                paginatedfeeHeads.map((fh,index) => (
                   <tr key={fh._id} className="hover:bg-gray-100 transition">
+                    <td className="border border-green-500 py-1">{startIndex+index+1}</td>
                     <td className="border border-green-500 px-2 py-1">{fh.feeHeadId}</td>
                     <td className="border border-green-500 px-2 py-1">{fh.feeHeadName}</td>
                     {/* <td className="border border-green-500 px-2 py-1">{fh.description}</td> */}
@@ -103,6 +110,12 @@ const FeeHeadsList = () => {
               )}
             </tbody>
           </table>
+          <Pagination
+              total={feeHeads.length}
+              perPage={perPage}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
         </div>
       </div>
     </div>

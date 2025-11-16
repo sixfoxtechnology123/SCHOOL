@@ -7,8 +7,11 @@ import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
 import toast from "react-hot-toast";
+import Pagination from "../component/Pagination";
 
 const AcademicSessionList = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
   const [sessions, setSessions] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,6 +42,8 @@ const AcademicSessionList = () => {
       console.error("Failed to delete session:", err);
     }
   };
+const startIndex = (currentPage - 1) * perPage;
+const paginatedsessions = sessions.slice(startIndex, startIndex + perPage);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -64,6 +69,7 @@ const AcademicSessionList = () => {
           <table className="w-full table-auto border border-green-500">
             <thead className="bg-green-100 text-sm">
               <tr>
+                <th className="border border-green-500 px-2 py-1">SL No</th>
                 <th className="border border-green-500 px-2 py-1">Session ID</th>
                 <th className="border border-green-500 px-2 py-1">Year</th>
                 <th className="border border-green-500 px-2 py-1">Start Date</th>
@@ -73,8 +79,9 @@ const AcademicSessionList = () => {
             </thead>
             <tbody className="text-sm text-center">
               {sessions.length > 0 ? (
-                sessions.map((s) => (
+                paginatedsessions.map((s,index) => (
                   <tr key={s._id} className="hover:bg-gray-100 transition">
+                    <td className="border border-green-500 px-2 py-1">{startIndex+index+1}</td>
                     <td className="border border-green-500 px-2 py-1">{s.sessionId}</td>
                     <td className="border border-green-500 px-2 py-1">{s.year}</td>
                     <td className="border border-green-500 px-2 py-1">
@@ -112,6 +119,12 @@ const AcademicSessionList = () => {
               )}
             </tbody>
           </table>
+          <Pagination
+              total={sessions.length}
+              perPage={perPage}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
         </div>
       </div>
     </div>

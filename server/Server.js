@@ -92,7 +92,7 @@ const createDefaultAdmin = async () => {
         role: "Admin",
         profileImage: "",
       });
-      //console.log("Default admin created → userId: sixfoxtechnology12@gmail.com | password: sixfox123");
+      console.log("Default admin created → userId: sixfoxtechnology12@gmail.com | password: sixfox123");
     } else {
       //console.log("Default admin already exists in database");
     }

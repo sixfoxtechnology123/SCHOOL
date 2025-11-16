@@ -7,6 +7,7 @@ import BackButton from "../component/BackButton";
 import Sidebar from "../component/Sidebar";
 import Header from "./Header";
 import toast from "react-hot-toast";
+import Pagination from "../component/Pagination";
 
 const formatDDMMYYYY = (iso) => {
   if (!iso) return "";
@@ -18,6 +19,8 @@ const formatDDMMYYYY = (iso) => {
 };
 
 const PaymentsList = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
   const [payments, setPayments] = useState([]);
   const [students, setStudents] = useState([]);   //  added for student names
   const [searchTerm, setSearchTerm] = useState("");
@@ -307,6 +310,8 @@ const deletePayment = async (id) => {
       (p.paymentId && p.paymentId.toLowerCase().includes(term))
     );
   });
+  const startIndex = (currentPage - 1) * perPage;
+const paginatedPayments = filteredPayments.slice(startIndex, startIndex + perPage);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -344,6 +349,7 @@ const deletePayment = async (id) => {
 <table className="w-full table-auto border border-green-600">
   <thead className="bg-green-100 text-xs">
     <tr>
+      <th className="border border-green-600">SL No</th>
       <th className="border border-green-600">PMT ID</th>
       <th className="border border-green-600">ST ID</th>
       <th className="border border-green-600">Session</th>
@@ -366,8 +372,9 @@ const deletePayment = async (id) => {
   </thead>
   <tbody className="text-sm text-center">
     {filteredPayments.length > 0 ? (
-      filteredPayments.map((p) => (
+      paginatedPayments.map((p,index) => (
         <tr key={p._id} className="hover:bg-gray-100 transition">
+          <td className="border border-green-600">{startIndex+index+1}</td>
           <td className="border border-green-600">{p.paymentId}</td>
           <td className="border border-green-600">{p.student}</td>
           <td className="border border-green-600">{p.academicSession}</td>
@@ -435,54 +442,57 @@ const deletePayment = async (id) => {
 
         
           <td className="border border-green-600">
-  {(p.totalPendingAmount || 0) + (p.overallPendingAmount || 0)}
-</td>
+              {(p.totalPendingAmount || 0) + (p.overallPendingAmount || 0)}
+            </td>
 
 
-          {/* <td className="border border-green-600">
-            ₹
-            {Math.round(
-              p.feeDetails?.reduce(
-                (acc, f) => acc + Number(f.pendingAmount || 0),
-                0
-              )
-            )}
-          </td> */}
+                      {/* <td className="border border-green-600">
+                        ₹
+                        {Math.round(
+                          p.feeDetails?.reduce(
+                            (acc, f) => acc + Number(f.pendingAmount || 0),
+                            0
+                          )
+                        )}
+                      </td> */}
 
-          <td className="border border-green-600">{formatDDMMYYYY(p.date)}</td>
-          <td className="border border-green-600">{p.paymentMode}</td>
-          {/* <td className="border border-green-600">{p.remarks || "-"}</td> */}
-          <td className="border border-green-600">{p.collectedBy || "-"}</td>
-          <td className="border border-green-600">
-            <div className="flex justify-center gap-4">
-              <button
-                onClick={() => handlePrint(p._id)}
-                className="text-green-600 hover:text-green-800"
-              >
-                <FaPrint />
-              </button>
-              <button
-                onClick={() => deletePayment(p._id)}
-                className="text-red-600 hover:text-red-800"
-              >
-                <FaTrash />
-              </button>
-            </div>
-          </td>
-        </tr>
-      ))
-    ) : (
-      <tr>
-        <td colSpan="18" className="text-center py-4 text-gray-500">
-          No payments found.
-        </td>
-      </tr>
-    )}
-  </tbody>
-</table>
-
-
-
+                      <td className="border border-green-600">{formatDDMMYYYY(p.date)}</td>
+                      <td className="border border-green-600">{p.paymentMode}</td>
+                      {/* <td className="border border-green-600">{p.remarks || "-"}</td> */}
+                      <td className="border border-green-600">{p.collectedBy || "-"}</td>
+                      <td className="border border-green-600">
+                        <div className="flex justify-center gap-4">
+                          <button
+                            onClick={() => handlePrint(p._id)}
+                            className="text-green-600 hover:text-green-800"
+                          >
+                            <FaPrint />
+                          </button>
+                          <button
+                            onClick={() => deletePayment(p._id)}
+                            className="text-red-600 hover:text-red-800"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="18" className="text-center py-4 text-gray-500">
+                      No payments found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+              <Pagination
+              total={filteredPayments.length}
+              perPage={perPage}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
         </div>
       </div>
     </div>

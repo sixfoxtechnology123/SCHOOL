@@ -5,8 +5,11 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "../component/Sidebar";
 import Header from "../component/Header";
 import { FaThLarge } from "react-icons/fa";
+import Pagination from "../component/Pagination";
 
 const DailyCollection = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
   const [data, setData] = useState([]);
   const [filterDate, setFilterDate] = useState("");
   const [selectedReport, setSelectedReport] = useState(null); // clicked row
@@ -75,6 +78,9 @@ const DailyCollection = () => {
           row.date === new Date(filterDate).toLocaleDateString("en-GB")
       )
     : data;
+const startIndex = (currentPage - 1) * perPage;
+const paginatedData = filteredData.slice(startIndex, startIndex + perPage);
+
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -126,6 +132,7 @@ const DailyCollection = () => {
           <table className="w-full table-auto border border-green-500">
             <thead className="bg-green-100 text-sm">
               <tr>
+                <th className="border border-green-500 px-2 py-1">SL No</th>
                 <th className="border border-green-500 px-2 py-1">Date</th>
                 <th className="border border-green-500 px-2 py-1">Total Students Paid</th>
                 <th className="border border-green-500 px-2 py-1">Total Amount Collected</th>
@@ -133,8 +140,9 @@ const DailyCollection = () => {
               </tr>
             </thead>
             <tbody className="text-sm text-center">
-              {filteredData.map((row, index) => (
+              {paginatedData.map((row, index) => (
                 <tr key={index} className="hover:bg-gray-100 transition">
+                  <td className="border border-green-500 px-2 py-1">{startIndex+index+1}</td>
                   <td className="border border-green-500 px-2 py-1">{row.date}</td>
                   <td className="border border-green-500 px-2 py-1">{row.totalStudents}</td>
                   <td className="border border-green-500 px-2 py-1">₹{row.totalAmount.toLocaleString()}</td>
@@ -157,6 +165,12 @@ const DailyCollection = () => {
               )}
             </tbody>
           </table>
+            <Pagination
+              total={filteredData.length}
+              perPage={perPage}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
         </div>
 
         {/* Modal */}
@@ -200,6 +214,7 @@ const DailyCollection = () => {
                     </tr>
                   )}
                 </tbody>
+             
               </table>
 
               <div className="text-right font-bold text-black mb-3">

@@ -8,10 +8,14 @@ import Header from "../component/Header";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import toast from "react-hot-toast";
+import Pagination from "../component/Pagination";
+
 
 const StudentsList = () => {
   const [sessions, setSessions] = useState([]);
   const [filterSession, setFilterSession] = useState("");
+   const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
 
   const [students, setStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -537,6 +541,8 @@ const tableRows = filteredStudents
   doc.save("students_list.pdf");
 };
 
+const startIndex = (currentPage - 1) * perPage;
+const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPage);
 
    return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -560,7 +566,7 @@ const tableRows = filteredStudents
                   <select
                     value={filterSession}
                     onChange={(e) => setFilterSession(e.target.value)}
-                    className="border border-green-500 rounded-l px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="border border-green-500 rounded-l px-1 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
                   >
                     <option value="">All Sessions</option>
                     {sessions.map((s) => (
@@ -574,7 +580,7 @@ const tableRows = filteredStudents
                   <select
                     value={filterClass}
                     onChange={(e) => setFilterClass(e.target.value)}
-                    className="border border-green-500 px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="border border-green-500 px-1 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
                   >
                     <option value="">All Classes</option>
                     {classes.map((cls) => (
@@ -587,7 +593,7 @@ const tableRows = filteredStudents
                     value={filterSection}
                     onChange={(e) => setFilterSection(e.target.value)}
                     disabled={!filterClass || sections.length === 0}
-                    className="border border-green-500 rounded-r px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="border border-green-500 rounded-r px-1 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
                   >
                     <option value="">All Sections</option>
                     {sections.map((sec) => (
@@ -614,7 +620,7 @@ const tableRows = filteredStudents
                     placeholder="Search by Student ID, ADM No or Name"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
-                    className="w-full border border-green-500 rounded px-2 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
+                    className="w-full border border-green-500 rounded px-1 py-0 focus:outline-none focus:ring-2 focus:ring-green-400"
                   />
 
                   {/* Print Button */}
@@ -643,30 +649,32 @@ const tableRows = filteredStudents
           <table className="w-full table-auto border border-green-500 text-sm">
             <thead className="bg-green-100">
               <tr>
-                <th className="border border-green-500 px-2 py-1">Student ID</th>
-                <th className="border border-green-500 px-2 py-1">Session</th>
-                <th className="border border-green-500 px-2 py-1">ADM No.</th>
-                <th className="border border-green-500 px-2 py-1">Name</th>
-                <th className="border border-green-500 px-2 py-1">Admission Type</th>
-                <th className="border border-green-500 px-2 py-1">Class</th>
-                <th className="border border-green-500 px-2 py-1">Sec</th>
-                <th className="border border-green-500 px-2 py-1">Roll</th>
-                {/* <th className="border border-green-500 px-2 py-1">DOB</th> */}
-                <th className="border border-green-500 px-2 py-1">Father</th>
-                <th className="border border-green-500 px-2 py-1">Mother</th>
-                {/* <th className="border border-green-500 px-2 py-1">Phone No</th> */}
-                <th className="border border-green-500 px-2 py-1">Action</th>
+                <th className="border border-green-500 px-1 py-1">SL No</th>
+                <th className="border border-green-500 px-1 py-1">Student ID</th>
+                <th className="border border-green-500 px-1 py-1">Session</th>
+                <th className="border border-green-500 px-1 py-1">ADM No.</th>
+                <th className="border border-green-500 px-1 py-1">Name</th>
+                <th className="border border-green-500 px-1 py-1">Admission Type</th>
+                <th className="border border-green-500 px-1 py-1">Class</th>
+                <th className="border border-green-500 px-1 py-1">Sec</th>
+                <th className="border border-green-500 px-1 py-1">Roll</th>
+                {/* <th className="border border-green-500 px-1 py-1">DOB</th> */}
+                <th className="border border-green-500 px-1 py-1">Father</th>
+                <th className="border border-green-500 px-1 py-1">Mother</th>
+                {/* <th className="border border-green-500 px-1 py-1">Phone No</th> */}
+                <th className="border border-green-500 px-1 py-1">Action</th>
               </tr>
             </thead>
             <tbody className="text-center">
               {filteredStudents.length > 0 ? (
-                filteredStudents.map((stu) => (
+                paginatedStudents.map((stu,index) => (
                   <tr key={stu._id} className="hover:bg-gray-100 transition">
-                    <td className="border border-green-500 px-2 py-1">{stu.studentId}</td>
-                    <td className="border border-green-500 px-2 py-1">{stu.academicSession}</td>
-                    <td className="border border-green-500 px-2 py-1">{stu.admissionNo}</td>
-                    <td className="border border-green-500 px-2 py-1">{getName(stu)}</td>
-                     <td className="border border-green-500 px-2 py-1">
+                    <td className="border border-green-500 px-1 py-1">{startIndex+index+1}</td>
+                    <td className="border border-green-500 px-1 py-1">{stu.studentId}</td>
+                    <td className="border border-green-500 px-1 py-1">{stu.academicSession}</td>
+                    <td className="border border-green-500 px-1 py-1">{stu.admissionNo}</td>
+                    <td className="border border-green-500 px-1 py-1">{getName(stu)}</td>
+                     <td className="border border-green-500 px-1 py-1">
                       {stu.admissionType
                         ? stu.admissionType
                             .split(/[\s-]+/)                     // split by space or dash
@@ -674,14 +682,14 @@ const tableRows = filteredStudents
                             .join(" ")                            // join with space
                         : ""}
                     </td>
-                    <td className="border border-green-500 px-2 py-1">{getClass(stu)}</td>
-                    <td className="border border-green-500 px-2 py-1">{stu.section || ""}</td>
-                    <td className="border border-green-500 px-2 py-1">{stu.rollNo || ""}</td>
-                    {/* <td className="border border-green-500 px-2 py-1">{formatDOB(stu.dob)}</td> */}
-                    <td className="border border-green-500 px-2 py-1">{stu.fatherName || ""}</td>
-                    <td className="border border-green-500 px-2 py-1">{stu.motherName || ""}</td>
-                    {/* <td className="border border-green-500 px-2 py-1">{getPhone(stu)}</td> */}
-                   <td className="border border-green-500 px-2 py-1">
+                    <td className="border border-green-500 px-1 py-1">{getClass(stu)}</td>
+                    <td className="border border-green-500 px-1 py-1">{stu.section || ""}</td>
+                    <td className="border border-green-500 px-1 py-1">{stu.rollNo || ""}</td>
+                    {/* <td className="border border-green-500 px-1 py-1">{formatDOB(stu.dob)}</td> */}
+                    <td className="border border-green-500 px-1 py-1">{stu.fatherName || ""}</td>
+                    <td className="border border-green-500 px-1 py-1">{stu.motherName || ""}</td>
+                    {/* <td className="border border-green-500 px-1 py-1">{getPhone(stu)}</td> */}
+                   <td className="border border-green-500 px-1 py-1">
                   <div className="flex justify-center items-center gap-2">
                     {/* Edit */}
                     <button
@@ -742,6 +750,13 @@ const tableRows = filteredStudents
               )}
             </tbody>
           </table>
+          
+          <Pagination
+              total={filteredStudents.length}
+              perPage={perPage}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
         </div>
       </div>
     </div>

@@ -7,8 +7,11 @@ import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
 import toast from "react-hot-toast";
+import Pagination from "../component/Pagination";
 
 const ClassesList = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
   const [classes, setClasses] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
@@ -44,6 +47,9 @@ const ClassesList = () => {
       console.error("Failed to delete class:", err);
     }
   };
+  const startIndex = (currentPage - 1) * perPage;
+const paginatedclasses = classes.slice(startIndex, startIndex + perPage);
+
   // -----------------------------------------
 
   return (
@@ -70,6 +76,7 @@ const ClassesList = () => {
           <table className="w-full table-auto border border-green-500">
             <thead className="bg-green-100 text-sm">
               <tr>
+                <th className="border border-green-500 py-1">SL No</th>
                 <th className="border border-green-500 px-2 py-1">Class ID</th>
                 <th className="border border-green-500 px-2 py-1">Class Name</th>
                 <th className="border border-green-500 px-2 py-1">Section</th>
@@ -78,8 +85,9 @@ const ClassesList = () => {
             </thead>
             <tbody className="text-sm text-center">
               {classes.length > 0 ? (
-                classes.map((cls) => (
+                paginatedclasses.map((cls,index) => (
                   <tr key={cls._id} className="hover:bg-gray-100 transition">
+                    <td className="border border-green-500 py-1">{startIndex+index+1}</td>
                     <td className="border border-green-500 px-2 py-1">{cls.classId}</td>
                     <td className="border border-green-500 px-2 py-1">{cls.className}</td>
                     <td className="border border-green-500 px-2 py-1">{cls.section}</td>
@@ -112,6 +120,12 @@ const ClassesList = () => {
               )}
             </tbody>
           </table>
+           <Pagination
+              total={classes.length}
+              perPage={perPage}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
         </div>
       </div>
     </div>

@@ -7,8 +7,11 @@ import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
 import toast from "react-hot-toast";
+import Pagination from "../component/Pagination";
 
 const FeeStructureList = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
   const [fees, setFees] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sessions, setSessions] = useState([]);
@@ -100,6 +103,9 @@ const filteredFees = fees.filter(fee =>
   (filterClass ? fee.classId === filterClass : true)
 );
 
+const startIndex = (currentPage - 1) * perPage;
+const paginatedFees = filteredFees.slice(startIndex, startIndex + perPage);
+
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -173,6 +179,7 @@ const filteredFees = fees.filter(fee =>
           <table className="w-full table-auto border border-green-500">
             <thead className="bg-green-100 text-sm">
               <tr>
+                <th className="border border-green-500 px-2 py-1">SL No</th>
                 <th className="border border-green-500 px-2 py-1">FeeStruct ID</th>
                 <th className="border border-green-500 px-2 py-1">Session</th>
                 <th className="border border-green-500 px-2 py-1">Class</th>
@@ -185,8 +192,9 @@ const filteredFees = fees.filter(fee =>
             </thead>
             <tbody className="text-sm text-center">
               {filteredFees.length > 0 ? (
-                filteredFees.map(fee => (
+                paginatedFees.map((fee,index) => (
                   <tr key={fee._id} className="hover:bg-gray-100 transition">
+                    <td className="border border-green-500 px-2 py-1">{startIndex+index+1}</td>
                     <td className="border border-green-500 px-2 py-1">{fee.feeStructId}</td>
                     <td className="border border-green-500 px-2 py-1">{fee.academicSession}</td>
                     <td className="border border-green-500 px-2 py-1">{fee.className}</td>
@@ -221,6 +229,12 @@ const filteredFees = fees.filter(fee =>
               )}
             </tbody>
           </table>
+            <Pagination
+              total={filteredFees.length}
+              perPage={perPage}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
         </div>
       </div>
     </div>

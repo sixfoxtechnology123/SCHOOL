@@ -6,11 +6,16 @@ import BackButton from "../component/BackButton";
 import Sidebar from '../component/Sidebar';
 import Header from "./Header";
 import toast from "react-hot-toast";
+import Pagination from "../component/Pagination";
+
 
 const TransportRoutesList = () => {
   const [routes, setRoutes] = useState([]);
   const [sessions, setSessions] = useState([]);
   const [filterSession, setFilterSession] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
+
   const navigate = useNavigate();
 
   // Fetch transport routes
@@ -65,10 +70,10 @@ const TransportRoutesList = () => {
     console.error("Failed to delete route:", err);
   }
 };
-
-
   // Filter routes by selected session
   const filteredRoutes = routes.filter(r => filterSession ? r.academicSession === filterSession : true);
+  const startIndex = (currentPage - 1) * perPage;
+const paginatedRoutes = filteredRoutes.slice(startIndex, startIndex + perPage);
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
@@ -118,6 +123,7 @@ const TransportRoutesList = () => {
           <table className="w-full table-auto border border-green-500">
             <thead className="bg-green-100 text-sm">
               <tr>
+                <th className="border border-green-500 py-1">SL No</th>
                 <th className="border border-green-500 px-2 py-1">Route ID</th>
                 <th className="border border-green-500 px-2 py-1">Session</th>
                 <th className="border border-green-500 px-2 py-1">Distance (KM)</th>
@@ -127,8 +133,9 @@ const TransportRoutesList = () => {
             </thead>
             <tbody className="text-sm text-center">
               {filteredRoutes.length > 0 ? (
-                filteredRoutes.map((r) => (
+                paginatedRoutes.map((r,index) => (
                   <tr key={r._id} className="hover:bg-gray-100 transition">
+                    <td className="border border-green-500 py-1">{startIndex+index+1}</td>
                     <td className="border border-green-500 px-2 py-1">{r.routeId}</td>
                     <td className="border border-green-500 px-2 py-1">{r.academicSession}</td>
                     <td className="border border-green-500 px-2 py-1">{r.distance}</td>
@@ -160,6 +167,13 @@ const TransportRoutesList = () => {
               )}
             </tbody>
           </table>
+          <Pagination
+              total={filteredRoutes.length}
+              perPage={perPage}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
+
         </div>
       </div>
     </div>

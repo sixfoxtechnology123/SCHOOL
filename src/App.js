@@ -35,6 +35,7 @@ import AdminManagement from "./rollebased/AdminManagement";
 import AdminLogin from "./rollebased/AdminLogin";
 import EditProfile from "./rollebased/EditProfile";
 import ChangePassword from "./rollebased/ChangePassword";
+import Pagination from "./component/Pagination";
 
 
 
@@ -78,6 +79,7 @@ function App() {
       <Route path="/" element={<AdminLogin/>} />
       <Route path="/EditProfile" element={<EditProfile/>} />
       <Route path="/ChangePassword" element={<ChangePassword/>} />
+      <Route path="/Pagination" element={<Pagination/>} />
 
     </Routes>
         <Toaster

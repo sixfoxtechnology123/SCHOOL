@@ -5,8 +5,11 @@ import Sidebar from "../component/Sidebar";
 import Header from "../component/Header";
 import { FaThLarge } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import Pagination from "../component/Pagination";
 
 const OutstandingFees = () => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
   const [outstandingData, setOutstandingData] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterClass, setFilterClass] = useState("");
@@ -46,7 +49,8 @@ const OutstandingFees = () => {
       console.log("Error fetching student fee details:", err);
     }
   };
-
+const startIndex = (currentPage - 1) * perPage;
+const paginatedData = filteredData.slice(startIndex, startIndex + perPage);
   return (
     <div className="flex min-h-screen flex-col md:flex-row">
       <Sidebar />
@@ -122,6 +126,7 @@ const OutstandingFees = () => {
             <table className="w-full table-auto border border-green-500">
               <thead className="bg-green-100 text-sm">
                 <tr>
+                  <th className="border border-green-500 px-2 py-1">SL No</th>
                   <th className="border border-green-500 px-2 py-1">Student ID</th>
                   <th className="border border-green-500 px-2 py-1">Student Name</th>
                   <th className="border border-green-500 px-2 py-1">Class</th>
@@ -132,8 +137,9 @@ const OutstandingFees = () => {
                 </tr>
               </thead>
               <tbody className="text-sm text-center">
-                {filteredData.length > 0 ? filteredData.map((item, index) => (
+                {paginatedData.length > 0 ? filteredData.map((item, index) => (
                   <tr key={index} className="hover:bg-gray-100 transition">
+                    <td className="border border-green-500 px-2 py-1">{startIndex+index+1}</td>
                     <td className="border border-green-500 px-2 py-1">{item.studentId || "-"}</td>
                     <td className="border border-green-500 px-2 py-1">{item.studentName || "-"}</td>
                     <td className="border border-green-500 px-2 py-1">{item.class || "-"}</td>
@@ -152,6 +158,12 @@ const OutstandingFees = () => {
                 )}
               </tbody>
             </table>
+              <Pagination
+              total={filteredData.length}
+              perPage={perPage}
+              currentPage={currentPage}
+              setCurrentPage={setCurrentPage}
+            />
           </div>
 
        {/* Modal */}
