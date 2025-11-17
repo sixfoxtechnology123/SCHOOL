@@ -15,6 +15,16 @@ const ClassesList = () => {
   const [classes, setClasses] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    if (role) setUserRole(role); // make sure this matches exactly the role in DB, e.g., "Admin"
+  }, []);
+
+  // <-- Add this line here
+  const isAdmin = userRole === "Admin";
+
 
   const fetchClasses = async () => {
     try {
@@ -91,24 +101,31 @@ const paginatedclasses = classes.slice(startIndex, startIndex + perPage);
                     <td className="border border-green-500 px-2 py-1">{cls.classId}</td>
                     <td className="border border-green-500 px-2 py-1">{cls.className}</td>
                     <td className="border border-green-500 px-2 py-1">{cls.section}</td>
-                    <td className="border border-green-500 px-2 py-1 text-center">
+                   <td className="border border-green-500 px-2 py-1 text-center">
                       <div className="flex justify-center items-center gap-4">
-                        <button
-                          onClick={() =>
-                            navigate("/classesMaster", { state: { classItem: cls } })
-                          }
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          onClick={() => deleteClass(cls._id, cls.className, cls.section)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <FaTrash />
-                        </button>
+                       <button
+                            onClick={() => navigate("/classesMaster", { state: { classItem: cls } })}
+                            className={`text-blue-600 hover:text-blue-800 ${!isAdmin ? "opacity-50 cursor-not-allowed" : ""}`}
+                            disabled={!isAdmin}
+                            title={!isAdmin ? "Only admin can edit" : ""}
+                          >
+                            <FaEdit />
+                          </button>
+
+                          <button
+                            onClick={() => deleteClass(cls._id, cls.className, cls.section)}
+                            className={`text-red-600 hover:text-red-800 ${!isAdmin ? "opacity-50 cursor-not-allowed" : ""}`}
+                            disabled={!isAdmin}
+                            title={!isAdmin ? "Only admin can delete" : ""}
+                          >
+                            <FaTrash />
+                          </button>
+
+
+
                       </div>
                     </td>
+
                   </tr>
                 ))
               ) : (
