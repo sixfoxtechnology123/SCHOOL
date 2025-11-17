@@ -133,6 +133,19 @@ export const getAllStudents = async (_req, res) => {
 export const createStudent = async (req, res) => {
   try {
     const { admissionType, studentId, ...studentData } = req.body;
+    // === Prevent duplicate: same session + same studentId + same class ===
+      const duplicate = await StudentMaster.findOne({
+        academicSession: req.body.academicSession,
+        studentId: studentId,
+        admitClass: req.body.admitClass
+      });
+
+      if (duplicate) {
+        return res.status(400).json({
+          message: "Student already exists for same Session, Student ID and Class"
+        });
+      }
+
           // Ensure no duplicate MongoDB _id comes from frontend
       if (studentData._id) delete studentData._id;
 
