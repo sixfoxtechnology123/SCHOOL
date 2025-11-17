@@ -15,6 +15,15 @@ const AcademicSessionList = () => {
   const [sessions, setSessions] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
+  const [userRole, setUserRole] = useState("");
+  
+    useEffect(() => {
+      const role = localStorage.getItem("userRole");
+      if (role) setUserRole(role); // make sure this matches exactly the role in DB, e.g., "Admin"
+    }, []);
+  
+    const token = localStorage.getItem("token");
+    const isAdmin = userRole === "Admin";
 
   const fetchSessions = async () => {
     try {
@@ -35,7 +44,11 @@ const AcademicSessionList = () => {
   const deleteSession = async (id, year) => {
     if (!window.confirm("Are you sure you want to delete this session?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/sessions/${id}`);
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:5000/api/sessions/${id}`,
+       {
+      headers: { Authorization: `Bearer ${token}` }
+    });
       setSessions((prev) => prev.filter((s) => s._id !== id));
       toast.success(`Academic Session "${year}" deleted successfully!`);
     } catch (err) {
@@ -94,15 +107,21 @@ const paginatedsessions = sessions.slice(startIndex, startIndex + perPage);
                       <div className="flex justify-center items-center gap-4">
                         <button
                           onClick={() =>
-                            navigate("/AcademicSessionMaster", { state: { sessionItem: s } })
+                            navigate("/AcademicSessionMaster", { state: { sessionItem: s ,token} })
                           }
-                          className="text-blue-600 hover:text-blue-800"
+                          //  className={`px-2 py-1 rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-blue-600 hover:text-blue-800"}`}
+                          //   disabled={!isAdmin}
+                          //   title={!isAdmin ? "Only admin can edit" : ""}
+                          className="rounded text-blue-600 hover:text-blue-800"
+                          title="Edit session"
                         >
                           <FaEdit />
                         </button>
                         <button
                           onClick={() => deleteSession(s._id, s.year)}
-                          className="text-red-600 hover:text-red-800"
+                          className={`rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-red-600 hover:text-red-800"}`}
+                          disabled={!isAdmin}
+                          title={!isAdmin ? "Only admin can delete" : ""}
                         >
                           <FaTrash />
                         </button>

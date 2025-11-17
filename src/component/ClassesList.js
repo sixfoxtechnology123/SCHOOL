@@ -22,7 +22,7 @@ const ClassesList = () => {
     if (role) setUserRole(role); // make sure this matches exactly the role in DB, e.g., "Admin"
   }, []);
 
-  // <-- Add this line here
+  const token = localStorage.getItem("token");
   const isAdmin = userRole === "Admin";
 
 
@@ -50,7 +50,11 @@ const ClassesList = () => {
   const deleteClass = async (id, className, section) => {
     if (!window.confirm("Are you sure you want to delete this class?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/classes/${id}`);
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:5000/api/classes/${id}`,
+      {
+      headers: { Authorization: `Bearer ${token}` },
+    });
       setClasses((prev) => prev.filter((c) => c._id !== id));
        toast.success(`Class: "${className} and section:  ${section}"  deleted successfully!`);
     } catch (err) {
@@ -58,7 +62,7 @@ const ClassesList = () => {
     }
   };
   const startIndex = (currentPage - 1) * perPage;
-const paginatedclasses = classes.slice(startIndex, startIndex + perPage);
+  const paginatedclasses = classes.slice(startIndex, startIndex + perPage);
 
   // -----------------------------------------
 
@@ -103,25 +107,25 @@ const paginatedclasses = classes.slice(startIndex, startIndex + perPage);
                     <td className="border border-green-500 px-2 py-1">{cls.section}</td>
                    <td className="border border-green-500 px-2 py-1 text-center">
                       <div className="flex justify-center items-center gap-4">
-                       <button
-                            onClick={() => navigate("/classesMaster", { state: { classItem: cls } })}
-                            className={`text-blue-600 hover:text-blue-800 ${!isAdmin ? "opacity-50 cursor-not-allowed" : ""}`}
-                            disabled={!isAdmin}
-                            title={!isAdmin ? "Only admin can edit" : ""}
-                          >
-                            <FaEdit />
-                          </button>
+                     <button
+                      onClick={() => navigate("/classesMaster", { state: { classItem: cls,token } })}
+                      // className={`px-2 py-1 rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-blue-600 hover:text-blue-800"}`}
+                      // disabled={!isAdmin}
+                      // title={!isAdmin ? "Only admin can edit" : ""}
+                      className="rounded text-blue-600 hover:text-blue-800"
+                          title="Edit Class"
+                    >
+                      <FaEdit />
+                    </button>
 
-                          <button
-                            onClick={() => deleteClass(cls._id, cls.className, cls.section)}
-                            className={`text-red-600 hover:text-red-800 ${!isAdmin ? "opacity-50 cursor-not-allowed" : ""}`}
-                            disabled={!isAdmin}
-                            title={!isAdmin ? "Only admin can delete" : ""}
-                          >
-                            <FaTrash />
-                          </button>
-
-
+                    <button
+                      onClick={() => deleteClass(cls._id, cls.className, cls.section)}
+                      className={`rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-red-600 hover:text-red-800"}`}
+                      disabled={!isAdmin}
+                      title={!isAdmin ? "Only admin can delete" : ""}
+                    >
+                      <FaTrash />
+                    </button>
 
                       </div>
                     </td>

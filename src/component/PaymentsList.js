@@ -26,6 +26,15 @@ const PaymentsList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    if (role) setUserRole(role); // make sure this matches exactly the role in DB, e.g., "Admin"
+  }, []);
+
+  const token = localStorage.getItem("token");
+  const isAdmin = userRole === "Admin";
 
   //  Fetch payments
   const fetchPayments = async () => {
@@ -83,9 +92,12 @@ const deletePayment = async (id) => {
 
   try {
     const payment = payments.find((p) => p._id === id);
+    const token = localStorage.getItem("token");
 
-    await axios.delete(`http://localhost:5000/api/payments/${id}`);
-
+    await axios.delete(`http://localhost:5000/api/payments/${id}`,
+     {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     // Remove from state
     setPayments((prev) => prev.filter((p) => p._id !== id));
 
@@ -475,7 +487,10 @@ const paginatedPayments = filteredPayments.slice(startIndex, startIndex + perPag
                           </button>
                           <button
                             onClick={() => deletePayment(p._id)}
-                            className="text-red-600 hover:text-red-800"
+                             className={`rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-red-600 hover:text-red-800"}`}
+                                disabled={!isAdmin}
+                                title={!isAdmin ? "Only admin can delete" : ""}
+
                           >
                             <FaTrash />
                           </button>

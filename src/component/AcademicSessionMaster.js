@@ -114,10 +114,15 @@ const handleYearChange = (e) => {
 
     try {
       if (isEditMode) {
+        const token = localStorage.getItem("token"); 
         await axios.put(
           `http://localhost:5000/api/sessions/${sessionData._id}`,
-          sessionData
+          sessionData,
+         {
+            headers: { Authorization: `Bearer ${token}` }, // add headers
+          }
         );
+
         toast.success("Session updated successfully!");
       } else {
         await axios.post("http://localhost:5000/api/sessions", sessionData);

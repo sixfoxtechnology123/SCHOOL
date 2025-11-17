@@ -15,6 +15,15 @@ const TransportRoutesList = () => {
   const [filterSession, setFilterSession] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const perPage = 10;
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    if (role) setUserRole(role); // make sure this matches exactly the role in DB, e.g., "Admin"
+  }, []);
+
+  const token = localStorage.getItem("token");
+  const isAdmin = userRole === "Admin";
 
   const navigate = useNavigate();
 
@@ -63,7 +72,12 @@ const TransportRoutesList = () => {
   if (!window.confirm("Are you sure you want to delete this route?")) return;
 
   try {
-    await axios.delete(`http://localhost:5000/api/transportroutes/${id}`);
+    const token = localStorage.getItem("token");
+    await axios.delete(`http://localhost:5000/api/transportroutes/${id}`,
+      {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
     setRoutes((prev) => prev.filter((r) => r._id !== id));
     toast.success(`Transport Route Range "${distance}" Km deleted successfully!`);
   } catch (err) {
@@ -146,13 +160,22 @@ const paginatedRoutes = filteredRoutes.slice(startIndex, startIndex + perPage);
                           onClick={() =>
                             navigate("/TransportRoutesMaster", { state: { routeItem: r } })
                           }
-                          className="text-blue-600 hover:text-blue-800"
+                          // className={`px-2 py-1 rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-blue-600 hover:text-blue-800"}`}
+                          // disabled={!isAdmin}
+                          // title={!isAdmin ? "Only admin can edit" : ""}
+                          className="rounded text-blue-600 hover:text-blue-800"
+                          title="Edit Transport"
+
+
                         >
                           <FaEdit />
                         </button>
                         <button
                           onClick={() => deleteRoute(r._id, r.distance)}
-                          className="text-red-600 hover:text-red-800"
+                           className={`rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-red-600 hover:text-red-800"}`}
+                            disabled={!isAdmin}
+                            title={!isAdmin ? "Only admin can delete" : ""}
+
                         >
                           <FaTrash />
                         </button>

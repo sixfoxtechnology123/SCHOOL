@@ -21,7 +21,8 @@ router.get("/unique/classes", getUniqueClasses);
 router.get("/sections/:className", getSectionsByClass);
 
 // Admin-only routes
-router.put("/:id", authMiddleware, adminOnly, updateClass);
+//router.put("/:id", authMiddleware, adminOnly, updateClass);
+router.put("/:id", updateClass);
 router.delete("/:id", authMiddleware, adminOnly, deleteClass);
 
 module.exports = router;

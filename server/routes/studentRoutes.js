@@ -1,5 +1,7 @@
 import express from "express";
 import multer from "multer";
+import { authMiddleware, adminOnly } from "../middleware/authMiddleware.js";
+
 import {
   getAllStudents,
   getLatestStudentId,
@@ -102,7 +104,7 @@ router.put(
 
 
 // DELETE /api/students/:id
-router.delete("/:id", deleteStudentController);
+router.delete("/:id",authMiddleware, adminOnly, deleteStudentController);
 router.get("/latest-admission", getLatestAdmissionNo);
 router.get("/latest/:session", getLatestStudentBySession);
 

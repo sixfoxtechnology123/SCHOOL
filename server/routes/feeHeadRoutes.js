@@ -1,6 +1,9 @@
 // routes/feeHeadRoutes.js
 const express = require("express");
 const router = express.Router();
+
+const { authMiddleware, adminOnly } = require("../middleware/authMiddleware");
+
 const {
   getAllFeeHeads,
   getLatestFeeHeadId,
@@ -12,7 +15,8 @@ const {
 router.get("/", getAllFeeHeads);
 router.get("/latest", getLatestFeeHeadId);
 router.post("/", createFeeHead);
-router.put("/:id", updateFeeHead);
-router.delete("/:id", deleteFeeHead);
+//router.put("/:id", authMiddleware, adminOnly,updateFeeHead);
+router.put("/:id",updateFeeHead);
+router.delete("/:id",authMiddleware, adminOnly, deleteFeeHead);
 
 module.exports = router;

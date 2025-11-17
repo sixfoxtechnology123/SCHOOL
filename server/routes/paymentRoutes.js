@@ -6,6 +6,7 @@ const FeeMonth = require("../models/FeeStructure"); // your Student model
 
 const controller = require("../controller/paymentController");
 const { generateNextPaymentId } = require("../controller/paymentController");
+const { authMiddleware, adminOnly } = require("../middleware/authMiddleware");
 
 const Payment = require("../models/Payment");
 
@@ -53,8 +54,8 @@ router.post("/", (req, res, next) => {
   next();
 }, controller.createPayment);
 
-router.put("/:id", controller.updatePayment);
-router.delete("/:id", controller.deletePayment);
+router.put("/:id",authMiddleware, adminOnly, controller.updatePayment);
+router.delete("/:id",authMiddleware, adminOnly, controller.deletePayment);
 // ===== New route for real-time fee calculation =====
 router.post("/calc-fee", async (req, res) => {
   try {

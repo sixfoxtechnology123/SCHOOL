@@ -65,10 +65,19 @@ const StudentsList = () => {
       familyIncome: "",
     });
 
-    const [classes, setClasses] = useState([]);
+const [classes, setClasses] = useState([]);
 const [sections, setSections] = useState([]);
 const [filterClass, setFilterClass] = useState("");
 const [filterSection, setFilterSection] = useState("");
+const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    if (role) setUserRole(role); // make sure this matches exactly the role in DB, e.g., "Admin"
+  }, []);
+
+  const token = localStorage.getItem("token");
+  const isAdmin = userRole === "Admin";
 
 useEffect(() => {
   // Fetch unique classes
@@ -133,7 +142,13 @@ const deleteStudent = async (id, name) => {
   if (!window.confirm(`Are you sure you want to delete student "${name}"?`)) return;
 
   try {
-    const res = await axios.delete(`http://localhost:5000/api/students/${id}`);
+    const token = localStorage.getItem("token");
+
+    const res = await axios.delete(`http://localhost:5000/api/students/${id}`,
+       {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
     
     if (res.status === 200 || res.status === 204) {
       // Remove student from state so table updates immediately
@@ -694,10 +709,15 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
                     {/* Edit */}
                     <button
                       onClick={() =>
-                        navigate("/StudentMaster", { state: { studentItem: stu } })
+                        navigate("/StudentMaster", { state: { studentItem: stu,token } })
                       }
-                      className="text-blue-600 hover:text-blue-800"
-                      title="Edit Student"
+                    //  className={`px-2 py-1 rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-blue-600 hover:text-blue-800"}`}
+                    //   disabled={!isAdmin}
+                    //   title={!isAdmin ? "Only admin can edit" : ""}
+                    className=" rounded text-blue-600 hover:text-blue-800"
+                          title="Edit session"
+
+
                     >
                       <FaEdit />
                     </button>
@@ -705,8 +725,9 @@ const paginatedStudents = filteredStudents.slice(startIndex, startIndex + perPag
                     {/* Delete */}
                     <button
                       onClick={() => deleteStudent(stu._id, getName(stu))}
-                      className="text-red-600 hover:text-red-800"
-                      title="Delete Student"
+                      className={`rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-red-600 hover:text-red-800"}`}
+                      disabled={!isAdmin}
+                      title={!isAdmin ? "Only admin can delete" : ""}
                     >
                       <FaTrash />
                     </button>

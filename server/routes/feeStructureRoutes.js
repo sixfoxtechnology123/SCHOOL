@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { authMiddleware, adminOnly } = require("../middleware/authMiddleware");
 const {
   getAllFeeStructures,
   getLatestFeeStructId,
@@ -15,8 +16,9 @@ const {
 router.get("/", getAllFeeStructures);
 router.get("/latest", getLatestFeeStructId);
 router.post("/", createFeeStructure);
-router.put("/:id", updateFeeStructure);
-router.delete("/:id", deleteFeeStructure);
+//router.put("/:id",authMiddleware, adminOnly, updateFeeStructure);
+router.put("/:id",updateFeeStructure);
+router.delete("/:id",authMiddleware, adminOnly, deleteFeeStructure);
 router.get("/get-amount", getFeeAmount);
 
 // Academic sessions

@@ -238,7 +238,11 @@ const handleChange = (e) => {
       }
 
       if (isEditMode) {
-        await axios.put(`http://localhost:5000/api/fees/${feeData._id}`, payload);
+        const token = localStorage.getItem("token"); 
+        await axios.put(`http://localhost:5000/api/fees/${feeData._id}`, payload ,{
+            headers: { Authorization: `Bearer ${token}` }, // add headers
+          }
+        );
         toast.success("Fee Structure updated!");
        
       } else {

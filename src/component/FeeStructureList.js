@@ -18,7 +18,15 @@ const FeeStructureList = () => {
   const [filterSession, setFilterSession] = useState("");
   const [filterClass, setFilterClass] = useState(""); // selected class in filter
   const [allClasses, setAllClasses] = useState([]); // all classes from backend
+  const [userRole, setUserRole] = useState("");
 
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    if (role) setUserRole(role); // make sure this matches exactly the role in DB, e.g., "Admin"
+  }, []);
+
+  const token = localStorage.getItem("token");
+  const isAdmin = userRole === "Admin";
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,9 +84,13 @@ const deleteFee = async (id, className, feeHeadName) => {
   if (!window.confirm(`Are you sure you want to delete the fee: ${feeHeadName} for class: ${className}?`)) return;
 
   try {
-    // Delete on server
-    await axios.delete(`http://localhost:5000/api/fees/${id}`);
+     const token = localStorage.getItem("token");
 
+    // Delete on server
+    await axios.delete(`http://localhost:5000/api/fees/${id}`,
+    {
+      headers: { Authorization: `Bearer ${token}` },
+    });
     // Update frontend state
     setFees(prev => prev.filter(f => f._id !== id));
 
@@ -210,14 +222,25 @@ const paginatedFees = filteredFees.slice(startIndex, startIndex + perPage);
                     <td className="border border-green-500 px-2 py-1 text-center">
                       <div className="flex justify-center items-center gap-4">
                         <button
-                          onClick={() => navigate("/FeeStructureMaster", { state: { feeItem: fee } })}
-                          className="text-blue-600 hover:text-blue-800"
+                          onClick={() => navigate("/FeeStructureMaster", { state: { feeItem: fee ,token} })}
+                        //  className={`px-2 py-1 rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-blue-600 hover:text-blue-800"}`}
+                        //   disabled={!isAdmin}
+                        //   title={!isAdmin ? "Only admin can edit" : ""}
+                        className="rounded text-blue-600 hover:text-blue-800"
+                          title="Edit Fee Structure"
+
+
+
                         >
                           <FaEdit />
                         </button>
                         <button
                           onClick={() => deleteFee(fee._id, fee.className, fee.feeHeadName)}
-                          className="text-red-600 hover:text-red-800"
+                          className={`rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-red-600 hover:text-red-800"}`}
+                          disabled={!isAdmin}
+                          title={!isAdmin ? "Only admin can delete" : ""}
+
+
                         >
                           <FaTrash />
                         </button>

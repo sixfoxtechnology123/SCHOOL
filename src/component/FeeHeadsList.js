@@ -15,6 +15,17 @@ const FeeHeadsList = () => {
   const [feeHeads, setFeeHeads] = useState([]);
   const navigate = useNavigate();
   const location = useLocation();
+    const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    const role = localStorage.getItem("userRole");
+    if (role) setUserRole(role); // make sure this matches exactly the role in DB, e.g., "Admin"
+  }, []);
+
+  const token = localStorage.getItem("token");
+  const isAdmin = userRole === "Admin";
+
+
 
   const fetchFeeHeads = async () => {
     try {
@@ -32,7 +43,11 @@ const FeeHeadsList = () => {
   const deleteFeeHead = async (id, feeHeadName) => {
     if (!window.confirm("Are you sure you want to delete this Fee Head?")) return;
     try {
-      await axios.delete(`http://localhost:5000/api/feeheads/${id}`);
+       const token = localStorage.getItem("token"); 
+      await axios.delete(`http://localhost:5000/api/feeheads/${id}`,
+        {
+      headers: { Authorization: `Bearer ${token}` },
+    });
       setFeeHeads((prev) => prev.filter((f) => f._id !== id));
       toast.success(`Fee Head "${feeHeadName}" deleted successfully!`);
     } catch (err) {
@@ -85,16 +100,22 @@ const paginatedfeeHeads = feeHeads.slice(startIndex, startIndex + perPage);
                       <div className="flex justify-center items-center gap-4">
                         <button
                           onClick={() =>
-                            navigate("/FeeHeadsMaster", { state: { feeHeadItem: fh } })
+                            navigate("/FeeHeadsMaster", { state: { feeHeadItem: fh,token } })
                           }
-                          className="text-blue-600 hover:text-blue-800"
+                      //     className={`px-2 py-1 rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-blue-600 hover:text-blue-800"}`}
+                      // disabled={!isAdmin}
+                      // title={!isAdmin ? "Only admin can edit" : ""}
+                      className="rounded text-blue-600 hover:text-blue-800"
+                          title="Edit Fee Heads"
                         >
                           <FaEdit />
                         </button>
                         <button
                           onClick={() => deleteFeeHead(fh._id, fh.feeHeadName)}
-                          className="text-red-600 hover:text-red-800"
-                        >
+                          className={`rounded ${!isAdmin ? "text-gray-500 cursor-not-allowed" : "text-red-600 hover:text-red-800"}`}
+                          disabled={!isAdmin}
+                          title={!isAdmin ? "Only admin can delete" : ""}
+                            >
                           <FaTrash />
                         </button>
                       </div>

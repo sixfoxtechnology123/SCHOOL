@@ -77,10 +77,15 @@ const TransportRoutesMaster = () => {
     e.preventDefault();
     try {
       if (isEditMode) {
+         const token = localStorage.getItem("token"); 
         await axios.put(
           `http://localhost:5000/api/transportroutes/${routeData._id}`,
-          routeData
+          routeData,
+        {
+            headers: { Authorization: `Bearer ${token}` }, // add headers
+          }
         );
+
         
         toast.success("Route updated successfully!");
       } else {
