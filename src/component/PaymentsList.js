@@ -301,15 +301,16 @@ const deletePayment = async (id) => {
   };
 
   
+const filteredPayments = payments.filter((p) => {
+  const term = searchTerm.toUpperCase();
 
-  // Filter payments based on search term
-  const filteredPayments = payments.filter((p) => {
-    const term = searchTerm.toLowerCase();
-    return (
-      (p.student && p.student.toLowerCase().includes(term)) ||
-      (p.paymentId && p.paymentId.toLowerCase().includes(term))
-    );
-  });
+  return (
+    (p.studentName && p.studentName.toUpperCase().includes(term)) ||
+    (p.paymentId && p.paymentId.toUpperCase().includes(term))
+  );
+});
+
+
   const startIndex = (currentPage - 1) * perPage;
 const paginatedPayments = filteredPayments.slice(startIndex, startIndex + perPage);
 
@@ -328,13 +329,17 @@ const paginatedPayments = filteredPayments.slice(startIndex, startIndex + perPag
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 md:flex-row md:items-center md:gap-2 w-full md:w-auto">
             <BackButton />
 
-            <input
-              type="text"
-              placeholder="Search by Student Name or Receipt ID"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-400"
-            />
+        <input
+            type="text"
+            placeholder="SEARCH BY STUDENT NAME OR RECEIPT ID"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+            className="flex-1 min-w-[300px] border border-green-500 rounded px-2 py-1 
+                      focus:outline-none focus:ring-2 focus:ring-green-400 
+                      placeholder:uppercase"
+            style={{ textTransform: "uppercase" }}
+          />
+
 
             <button
               onClick={() => navigate("/PaymentsMaster")}
