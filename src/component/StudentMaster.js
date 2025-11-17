@@ -962,7 +962,7 @@ const handleSubmit = async (e) => {
           <div>
             <p className="pl-4 font-bold mb-2 text-white bg-gray-800 py-0 rounded">Permanent Address</p>
             <div className="grid grid-cols-1 sm:grid-cols-6 gap-2">
-              {["vill", "po", "block", "pin", "ps", "dist"].map((field) => (
+              {["vill/town", "po", "block", "pin", "ps", "dist"].map((field) => (
                 <div key={field} className="flex flex-col">
                   <label>{field.toUpperCase()} -</label>
                   <input                  
@@ -1000,7 +1000,7 @@ const handleSubmit = async (e) => {
                 </label>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-6 gap-2">
-                {["vill", "po", "block", "pin", "ps", "dist"].map((field) => (
+                {["vill/town", "po", "block", "pin", "ps", "dist"].map((field) => (
                   <div key={field} className="flex flex-col">
                     <label>{field.toUpperCase()} -</label>
                     <input

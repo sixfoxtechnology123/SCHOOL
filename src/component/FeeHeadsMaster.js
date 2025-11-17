@@ -124,7 +124,6 @@ const FeeHeadsMaster = () => {
                 "Development Fee",
                 "Board Registration Fee",
                 "Exam Fee",
-                "Bus/Jeep/Van Charge",
                 "Sports & Annual Social",
                 "Electricity Charge",
                 "Miscellaneous Fee",
